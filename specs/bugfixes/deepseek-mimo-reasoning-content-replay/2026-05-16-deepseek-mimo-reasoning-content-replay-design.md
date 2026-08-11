@@ -41,11 +41,11 @@ DeepSeek 官方文档已在“思考模式”中说明 `reasoning_content` 是�
 1. DeepSeek 与 Xiaomi 都通过 `mapApiTypeToOpenClawApi()` 根据用户选择映射到 OpenClaw transport。
 2. DeepSeek 与 Xiaomi 的默认 provider 配置可以面向新用户使用 OpenAI-compatible，但 runtime 同步必须尊重用户已经选择的 `apiFormat` 与 base URL。
 3. Gemini 有 `modelDefaults.reasoning: true`，但 DeepSeek 与 Xiaomi 没有 reasoning 默认值或模型级动态 reasoning 标记。
-4. DeepSeek 与 Xiaomi 没有 provider-owned replay policy 配置，也没有在 LobsterAI 侧显式声明“这类模型需要 reasoning 回放”。
+4. DeepSeek 与 Xiaomi 没有 provider-owned replay policy 配置，也没有在 智码 GLM Code 侧显式声明“这类模型需要 reasoning 回放”。
 
 ### 2.2 已有能力
 
-LobsterAI 已有几段基础能力可复用：
+智码 GLM Code 已有几段基础能力可复用：
 
 1. `src/main/libs/coworkOpenAICompatProxy.ts` 已能从 OpenAI 兼容流式响应中读取 `delta.reasoning_content` / `delta.reasoning`，并转成 Anthropic `thinking` block。
 2. `src/main/libs/coworkFormatTransform.ts` 已能把 Anthropic `thinking` block 转成 OpenAI assistant message 的 `reasoning_content`，也能反向把 `message.reasoning_content` 转成 `thinking` block。
@@ -74,7 +74,7 @@ LobsterAI 已有几段基础能力可复用：
 
 1. DeepSeek 成功路径显示为 `provider=deepseek api=anthropic-messages endpoint=deepseek-native route=native`，运行结束后的 history 中可见 assistant message 保留了 `thinking` 与 `toolCall` block，说明 Anthropic-compatible thinking replay 在 DeepSeek native 路径上是成立的。
 2. MiMo 失败路径显示为 `provider=xiaomi api=anthropic-messages endpoint=custom route=proxy-like policy=none`，工具执行完成后的续轮请求返回 `400 Param Incorrect`，错误文案为 thinking mode 必须回传 reasoning / thinking 内容。
-3. 打包 runtime 的插件列表包含 `deepseek`，但没有 `xiaomi`。LobsterAI 的 `scripts/prune-openclaw-runtime.cjs` bundled extension 保留名单也漏掉了 `xiaomi`，导致打包产物会剪掉 Xiaomi provider extension。
+3. 打包 runtime 的插件列表包含 `deepseek`，但没有 `xiaomi`。智码 GLM Code 的 `scripts/prune-openclaw-runtime.cjs` bundled extension 保留名单也漏掉了 `xiaomi`，导致打包产物会剪掉 Xiaomi provider extension。
 4. 因为 Xiaomi extension 没有进入 packaged runtime，OpenClaw 只能把 Xiaomi Anthropic-compatible 请求当成 generic custom endpoint 处理，无法应用 provider-owned replay policy、default thinking resolver 和 Xiaomi 专属 payload wrapper。
 5. 用户当前 Xiaomi 配置仍然是 Anthropic-compatible 地址。这个配置本身不应被视为错误；小米官方 Anthropic 文档明确支持 `https://api.xiaomimimo.com/anthropic/v1/messages`，并要求在思考模式工具调用续轮保留历史 `thinking` 内容块。
 
@@ -128,7 +128,7 @@ DeepSeek 当前能工作，不是因为它和 MiMo 的 replay 要求不同，而
 
 DeepSeek V4 当前已有可用的 payload wrapper，默认开启 thinking，显式 `thinking=off` 时才关闭。这解释了为什么 DeepSeek 现在比 MiMo 更容易成功。但这个实现仍是 DeepSeek 专用文件和 DeepSeek 专用 matcher，后续应纳入共享 wrapper，避免 MiMo 另写一份近似逻辑。
 
-当前还没有在 LobsterAI 仓库内验证：
+当前还没有在 智码 GLM Code 仓库内验证：
 
 1. `deepseek-reasoner` / `deepseek-v4-*` 返回 `reasoning_content` 后会在工具调用续轮回放。
 2. OpenAI 兼容路径与 Anthropic 兼容路径都能按各自协议形状回放推理内容。
@@ -148,7 +148,7 @@ DeepSeek V4 当前已有可用的 payload wrapper，默认开启 thinking，显�
 
 #### 缺口 D：packaged runtime prune 漏掉 Xiaomi extension
 
-`scripts/prune-openclaw-runtime.cjs` 的 bundled extension 保留名单没有包含 `xiaomi`，导致发布包中 Xiaomi provider extension 被删除。即便源码里的 `extensions/xiaomi` 已经补齐 provider hook，打包产物也不会加载这些 hook。这个问题必须在 LobsterAI 仓库内用 prune 测试锁住。
+`scripts/prune-openclaw-runtime.cjs` 的 bundled extension 保留名单没有包含 `xiaomi`，导致发布包中 Xiaomi provider extension 被删除。即便源码里的 `extensions/xiaomi` 已经补齐 provider hook，打包产物也不会加载这些 hook。这个问题必须在 智码 GLM Code 仓库内用 prune 测试锁住。
 
 ## 3. 用户场景
 
@@ -269,7 +269,7 @@ DeepSeek 与 MiMo 对“thinking enabled / disabled”的协议目标一致，�
 
 ## 5. 实现方案
 
-### 5.1 LobsterAI 侧 provider 配置与打包保留
+### 5.1 智码 GLM Code 侧 provider 配置与打包保留
 
 在 `src/shared/providers/constants.ts`、`src/main/libs/openclawConfigSync.ts` 与 `scripts/prune-openclaw-runtime.cjs` 中调整 DeepSeek / Xiaomi 配置：
 
@@ -279,7 +279,7 @@ DeepSeek 与 MiMo 对“thinking enabled / disabled”的协议目标一致，�
 4. `ProviderRegistry`、设置页默认值、配置持久化和 `buildProviderSelection()` 测试都要覆盖默认 OpenAI-compatible 与保留 Anthropic-compatible 两种输出。
 5. 将 `xiaomi` 加入 OpenClaw runtime prune 保留名单，并新增测试锁定。
 
-### 5.2 LobsterAI 侧 provider reasoning 元数据
+### 5.2 智码 GLM Code 侧 provider reasoning 元数据
 
 在 `src/main/libs/openclawConfigSync.ts` 的 provider descriptor 中为 DeepSeek / Xiaomi 增加可测试的 reasoning 能力标记：
 
@@ -346,7 +346,7 @@ OpenClaw patch 应包含或修改以下测试：
 
 ## 6. 涉及文件
 
-LobsterAI：
+智码 GLM Code：
 
 1. `src/shared/providers/constants.ts`
 2. `src/main/libs/openclawConfigSync.ts`
@@ -368,7 +368,7 @@ OpenClaw patches：
 4. 扩展 OpenClaw provider replay policy，使 Xiaomi provider 支持 OpenAI-compatible 与 Anthropic-compatible hybrid replay。
 5. 扩展 Anthropic transport / replay serialization，让 Xiaomi Anthropic-compatible 可保留 unsigned thinking block。
 
-如果后续升级 OpenClaw 到包含官方修复的版本，应优先删除本地 patch，并用 LobsterAI 侧测试锁定行为。
+如果后续升级 OpenClaw 到包含官方修复的版本，应优先删除本地 patch，并用 智码 GLM Code 侧测试锁定行为。
 
 ## 7. 验证计划
 

@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-同一个 IM 群聊中拉入多个机器人，并且这些机器人分别绑定到不同 Agent 时，OpenClaw 可以正确按 `sessionKey` 路由到目标 Agent，但 LobsterAI 本地会话映射只按 `(platform, im_conversation_id)` 查找，导致不同 Agent 的同群会话被压成一条本地 mapping。
+同一个 IM 群聊中拉入多个机器人，并且这些机器人分别绑定到不同 Agent 时，OpenClaw 可以正确按 `sessionKey` 路由到目标 Agent，但 智码 GLM Code 本地会话映射只按 `(platform, im_conversation_id)` 查找，导致不同 Agent 的同群会话被压成一条本地 mapping。
 
 典型脱敏 key 形态如下：
 
@@ -21,7 +21,7 @@ im_conversation_id = group:oc_622a147f6d4****
 agent_id = main
 ```
 
-因此非 main Agent 的群聊消息虽然能在移动端收到回复，但不会同步到正确的 LobsterAI 本地会话。
+因此非 main Agent 的群聊消息虽然能在移动端收到回复，但不会同步到正确的 智码 GLM Code 本地会话。
 
 ### 1.2 根因
 
@@ -39,7 +39,7 @@ agent_id = main
 
 **When** 用户在群里 `@` 自定义 Agent 对应机器人。
 
-**Then** OpenClaw 的 `agent:<agentId>:feishu:group:<chatId>` 会话应同步到该 Agent 名下的 LobsterAI 会话，而不是复用 main Agent 的同群会话。
+**Then** OpenClaw 的 `agent:<agentId>:feishu:group:<chatId>` 会话应同步到该 Agent 名下的 智码 GLM Code 会话，而不是复用 main Agent 的同群会话。
 
 ## 3. 功能需求
 
@@ -81,7 +81,7 @@ PRIMARY KEY (im_conversation_id, platform, agent_id)
 
 `resolveOrCreateSession(sessionKey)` 使用以下顺序：
 
-1. 跳过 LobsterAI 本地 session key。
+1. 跳过 智码 GLM Code 本地 session key。
 2. 解析 `platform`、`im_conversation_id` 和 `agentId`。
 3. 按 `openclaw_session_key` 精确查找 mapping。
 4. 按 `(platform, im_conversation_id, agentId)` 查找 mapping。
@@ -101,6 +101,6 @@ PRIMARY KEY (im_conversation_id, platform, agent_id)
 
 1. 同一个飞书群下 `agent:main:feishu:group:oc_****` 和 `agent:<custom-agent>:feishu:group:oc_****` 会生成两条 mapping。
 2. main Agent 的历史群聊会话不被覆盖或迁移到自定义 Agent。
-3. 自定义 Agent 的群聊消息出现在该 Agent 名下的 LobsterAI 会话。
+3. 自定义 Agent 的群聊消息出现在该 Agent 名下的 智码 GLM Code 会话。
 4. `openclaw_session_key` 精确查找可以命中正确 mapping。
 5. 定时任务 IM 会话列表不会折叠同群不同 Agent 的 mapping。

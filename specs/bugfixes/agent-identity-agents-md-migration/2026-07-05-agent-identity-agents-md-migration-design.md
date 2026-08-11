@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI 的 Agent 设置页修改“身份描述”后，当前 Agent workspace 中的
+用户在 智码 GLM Code 的 Agent 设置页修改“身份描述”后，当前 Agent workspace 中的
 `IDENTITY.md` 已经更新，但同一个 workspace 的 `AGENTS.md` 顶部可能仍残留历史生成的
 身份块，例如：
 
@@ -29,14 +29,14 @@ Agent 表现仍像旧身份。
 
 ### 1.2 根因
 
-当前 LobsterAI 的路径和文件模型是：
+当前 智码 GLM Code 的路径和文件模型是：
 
 | 文件 | 目标用途 |
 |------|----------|
 | `IDENTITY.md` | Agent 身份描述正文，是用户在身份设置页编辑的权威来源 |
 | `SOUL.md` | Agent 性格、行为边界和系统提示 |
 | `USER.md` | 关于用户的信息 |
-| `AGENTS.md` | workspace 规则、技能策略、运行策略和 LobsterAI managed section |
+| `AGENTS.md` | workspace 规则、技能策略、运行策略和 智码 GLM Code managed section |
 
 非主 Agent 的 workspace 同步逻辑会把 `agent.identity` 写入
 `workspace-{agentId}/IDENTITY.md`，再调用 `syncAgentsMd()` 生成/更新 `AGENTS.md`。
@@ -44,7 +44,7 @@ Agent 表现仍像旧身份。
 `syncAgentsMd()` 的设计会保留 marker 前的所有内容：
 
 ```text
-<!-- LobsterAI managed: do not edit below this line -->
+<!-- 智码 GLM Code managed: do not edit below this line -->
 ```
 
 这对保护用户手写 `AGENTS.md` 内容是必要的，但也意味着历史版本或历史创建流程写入
@@ -55,9 +55,9 @@ Agent 表现仍像旧身份。
 
 ### 1.3 范围
 
-本修复只处理 LobsterAI 历史生成的高置信 legacy identity block：
+本修复只处理 智码 GLM Code 历史生成的高置信 legacy identity block：
 
-- 位于 `AGENTS.md` 的 LobsterAI managed marker 之前；
+- 位于 `AGENTS.md` 的 智码 GLM Code managed marker 之前；
 - 位于文件顶部默认模板区域；
 - 标题精确匹配历史格式 `## Identity（必须遵守）`；
 - 以水平分隔线 `---` 结束；
@@ -89,7 +89,7 @@ section。
 
 **And** 同 workspace 的 `AGENTS.md` 中高置信历史身份块被移出 prompt 表面
 
-**And** `AGENTS.md` 其它用户内容和 LobsterAI managed section 保持不变
+**And** `AGENTS.md` 其它用户内容和 智码 GLM Code managed section 保持不变
 
 **And** 原始 `AGENTS.md` 被完整备份到不参与 bootstrap 注入的位置。
 
@@ -107,7 +107,7 @@ section。
 ### 场景 C: AGENTS.md 中有用户手写 Identity 规则
 
 **Given** 用户自己在 `AGENTS.md` 中写了 `## Identity` 或其它身份相关说明，但结构不符合
-LobsterAI 历史生成模板
+智码 GLM Code 历史生成模板
 
 **When** 用户保存 Agent 身份
 
@@ -300,7 +300,7 @@ src/main/libs/openclawAgentsMdIdentityMigration.ts
 
 This folder is home. Treat it that way.
 
-<!-- LobsterAI managed: do not edit below this line -->
+<!-- 智码 GLM Code managed: do not edit below this line -->
 
 ## System Prompt
 ...
@@ -313,7 +313,7 @@ This folder is home. Treat it that way.
 
 This folder is home. Treat it that way.
 
-<!-- LobsterAI managed: do not edit below this line -->
+<!-- 智码 GLM Code managed: do not edit below this line -->
 
 ## System Prompt
 ...
@@ -407,7 +407,7 @@ if (identityChanged) {
 `syncAgentsMd()` 继续负责：
 
 - 保留 marker 前用户内容；
-- 写入 marker 后 LobsterAI managed section；
+- 写入 marker 后 智码 GLM Code managed section；
 - 嵌入 system prompt、browser/web-search/memory/scheduled-task 等策略。
 
 legacy identity cleanup 不应变成 `syncAgentsMd()` 每次调用的默认副作用。可以复用同一个
@@ -487,7 +487,7 @@ src/renderer/services/agent.test.ts
 1. 用户在非主 Agent 设置页修改身份并保存后，该 Agent 的 `IDENTITY.md` 包含新身份。
 2. 同一次保存后，如果 `AGENTS.md` 顶部存在高置信 `## Identity（必须遵守）` 历史块，该块
    从 prompt 表面移除。
-3. 清理后的 `AGENTS.md` 仍保留原来的默认模板内容、用户其它规则和 LobsterAI managed
+3. 清理后的 `AGENTS.md` 仍保留原来的默认模板内容、用户其它规则和 智码 GLM Code managed
    section。
 4. 清理前完整备份原始 `AGENTS.md` 到 `<workspace>/.lobsterai/migrations/`。
 5. 备份失败时不修改 `AGENTS.md`。

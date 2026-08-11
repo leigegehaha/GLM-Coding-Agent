@@ -44,7 +44,7 @@ OpenClaw 会话同步超时，消息尚未发送。请稍后重试或重启 Open
 - 冻结的同一时间窗内，Electron 主进程定时器毫秒级准点触发（排除整机卡死），被卡住的均为 gateway 进程内的本地操作（排除外网网络问题）；
 - gateway 冷启动耗时 26~95 秒（startup profile：`authBootstrap 28401ms`、`postAttachRuntime 60487ms`），bundle import 4~6.5 秒，所有 I/O 环节一致性地慢 10~100 倍。
 
-结论：该机器存在进程级资源饥饿（内存换页/磁盘饱和/杀软实时扫描叠加），属环境问题，LobsterAI 无法在代码层根治；但发送链路应当对"引擎慢"具备容错——**gateway 是自愈的、patch 是幂等的且最终会成功，客户端却在 30 秒就放弃并丢弃消息**，这是本次要修复的缺陷。
+结论：该机器存在进程级资源饥饿（内存换页/磁盘饱和/杀软实时扫描叠加），属环境问题，智码 GLM Code 无法在代码层根治；但发送链路应当对"引擎慢"具备容错——**gateway 是自愈的、patch 是幂等的且最终会成功，客户端却在 30 秒就放弃并丢弃消息**，这是本次要修复的缺陷。
 
 ### 1.4 非根因 / 非目标
 
@@ -113,13 +113,13 @@ OpenClaw 会话同步超时，消息尚未发送。请稍后重试或重启 Open
 中文：
 
 ```text
-OpenClaw 引擎响应缓慢，消息尚未发送。请等待 1~2 分钟后重新发送；若频繁出现，请检查系统内存与磁盘占用，并将 LobsterAI 加入杀毒软件白名单。
+OpenClaw 引擎响应缓慢，消息尚未发送。请等待 1~2 分钟后重新发送；若频繁出现，请检查系统内存与磁盘占用，并将 智码 GLM Code 加入杀毒软件白名单。
 ```
 
 英文：
 
 ```text
-The OpenClaw engine is responding slowly and your message has not been sent. Please wait a minute or two and resend. If this happens frequently, check system memory and disk usage, and add LobsterAI to your antivirus allowlist.
+The OpenClaw engine is responding slowly and your message has not been sent. Please wait a minute or two and resend. If this happens frequently, check system memory and disk usage, and add 智码 GLM Code to your antivirus allowlist.
 ```
 
 理由：日志证明重启会制造新的冷启动失败窗口，"重启 Runtime"是反向引导。

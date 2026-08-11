@@ -17,11 +17,23 @@ describe('ProviderName constants', () => {
 });
 
 describe('ProviderRegistry', () => {
-  test('providerIds returns 18 providers (no custom)', () => {
+  test('providerIds returns 19 providers (no custom)', () => {
     const ids = ProviderRegistry.providerIds;
-    expect(ids.length).toBe(18);
+    expect(ids.length).toBe(19);
     expect(ids).not.toContain(ProviderName.Custom);
     expect(ids).not.toContain(ProviderName.LobsteraiServer);
+  });
+
+  test('智码 Coding Plan uses the glmcoding.cn OpenAI-compatible endpoint', () => {
+    const def = ProviderRegistry.get(ProviderName.ZhimaCoding);
+    expect(def).toMatchObject({
+      id: ProviderName.ZhimaCoding,
+      label: '智码 Coding Plan',
+      openClawProviderId: OpenClawProviderId.ZhimaCoding,
+      defaultBaseUrl: 'https://glmcoding.cn/v1',
+      defaultApiFormat: ApiFormat.OpenAI,
+      defaultModels: [],
+    });
   });
 
   test('get returns definition for known provider', () => {
@@ -166,6 +178,10 @@ describe('ProviderRegistry', () => {
     expect(ProviderRegistry.resolveModelSupportsThinking(ProviderName.Minimax, 'MiniMax-M2.7', false)).toBe(false);
     expect(ProviderRegistry.resolveModelSupportsThinking(ProviderName.Minimax, 'MiniMax-M2.5', false)).toBe(false);
     expect(ProviderRegistry.resolveModelSupportsThinking('custom_0', 'glm-5.1', false)).toBe(false);
+    expect(ProviderRegistry.resolveModelSupportsThinking('zhima-coding', 'glm-5.2', false)).toBe(true);
+    expect(ProviderRegistry.resolveModelSupportsThinking('zhima-coding', 'claude-opus-4-8', false)).toBe(true);
+    expect(ProviderRegistry.resolveModelSupportsThinking('zhima-coding', 'deepseek-v4-pro', false)).toBe(true);
+    expect(ProviderRegistry.resolveModelSupportsThinking('lobsterai-server', 'kimi-k3-YoudaoInner', false)).toBe(true);
     expect(ProviderRegistry.resolveModelSupportsThinking('lobsterai-server', 'glm-5.1-YoudaoInner', false)).toBe(false);
     expect(ProviderRegistry.resolveModelSupportsThinking('lobsterai-server', 'glm-5.1-YoudaoInner', true)).toBe(true);
     expect(ProviderRegistry.resolveModelSupportsThinking('custom_0', 'unknown-model', true)).toBe(true);
@@ -203,9 +219,10 @@ describe('ProviderRegistry', () => {
     expect(ProviderRegistry.supportsCodingPlan('unknown')).toBe(false);
   });
 
-  test('idsByRegion china returns 12 providers', () => {
+  test('idsByRegion china returns 13 providers', () => {
     const china = ProviderRegistry.idsByRegion('china');
-    expect(china.length).toBe(12);
+    expect(china.length).toBe(13);
+    expect(china).toContain(ProviderName.ZhimaCoding);
     expect(china).toContain(ProviderName.DeepSeek);
     expect(china).toContain(ProviderName.Qianfan);
     expect(china).toContain(ProviderName.Ollama);

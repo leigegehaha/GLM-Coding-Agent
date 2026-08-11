@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-LobsterAI 用户在工具执行期间手动停止任务后，紧接着发送新消息，偶发收到：
+智码 GLM Code 用户在工具执行期间手动停止任务后，紧接着发送新消息，偶发收到：
 
 ```text
 session file locked (timeout 60000ms): pid=... alive=true ageMs=...
@@ -20,7 +20,7 @@ session file locked (timeout 60000ms): pid=... alive=true ageMs=...
 - OpenClaw commit：`2e08f0f4221f522b60423ed6ffd83427942b28de`
 - 构建时间：`2026-07-13T06:22:34.083Z`
 
-运行包已有 LobsterAI 的 `openclaw-aborted-tool-loop-breaker.patch`，但该补丁只负责累计 aborted tool outcome 的历史清理和循环熔断。运行 bundle 中不存在上游 #94412 新增的 `Agent run aborted` 终止路径，因此没有覆盖“单次工具执行被 abort 后立即停止 agent loop”的场景。
+运行包已有 智码 GLM Code 的 `openclaw-aborted-tool-loop-breaker.patch`，但该补丁只负责累计 aborted tool outcome 的历史清理和循环熔断。运行 bundle 中不存在上游 #94412 新增的 `Agent run aborted` 终止路径，因此没有覆盖“单次工具执行被 abort 后立即停止 agent loop”的场景。
 
 ### 1.3 根因
 
@@ -32,7 +32,7 @@ OpenClaw `v2026.6.1` 的 `packages/agent-core/src/agent-loop.ts` 在 `executeToo
 4. `getSteeringMessages()`；
 5. 下一次 `streamAssistantResponse()`。
 
-这些边界没有重新检查当前 `AbortSignal`。如果停止发生在工具执行期间，工具完成或延迟完成后，旧 run 仍可能请求下一轮模型。LobsterAI 此时可能已把本地会话标记为 idle 并提交排队消息，新旧 run 竞争同一个 OpenClaw session write lock，最终表现为 live-pid lock timeout。
+这些边界没有重新检查当前 `AbortSignal`。如果停止发生在工具执行期间，工具完成或延迟完成后，旧 run 仍可能请求下一轮模型。智码 GLM Code 此时可能已把本地会话标记为 idle 并提交排队消息，新旧 run 竞争同一个 OpenClaw session write lock，最终表现为 live-pid lock timeout。
 
 ## 2. 上游修复依据
 
@@ -50,7 +50,7 @@ OpenClaw `v2026.6.1` 的 `packages/agent-core/src/agent-loop.ts` 在 `executeToo
 1. 工具执行期间停止 run 后，旧 run 不得再调用模型。
 2. 异步 `prepareNextTurn()` 期间发生 abort 后，同样不得再调用模型。
 3. 保持 Agent 事件生命周期闭合，持久化明确的 aborted assistant outcome。
-4. 以 `v2026.6.1` 版本专属 patch 移植，不在 LobsterAI 业务层复制 OpenClaw agent loop。
+4. 以 `v2026.6.1` 版本专属 patch 移植，不在 智码 GLM Code 业务层复制 OpenClaw agent loop。
 5. 保留明确的补丁下线条件，避免未来升级后重复套用上游修复。
 
 ## 4. 实现方案
@@ -73,11 +73,11 @@ scripts/patches/v2026.6.1/openclaw-stop-loop-after-aborted-tool-run.patch
   - 覆盖异步 turn hook 触发 abort。
   - 两个场景都断言模型 stream 只调用一次。
 
-`scripts/apply-openclaw-patches.cjs` 增加强校验，防止 patch 因上下文变化被误判为已应用；LobsterAI 侧增加 patch 内容测试，确保关键源码和回归测试不会从版本补丁中意外丢失。
+`scripts/apply-openclaw-patches.cjs` 增加强校验，防止 patch 因上下文变化被误判为已应用；智码 GLM Code 侧增加 patch 内容测试，确保关键源码和回归测试不会从版本补丁中意外丢失。
 
 ## 5. 补丁生命周期
 
-该补丁只适用于 LobsterAI 当前固定的 OpenClaw `v2026.6.1`。
+该补丁只适用于 智码 GLM Code 当前固定的 OpenClaw `v2026.6.1`。
 
 未来将 `package.json` 中的 `openclaw.version` 升级到 `v2026.6.11` 或更高稳定版本时，应执行以下审计：
 
@@ -101,11 +101,11 @@ scripts/patches/v2026.6.1/openclaw-stop-loop-after-aborted-tool-run.patch
 
 ## 7. 验收标准
 
-1. 新 patch 能从干净 OpenClaw `v2026.6.1` 与其余 LobsterAI patch 一起应用。
-2. patch 强校验和 LobsterAI patch 内容测试通过。
+1. 新 patch 能从干净 OpenClaw `v2026.6.1` 与其余 智码 GLM Code patch 一起应用。
+2. patch 强校验和 智码 GLM Code patch 内容测试通过。
 3. OpenClaw 回归测试中，工具 abort 和 async turn hook abort 的 `streamCalls` 都为 1。
 4. 构建后的 gateway bundle 包含 `Agent run aborted` 终止路径。
-5. LobsterAI 中停止长时间 browser 工具并立即提交排队消息时，旧 run 不再发起额外模型请求。
+5. 智码 GLM Code 中停止长时间 browser 工具并立即提交排队消息时，旧 run 不再发起额外模型请求。
 6. 同一会话后续消息不再因为该路径出现 live-pid `session file locked`。
 
 ## 8. 验证计划

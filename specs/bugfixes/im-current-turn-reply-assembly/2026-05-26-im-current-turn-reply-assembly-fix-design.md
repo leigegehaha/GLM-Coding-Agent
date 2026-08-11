@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-IM 会话完成后，LobsterAI 组装 outbound 回复时可能把历史 assistant 回复一起拼进当前回复，导致用户收到的内容包含旧问答、旧日志排查结果、旧问候语或重复段落。
+IM 会话完成后，智码 GLM Code 组装 outbound 回复时可能把历史 assistant 回复一起拼进当前回复，导致用户收到的内容包含旧问答、旧日志排查结果、旧问候语或重复段落。
 
 第一份日志中的典型现象：
 
@@ -46,26 +46,26 @@ const messages = storeMessages.length > 0 ? storeMessages : accumulator.messages
 
 ### 场景 A: 连续两轮 IM 问答
 
-**Given** 用户在同一个 IM 会话中连续发起两轮问题  
-**When** 第二轮问题处理完成  
+**Given** 用户在同一个 IM 会话中连续发起两轮问题
+**When** 第二轮问题处理完成
 **Then** outbound 回复只包含第二轮答案，不包含第一轮答案。
 
 ### 场景 B: 当前 turn 包含工具调用
 
-**Given** 当前 turn 中 assistant 先说明计划，然后执行 tool call，最后输出总结  
-**When** 会话完成  
+**Given** 当前 turn 中 assistant 先说明计划，然后执行 tool call，最后输出总结
+**When** 会话完成
 **Then** outbound 回复只包含当前 turn 内可见 assistant 文本，保留正确顺序，不夹带旧 tool result 或旧 assistant。
 
 ### 场景 C: store 已经过 `reconcileWithHistory()` 替换
 
-**Given** 当前 turn 完成后，store 中 assistant 文本已被 `chat.history` 权威内容更新  
-**When** `IMCoworkHandler` 生成回复  
+**Given** 当前 turn 完成后，store 中 assistant 文本已被 `chat.history` 权威内容更新
+**When** `IMCoworkHandler` 生成回复
 **Then** 应使用 store 中当前 turn 的最终文本，而不是 accumulator 中较旧的流式快照，也不是整个 store session。
 
 ### 场景 D: 定时提醒后台投递
 
-**Given** cron 触发 IM reminder background delivery  
-**When** assistant 输出提醒正文  
+**Given** cron 触发 IM reminder background delivery
+**When** assistant 输出提醒正文
 **Then** reminder 仍可绕过 reminder commitment guard，但只发送本次 reminder turn 的 assistant 文本，不夹带历史内容。
 
 ## 3. 功能需求

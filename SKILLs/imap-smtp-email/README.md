@@ -4,9 +4,9 @@ Read and send email via IMAP/SMTP protocol. Works with any IMAP/SMTP server incl
 
 ## Quick Setup
 
-1. **Configure accounts in LobsterAI Settings > Email.**
+1. **Configure accounts in 智码 GLM Code Settings > Email.**
 
-LobsterAI writes `accounts.json` for multi-account setups. Existing `.env` files are still read as a legacy single-account fallback.
+智码 GLM Code writes `accounts.json` for multi-account setups. Existing `.env` files are still read as a legacy single-account fallback.
 
 Optional legacy `.env` format:
 
@@ -177,7 +177,7 @@ Sending is blocked unless `--confirmed` is passed after the user confirms recipi
 ## Files
 
 - `SKILL.md` - Skill documentation
-- `accounts.json` - Multi-account credentials managed by LobsterAI Settings
+- `accounts.json` - Multi-account credentials managed by 智码 GLM Code Settings
 - `scripts/imap.js` - IMAP CLI tool
 - `scripts/smtp.js` - SMTP CLI tool
 - `package.json` - Node.js dependencies

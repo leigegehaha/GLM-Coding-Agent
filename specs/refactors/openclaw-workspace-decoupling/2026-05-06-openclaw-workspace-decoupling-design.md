@@ -1,18 +1,18 @@
-# LobsterAI 工作目录与 OpenClaw Workspace 解耦设计文档
+# 智码 GLM Code 工作目录与 OpenClaw Workspace 解耦设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/动机
 
-在 PR #1890 之前，LobsterAI 的 `workingDirectory` 同时承担两种职责：
+在 PR #1890 之前，智码 GLM Code 的 `workingDirectory` 同时承担两种职责：
 
-1. LobsterAI 用户选择的任务工作目录，用于桌面 Cowork 和 IM 会话的项目 cwd。
+1. 智码 GLM Code 用户选择的任务工作目录，用于桌面 Cowork 和 IM 会话的项目 cwd。
 2. OpenClaw 的 `agents.defaults.workspace`，用于存放 `MEMORY.md`、`AGENTS.md`、`IDENTITY.md`、`USER.md`、`SOUL.md` 等 agent workspace 文件。
 
 这种耦合会带来几个问题：
 
 - 切换任务工作目录会把长期记忆、身份文件和 OpenClaw bootstrap 文件分散到不同项目目录。
-- 用户只想切换项目 cwd 时，LobsterAI 需要同步 `MEMORY.md`、`IDENTITY.md` 并重写 `openclaw.json`。
+- 用户只想切换项目 cwd 时，智码 GLM Code 需要同步 `MEMORY.md`、`IDENTITY.md` 并重写 `openclaw.json`。
 - 个性化设置页面读写的是当前工作目录下的 bootstrap 文件，工作目录变化后用户看到的身份/记忆也随之变化。
 - OpenClaw config 写入 `agents.defaults.workspace` 后，工作目录变化可能触发 gateway reload 或 hard restart。
 
@@ -20,12 +20,12 @@
 
 本轮解耦的产品目标是：
 
-- 用户选择的 LobsterAI 工作目录只表达“当前任务在哪个项目目录执行”。
+- 用户选择的 智码 GLM Code 工作目录只表达“当前任务在哪个项目目录执行”。
 - OpenClaw workspace 只表达“agent 运行依赖的 profile/state 目录”，用于存放 `AGENTS.md`、`IDENTITY.md`、`USER.md`、`SOUL.md`、`MEMORY.md`、`memory/` 等文件。
-- Agent 生成、读取、修改的用户项目文件必须落在用户选择的 LobsterAI 工作目录，而不是 OpenClaw workspace。
-- 主 agent 的长期记忆和个性化文件集中存放在 LobsterAI 管理的固定 OpenClaw workspace。
+- Agent 生成、读取、修改的用户项目文件必须落在用户选择的 智码 GLM Code 工作目录，而不是 OpenClaw workspace。
+- 主 agent 的长期记忆和个性化文件集中存放在 智码 GLM Code 管理的固定 OpenClaw workspace。
 - 迁移旧目录中的记忆和个性化文件，不删除源文件。
-- 切换 LobsterAI 工作目录不应导致主 agent 的记忆文件迁移，也不应仅因 cwd 变化重写 OpenClaw config。
+- 切换 智码 GLM Code 工作目录不应导致主 agent 的记忆文件迁移，也不应仅因 cwd 变化重写 OpenClaw config。
 - 保持桌面 Cowork、IM 会话、OpenClaw native channel 会话的任务 cwd 行为可预测。
 
 ## 2. 现状分析
@@ -64,11 +64,11 @@ PR #1894 的提交为 `5b84ab8 fix: reorder workspace migration to copy memory/ 
 
 | 概念 | 当前字段/函数 | 当前用途 |
 |------|---------------|----------|
-| LobsterAI 任务工作目录 | `CoworkConfig.workingDirectory`、`CoworkSession.cwd` | UI 选择的任务目录，保存到 session，IM 会话也依赖它 |
+| 智码 GLM Code 任务工作目录 | `CoworkConfig.workingDirectory`、`CoworkSession.cwd` | UI 选择的任务目录，保存到 session，IM 会话也依赖它 |
 | OpenClaw 主 agent workspace | `getMainAgentWorkspacePath(stateDir)` | 固定为 `{STATE_DIR}/workspace-main`，保存记忆和 bootstrap 文件 |
 | OpenClaw runtime workspace/cwd | `openclaw.json` 的 `agents.defaults.workspace` | 当前也被写成 `{STATE_DIR}/workspace-main` |
 
-目标语义应该是：第二行的 OpenClaw workspace 默认固定为 `{STATE_DIR}/workspace-main`，只保存 OpenClaw 依赖的 MD 文件和 `memory/`；第三行的 runtime cwd 则应由 LobsterAI session cwd 决定。
+目标语义应该是：第二行的 OpenClaw workspace 默认固定为 `{STATE_DIR}/workspace-main`，只保存 OpenClaw 依赖的 MD 文件和 `memory/`；第三行的 runtime cwd 则应由 智码 GLM Code session cwd 决定。
 
 这里的关键问题不是 `{STATE_DIR}/workspace-main` 这个默认位置，而是当前 OpenClaw 文档和源码仍将 `agents.defaults.workspace` 定义为 agent 的工具 cwd 和上下文 workspace。因此 PR #1890 固定 OpenClaw workspace 的方向是正确的，但在缺少独立 task cwd 通道时，也会改变 OpenClaw 工具实际运行目录。
 
@@ -77,7 +77,7 @@ PR #1894 的提交为 `5b84ab8 fix: reorder workspace migration to copy memory/ 
 ### 3.1 当前方案的优点
 
 - 主 agent 的 `MEMORY.md`、`IDENTITY.md`、`USER.md`、`SOUL.md` 不再随用户工作目录漂移。
-- 切换 LobsterAI 工作目录不会立即触发 OpenClaw config sync，减少 gateway reload/restart 风险。
+- 切换 智码 GLM Code 工作目录不会立即触发 OpenClaw config sync，减少 gateway reload/restart 风险。
 - Settings 页面读写固定 OpenClaw 依赖文件，产品概念更接近“全局个性化”。
 - 迁移过程不删除旧文件，失败时不会破坏用户原始项目目录。
 
@@ -87,7 +87,7 @@ PR #1894 的提交为 `5b84ab8 fix: reorder workspace migration to copy memory/ 
 
 `openclawConfigSync.ts` 将 `agents.defaults.workspace` 固定为 `{STATE_DIR}/workspace-main`，这符合“OpenClaw workspace 只放 OpenClaw 依赖文件”的目标。但当前 OpenClaw agent runtime 仍将该字段作为工具和上下文的唯一工作目录。
 
-同时，LobsterAI 在 `cowork:session:start` 里虽然保存了 `taskWorkingDirectory` 并向 runtime 传入 `workspaceRoot`，但 `OpenClawRuntimeAdapter.startSession()` 没有把 `workspaceRoot` 继续传给 `runTurn()`，`chat.send` 请求也没有携带 cwd 或 workspace override。
+同时，智码 GLM Code 在 `cowork:session:start` 里虽然保存了 `taskWorkingDirectory` 并向 runtime 传入 `workspaceRoot`，但 `OpenClawRuntimeAdapter.startSession()` 没有把 `workspaceRoot` 继续传给 `runTurn()`，`chat.send` 请求也没有携带 cwd 或 workspace override。
 
 结果是：用户选择 `/path/to/project` 后，UI 和数据库里 session cwd 是项目目录，但 OpenClaw read/write/edit/exec/apply_patch 的默认目录可能变成 `{STATE_DIR}/workspace-main`。这会导致桌面 Cowork、IM 会话和 OpenClaw native channel 会话都无法可靠操作用户选择的项目。
 
@@ -133,7 +133,7 @@ PR #1894 将迁移 key 升级到 v2，但 `copyDirIfNeeded()` 仍然在目标 `m
 
 #### 问题 5: Enterprise config 仍然混用 workspace 和 workingDirectory
 
-`enterpriseConfigSync.ts` 仍然把外部 `openclaw.json` 的 `agents.defaults.workspace` 写回 LobsterAI `workingDirectory`。在新的语义下，如果 `agents.defaults.workspace` 表示固定的 OpenClaw workspace，这个同步会把 LobsterAI 任务目录改成 OpenClaw 私有目录。
+`enterpriseConfigSync.ts` 仍然把外部 `openclaw.json` 的 `agents.defaults.workspace` 写回 智码 GLM Code `workingDirectory`。在新的语义下，如果 `agents.defaults.workspace` 表示固定的 OpenClaw workspace，这个同步会把 智码 GLM Code 任务目录改成 OpenClaw 私有目录。
 
 这说明当前解耦没有形成端到端的数据模型，只是在部分调用点替换了路径。
 
@@ -145,11 +145,11 @@ PR #1894 将迁移 key 升级到 v2，但 `copyDirIfNeeded()` 仍然在目标 `m
 
 | 新概念 | 建议命名 | 所有者 | 说明 |
 |--------|----------|--------|------|
-| 任务工作目录 | `taskWorkingDirectory` | LobsterAI session | 用户选择的项目目录，是工具读写和命令执行的 cwd |
-| OpenClaw workspace | `mainOpenClawWorkspace` | LobsterAI/OpenClaw | 保存 `MEMORY.md`、`memory/`、`AGENTS.md`、`IDENTITY.md`、`USER.md`、`SOUL.md` 等 OpenClaw 依赖文件 |
+| 任务工作目录 | `taskWorkingDirectory` | 智码 GLM Code session | 用户选择的项目目录，是工具读写和命令执行的 cwd |
+| OpenClaw workspace | `mainOpenClawWorkspace` | 智码 GLM Code/OpenClaw | 保存 `MEMORY.md`、`memory/`、`AGENTS.md`、`IDENTITY.md`、`USER.md`、`SOUL.md` 等 OpenClaw 依赖文件 |
 | Runtime cwd | `runtimeCwd` | OpenClaw run | 当前 turn 实际使用的工具 cwd，应由 session cwd 决定 |
 
-LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段，但代码内部新增 helper 或注释时应称为 task directory，不再称为 OpenClaw workspace。
+智码 GLM Code 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段，但代码内部新增 helper 或注释时应称为 task directory，不再称为 OpenClaw workspace。
 
 ### 4.2 OpenClaw 侧增加一等 runtime cwd 能力
 
@@ -159,7 +159,7 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
 {
   "agents": {
     "defaults": {
-      "workspace": "/Users/me/Library/Application Support/LobsterAI/openclaw/state/workspace-main",
+      "workspace": "/Users/me/Library/Application Support/智码 GLM Code/openclaw/state/workspace-main",
       "cwd": "/Users/me/project"
     }
   }
@@ -173,16 +173,16 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
 3. 如果未配置 `cwd`，为了兼容 OpenClaw 独立使用，回退到 `workspace`。
 4. `chat.send` 或 `sessions.patch` 支持 owner-only 的 per-run `cwd`，并在 session 创建时持久化，以保证继续会话、compaction、follow-up 都使用同一个任务目录。
 
-这样 LobsterAI 可以做到：
+这样 智码 GLM Code 可以做到：
 
 - `workspace` 固定写 `{STATE_DIR}/workspace-main`。
 - 桌面 Cowork 每个 session 将 `CoworkSession.cwd` 传给 `chat.send.cwd`。
 - IM 会话创建时也传入 resolved task cwd。
-- Native channel 会话没有显式 task cwd 时，使用 LobsterAI 当前配置的默认 task directory，而不是 OpenClaw workspace。
+- Native channel 会话没有显式 task cwd 时，使用 智码 GLM Code 当前配置的默认 task directory，而不是 OpenClaw workspace。
 
-### 4.3 LobsterAI 侧调整
+### 4.3 智码 GLM Code 侧调整
 
-在 OpenClaw 支持上述能力后，LobsterAI 应按以下方式落地：
+在 OpenClaw 支持上述能力后，智码 GLM Code 应按以下方式落地：
 
 1. `openclawConfigSync.ts`
    - 写入 `agents.defaults.workspace = getMainAgentWorkspacePath(stateDir)`。
@@ -196,7 +196,7 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
    - 变更 task directory 不需要迁移记忆。
    - 如果 OpenClaw config 只保存 fallback workspace，可以选择同步但不要求 gateway hard restart。
 4. `enterpriseConfigSync.ts`
-   - 只从企业配置中的明确 task cwd 字段同步 LobsterAI `workingDirectory`。
+   - 只从企业配置中的明确 task cwd 字段同步 智码 GLM Code `workingDirectory`。
    - 不再把 OpenClaw workspace 写入 `workingDirectory`。
 
 ### 4.4 迁移修正
@@ -221,14 +221,14 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
 
 ### 4.5 短期止血方案
 
-如果短期无法修改 OpenClaw API，不建议只在 LobsterAI 侧把 `agents.defaults.workspace` 固定到 `{STATE_DIR}/workspace-main` 后直接发布。固定到 `{STATE_DIR}/workspace-main` 本身是正确目标，但它必须和 runtime cwd 分离一起生效。更安全的临时方案是：
+如果短期无法修改 OpenClaw API，不建议只在 智码 GLM Code 侧把 `agents.defaults.workspace` 固定到 `{STATE_DIR}/workspace-main` 后直接发布。固定到 `{STATE_DIR}/workspace-main` 本身是正确目标，但它必须和 runtime cwd 分离一起生效。更安全的临时方案是：
 
 1. 同步 patch OpenClaw bundled runtime，让 `chat.send.cwd` 或等价字段真正控制工具默认 cwd。
 2. 在 OpenClaw patch 没有落地前，如果必须防止用户文件写错位置，可以临时保持 `agents.defaults.workspace` 指向用户任务工作目录；这是止血兼容，不是目标设计。
-3. 将主 agent 记忆和 OpenClaw 依赖文件固定目录作为 LobsterAI 内部存储，但通过明确的 OpenClaw runtime cwd 支持后再接入 runtime。
+3. 将主 agent 记忆和 OpenClaw 依赖文件固定目录作为 智码 GLM Code 内部存储，但通过明确的 OpenClaw runtime cwd 支持后再接入 runtime。
 4. 如果必须让 OpenClaw 读取固定记忆目录，应优先在 OpenClaw 增加 workspace/cwd 分离能力，而不是用提示词要求 agent 自己读绝对路径。
 
-目标状态仍然是：OpenClaw workspace 默认在 `{STATE_DIR}/workspace-main`，用户生成文件默认在 LobsterAI task cwd。
+目标状态仍然是：OpenClaw workspace 默认在 `{STATE_DIR}/workspace-main`，用户生成文件默认在 智码 GLM Code task cwd。
 
 ## 5. 实施步骤
 
@@ -241,7 +241,7 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
 
 ### 阶段二：修复路径模型
 
-1. 在 LobsterAI 代码中引入 `taskWorkingDirectory` 与 `mainOpenClawWorkspace` helper。
+1. 在 智码 GLM Code 代码中引入 `taskWorkingDirectory` 与 `mainOpenClawWorkspace` helper。
 2. 清理 `workspaceRoot` 这种容易误导的参数名。
 3. 增加测试证明 `workingDirectory` 变化不会改变 OpenClaw 依赖文件位置。
 4. 增加测试证明 session cwd 会传给 OpenClaw runtime。
@@ -251,7 +251,7 @@ LobsterAI 现有 `CoworkConfig.workingDirectory` 可以保留作为兼容字段�
 1. OpenClaw 增加 `cwd` 配置或等价字段。
 2. OpenClaw `chat.send`/session entry 增加 owner-only per-run cwd override。
 3. OpenClaw runtime 区分 bootstrap/memory workspace 和 tool cwd。
-4. LobsterAI 改为使用新协议。
+4. 智码 GLM Code 改为使用新协议。
 
 ## 6. 涉及文件
 
@@ -296,10 +296,10 @@ PR #1890 已涉及：
 
 ## 8. 验收标准
 
-1. LobsterAI 用户工作目录不再决定主 agent 记忆和 OpenClaw 依赖文件的位置。
+1. 智码 GLM Code 用户工作目录不再决定主 agent 记忆和 OpenClaw 依赖文件的位置。
 2. OpenClaw workspace 只保存 OpenClaw 依赖的 MD 文件和 `memory/`，不作为用户生成文件的默认落盘目录。
 3. OpenClaw 工具实际 cwd 等于用户选择或 session 保存的任务目录。
 4. 切换工作目录不会丢失或切换 Settings 页面中的长期记忆、身份和 persona。
 5. 旧版本用户升级后不会丢失 `memory/` daily notes 或 `AGENTS.md` 用户内容。
 6. 迁移失败可重试，不会因为单个全局 migration key 永久跳过。
-7. Enterprise config 不再把 OpenClaw workspace 写回 LobsterAI task working directory。
+7. Enterprise config 不再把 OpenClaw workspace 写回 智码 GLM Code task working directory。

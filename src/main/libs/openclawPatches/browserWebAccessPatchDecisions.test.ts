@@ -7,7 +7,7 @@ describe('browser/web access OpenClaw patch decisions', () => {
     expectCurrentOpenClawPatchMissing('openclaw-browser-duplicate-launch.patch');
   });
 
-  test('does not carry legacy web fetch env proxy patch because LobsterAI no longer writes useEnvProxy', () => {
+  test('does not carry legacy web fetch env proxy patch because 智码 GLM Code no longer writes useEnvProxy', () => {
     expectCurrentOpenClawPatchMissing('openclaw-web-fetch-env-proxy.patch');
   });
 });

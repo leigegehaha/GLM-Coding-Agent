@@ -3,11 +3,11 @@ import { configService } from './config';
 import { getInstallationId } from './installationId';
 
 export const LogReporterEndpoint = {
-  YoudaoAnalyzer: 'https://rlogs.youdao.com/rlog.php',
+  GLMCodeAnalytics: 'https://glmcoding.cn/api/analytics/events',
 } as const;
 
 export const LogReporterProduct = {
-  LobsterAI: 'wisdom',
+  GLMCode: 'glm-code',
 } as const;
 
 export const LogReporterCategory = {
@@ -15,54 +15,54 @@ export const LogReporterCategory = {
 } as const;
 
 export const LogReporterActionPrefix = {
-  LobsterAI: 'lobsterai_',
+  GLMCode: 'glmcode_',
 } as const;
 
 export const LogReporterAction = {
-  AgentCreateAction: 'lobsterai_agent_create_action',
-  AgentSettingsAction: 'lobsterai_agent_settings_action',
-  AgentEngineMaintenanceAction: 'lobsterai_agent_engine_maintenance_action',
-  AgentEngineSettingChanged: 'lobsterai_agent_engine_setting_changed',
-  AboutAction: 'lobsterai_about_action',
-  AccountMenuAction: 'lobsterai_account_menu_action',
-  AppStarted: 'lobsterai_app_started',
-  AppearanceSettingChanged: 'lobsterai_appearance_setting_changed',
-  ArtifactPreviewAction: 'lobsterai_artifact_preview_action',
-  AuthLifecycle: 'lobsterai_auth_lifecycle',
-  BrowserSettingChanged: 'lobsterai_browser_setting_changed',
-  CustomModelConnectionTested: 'lobsterai_custom_model_connection_tested',
-  CustomModelSettingsSaved: 'lobsterai_custom_model_settings_saved',
-  ConversationBlockAction: 'lobsterai_conversation_block_action',
-  ConversationMessageAction: 'lobsterai_conversation_message_action',
-  ConversationNavigationAction: 'lobsterai_conversation_navigation_action',
-  DreamingSettingChanged: 'lobsterai_dreaming_setting_changed',
-  EmailSkillConnectionTested: 'lobsterai_email_skill_connection_tested',
-  EmailSkillSettingsSaved: 'lobsterai_email_skill_settings_saved',
-  ExpertKitAction: 'lobsterai_expert_kit_action',
-  ExpertKitSelected: 'lobsterai_expert_kit_selected',
-  GeneralSettingChanged: 'lobsterai_general_setting_changed',
-  ImConnectionTested: 'lobsterai_im_connection_tested',
-  ImGatewayToggled: 'lobsterai_im_gateway_toggled',
-  ImInstanceChanged: 'lobsterai_im_instance_changed',
-  ImSettingsSaved: 'lobsterai_im_settings_saved',
-  MemoryEntryChanged: 'lobsterai_memory_entry_changed',
-  MemorySettingChanged: 'lobsterai_memory_setting_changed',
-  McpEnabled: 'lobsterai_mcp_enabled',
-  McpAction: 'lobsterai_mcp_action',
-  ModelSelected: 'lobsterai_model_selected',
-  PlanModeEnabled: 'lobsterai_plan_mode_enabled',
-  PluginAction: 'lobsterai_plugin_action',
-  PluginSettingsSaved: 'lobsterai_plugin_settings_saved',
-  PromptControlAction: 'lobsterai_prompt_control_action',
-  PromptSubmit: 'lobsterai_prompt_submit',
-  PromptTemplateAction: 'lobsterai_prompt_template_action',
-  ShortcutSettingChanged: 'lobsterai_shortcut_setting_changed',
-  SidebarAction: 'lobsterai_sidebar_action',
-  SkillAction: 'lobsterai_skill_action',
-  SkillEnabled: 'lobsterai_skill_enabled',
-  ScheduledTaskAction: 'lobsterai_scheduled_task_action',
-  TaskSearchAction: 'lobsterai_task_search_action',
-  UsageAnalyticsEnabled: 'lobsterai_usage_analytics_enabled',
+  AgentCreateAction: 'glmcode_agent_create_action',
+  AgentSettingsAction: 'glmcode_agent_settings_action',
+  AgentEngineMaintenanceAction: 'glmcode_agent_engine_maintenance_action',
+  AgentEngineSettingChanged: 'glmcode_agent_engine_setting_changed',
+  AboutAction: 'glmcode_about_action',
+  AccountMenuAction: 'glmcode_account_menu_action',
+  AppStarted: 'glmcode_app_started',
+  AppearanceSettingChanged: 'glmcode_appearance_setting_changed',
+  ArtifactPreviewAction: 'glmcode_artifact_preview_action',
+  AuthLifecycle: 'glmcode_auth_lifecycle',
+  BrowserSettingChanged: 'glmcode_browser_setting_changed',
+  CustomModelConnectionTested: 'glmcode_custom_model_connection_tested',
+  CustomModelSettingsSaved: 'glmcode_custom_model_settings_saved',
+  ConversationBlockAction: 'glmcode_conversation_block_action',
+  ConversationMessageAction: 'glmcode_conversation_message_action',
+  ConversationNavigationAction: 'glmcode_conversation_navigation_action',
+  DreamingSettingChanged: 'glmcode_dreaming_setting_changed',
+  EmailSkillConnectionTested: 'glmcode_email_skill_connection_tested',
+  EmailSkillSettingsSaved: 'glmcode_email_skill_settings_saved',
+  ExpertKitAction: 'glmcode_expert_kit_action',
+  ExpertKitSelected: 'glmcode_expert_kit_selected',
+  GeneralSettingChanged: 'glmcode_general_setting_changed',
+  ImConnectionTested: 'glmcode_im_connection_tested',
+  ImGatewayToggled: 'glmcode_im_gateway_toggled',
+  ImInstanceChanged: 'glmcode_im_instance_changed',
+  ImSettingsSaved: 'glmcode_im_settings_saved',
+  MemoryEntryChanged: 'glmcode_memory_entry_changed',
+  MemorySettingChanged: 'glmcode_memory_setting_changed',
+  McpEnabled: 'glmcode_mcp_enabled',
+  McpAction: 'glmcode_mcp_action',
+  ModelSelected: 'glmcode_model_selected',
+  PlanModeEnabled: 'glmcode_plan_mode_enabled',
+  PluginAction: 'glmcode_plugin_action',
+  PluginSettingsSaved: 'glmcode_plugin_settings_saved',
+  PromptControlAction: 'glmcode_prompt_control_action',
+  PromptSubmit: 'glmcode_prompt_submit',
+  PromptTemplateAction: 'glmcode_prompt_template_action',
+  ShortcutSettingChanged: 'glmcode_shortcut_setting_changed',
+  SidebarAction: 'glmcode_sidebar_action',
+  SkillAction: 'glmcode_skill_action',
+  SkillEnabled: 'glmcode_skill_enabled',
+  ScheduledTaskAction: 'glmcode_scheduled_task_action',
+  TaskSearchAction: 'glmcode_task_search_action',
+  UsageAnalyticsEnabled: 'glmcode_usage_analytics_enabled',
 } as const;
 
 export const LogReporterEntry = {
@@ -71,14 +71,14 @@ export const LogReporterEntry = {
 
 type LogParamValue = string | number | boolean | null | undefined;
 
-export type LogEventAction = `${typeof LogReporterActionPrefix.LobsterAI}${string}`;
+export type LogEventAction = `${typeof LogReporterActionPrefix.GLMCode}${string}`;
 
 export type LogEventParams = Record<string, LogParamValue> & {
   action: LogEventAction;
 };
 
 const logCommons = {
-  _npid: LogReporterProduct.LobsterAI,
+  _npid: LogReporterProduct.GLMCode,
   _ncat: LogReporterCategory.Actions,
 } as const;
 
@@ -203,7 +203,7 @@ export const buildLogUrl = (
   params: LogEventParams,
   options: BuildLogUrlOptions = {},
 ): string => {
-  const url = new URL(LogReporterEndpoint.YoudaoAnalyzer);
+  const url = new URL(LogReporterEndpoint.GLMCodeAnalytics);
   const config = configService.getConfig();
   const userId = options.userId ?? store.getState().auth.user?.yid ?? '';
   const firstKeyfrom = options.firstKeyfrom ?? cachedKeyfromAttribution?.firstKeyfrom;
@@ -233,7 +233,7 @@ export const buildLogUrl = (
   return url.href;
 };
 
-export const reportYdAnalyzer = async (params: LogEventParams): Promise<boolean> => {
+export const reportAnalytics = async (params: LogEventParams): Promise<boolean> => {
   if (configService.getConfig().usageAnalyticsEnabled === false) {
     writeReporterLog('debug', `skipped event ${params.action} because usage analytics is disabled`);
     return false;
@@ -244,8 +244,8 @@ export const reportYdAnalyzer = async (params: LogEventParams): Promise<boolean>
     return false;
   }
 
-  if (!params.action.startsWith(LogReporterActionPrefix.LobsterAI)) {
-    writeReporterLog('warn', 'skipped an event without the LobsterAI action prefix');
+  if (!params.action.startsWith(LogReporterActionPrefix.GLMCode)) {
+    writeReporterLog('warn', 'skipped an event without the GLM Code action prefix');
     return false;
   }
 

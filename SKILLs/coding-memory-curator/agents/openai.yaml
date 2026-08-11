@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coding Memory Curator"
+  short_description: "Store durable, verified engineering context safely."
+  default_prompt: "Use $coding-memory-curator to save this verified engineering context in the existing memory files."

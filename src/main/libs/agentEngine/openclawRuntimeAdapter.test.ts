@@ -28,6 +28,7 @@ import {
   COWORK_BTW_RESULT_MAX_CHARS,
   CoworkBtwStatus,
 } from '../../../shared/cowork/btw';
+import { CODING_OPTIMIZATION_PROMPT_MARKER } from '../../../shared/cowork/codingOptimization';
 import { CoworkSelectedTextSource } from '../../../shared/cowork/selectedText';
 import { OpenClawTranscriptSafetyLimit } from '../../../shared/openclawTranscript/constants';
 import {
@@ -623,7 +624,7 @@ test('resolveOpenClawRuntimeErrorMessage restores recent quota error hidden by O
   expect(consumeRecentOpenClawTokenProxyQuotaError()).toBeNull();
 });
 
-test('resolveOpenClawRuntimeErrorMessage classifies raw LobsterAI quota errors', () => {
+test('resolveOpenClawRuntimeErrorMessage classifies raw 智码 GLM Code quota errors', () => {
   expect(resolveOpenClawRuntimeErrorMessage('本月积分已用完')).toContain('积分额度已用完');
 });
 
@@ -636,7 +637,7 @@ test('resolveOpenClawRuntimeErrorMessage classifies generic error from safe OAut
   })).toContain('OAuth 授权已失效');
 });
 
-test('resolveOpenClawRuntimeErrorMessage identifies expired LobsterAI plan login', () => {
+test('resolveOpenClawRuntimeErrorMessage identifies expired 智码 GLM Code plan login', () => {
   expect(resolveOpenClawRuntimeErrorMessage('LLM request failed.', {
     provider: 'lobsterai-server',
     model: 'MiniMax-M3',
@@ -646,7 +647,7 @@ test('resolveOpenClawRuntimeErrorMessage identifies expired LobsterAI plan login
   })).toContain('登录状态已过期');
 });
 
-test('resolveOpenClawRuntimeErrorMessage keeps LobsterAI HTTP 403 as model access denial', () => {
+test('resolveOpenClawRuntimeErrorMessage keeps 智码 GLM Code HTTP 403 as model access denial', () => {
   expect(resolveOpenClawRuntimeErrorMessage('LLM request failed.', {
     provider: 'lobsterai-server',
     model: 'MiniMax-M3',
@@ -896,10 +897,10 @@ test('outbound prompt injects continuity capsule bridge before the current reque
 
   const prompt = await internal.buildOutboundPrompt('session-1', '继续');
 
-  expect(prompt).toContain('[LobsterAI continuity context after context compaction]');
+  expect(prompt).toContain('[智码 GLM Code continuity context after context compaction]');
   expect(prompt).toContain('Improve compaction continuity.');
   expect(prompt).toContain('src/main/libs/agentEngine/openclawRuntimeAdapter.ts');
-  expect(prompt.indexOf('[LobsterAI continuity context after context compaction]')).toBeLessThan(
+  expect(prompt.indexOf('[智码 GLM Code continuity context after context compaction]')).toBeLessThan(
     prompt.indexOf('[Current user request]'),
   );
 });
@@ -944,10 +945,10 @@ test('outbound prompt injects full capsule first and mini capsule on later turns
   const firstPrompt = await internal.buildOutboundPrompt('session-1', '继续');
   const secondPrompt = await internal.buildOutboundPrompt('session-1', '再继续');
 
-  expect(firstPrompt).toContain('[LobsterAI continuity context after context compaction]');
+  expect(firstPrompt).toContain('[智码 GLM Code continuity context after context compaction]');
   expect(firstPrompt).toContain('Touched files:');
   expect(firstPrompt).toContain('src/main/libs/agentEngine/openclawRuntimeAdapter.ts');
-  expect(secondPrompt).toContain('[LobsterAI brief continuity context after context compaction]');
+  expect(secondPrompt).toContain('[智码 GLM Code brief continuity context after context compaction]');
   expect(secondPrompt).toContain('Improve compaction continuity.');
   expect(secondPrompt).toContain('Inject capsule bridge.');
   expect(secondPrompt).not.toContain('Touched files:');
@@ -996,9 +997,9 @@ test('outbound prompt injects workspace rehydration bridge before the current re
 
   const prompt = await internal.buildOutboundPrompt('session-1', '继续');
 
-  expect(prompt).toContain('[LobsterAI workspace state after context compaction]');
+  expect(prompt).toContain('[智码 GLM Code workspace state after context compaction]');
   expect(prompt).toContain('src/main/libs/agentEngine/coworkWorkspaceRehydration.ts');
-  expect(prompt.indexOf('[LobsterAI workspace state after context compaction]')).toBeLessThan(
+  expect(prompt.indexOf('[智码 GLM Code workspace state after context compaction]')).toBeLessThan(
     prompt.indexOf('[Current user request]'),
   );
 });
@@ -1046,8 +1047,8 @@ test('outbound prompt injects workspace rehydration bridge once per compaction',
   const firstPrompt = await internal.buildOutboundPrompt('session-1', '继续');
   const secondPrompt = await internal.buildOutboundPrompt('session-1', '再继续');
 
-  expect(firstPrompt).toContain('[LobsterAI workspace state after context compaction]');
-  expect(secondPrompt).not.toContain('[LobsterAI workspace state after context compaction]');
+  expect(firstPrompt).toContain('[智码 GLM Code workspace state after context compaction]');
+  expect(secondPrompt).not.toContain('[智码 GLM Code workspace state after context compaction]');
 });
 
 test('outbound prompt injects top-k evidence bridge before the current request', async () => {
@@ -1106,9 +1107,9 @@ test('outbound prompt injects top-k evidence bridge before the current request',
 
   const prompt = await internal.buildOutboundPrompt('session-1', '继续处理 src/pages/Bakery.tsx 的 npm test failed');
 
-  expect(prompt).toContain('[LobsterAI retrieved evidence after context compaction]');
+  expect(prompt).toContain('[智码 GLM Code retrieved evidence after context compaction]');
   expect(prompt).toContain('npm test failed in src/pages/Bakery.tsx');
-  expect(prompt.indexOf('[LobsterAI retrieved evidence after context compaction]')).toBeLessThan(
+  expect(prompt.indexOf('[智码 GLM Code retrieved evidence after context compaction]')).toBeLessThan(
     prompt.indexOf('[Current user request]'),
   );
 });
@@ -1150,7 +1151,7 @@ test('outbound prompt skips continuity capsule bridge before compaction', async 
 
   const prompt = await internal.buildOutboundPrompt('session-1', 'hello');
 
-  expect(prompt).not.toContain('[LobsterAI continuity context after context compaction]');
+  expect(prompt).not.toContain('[智码 GLM Code continuity context after context compaction]');
 });
 
 test('context usage ignores non-checkpoint compactionCount', () => {
@@ -2399,6 +2400,7 @@ function createRunTurnAdapter(options: {
   autoFinalizeChatSend?: boolean;
   holdChatSend?: boolean;
   stateDir?: string;
+  codingOptimized?: boolean;
 } = {}) {
   const session = {
     id: 'session-1',
@@ -2409,6 +2411,7 @@ function createRunTurnAdapter(options: {
     cwd: options.sessionCwd ?? '',
     systemPrompt: '',
     modelOverride: options.sessionModelOverride ?? '',
+    codingOptimized: options.codingOptimized ?? true,
     executionMode: 'local',
     activeSkillIds: [],
     agentId: 'main',
@@ -3038,6 +3041,24 @@ test('normal conversation does not receive plan mode instructions', async () => 
   expect(chatSendRequests[0].params.message).not.toContain('# Plan Mode');
   expect(chatSendRequests[0].params.message).not.toContain('[Plan Mode reminder]');
   expect(chatSendRequests[0].params.message).not.toContain('[Plan Mode recovery instruction]');
+});
+
+test('runtime applies coding optimization from the persisted session state', async () => {
+  const { adapter, requests } = createRunTurnAdapter();
+
+  await adapter.continueSession('session-1', 'Implement the requested change.');
+
+  const chatSend = requests.find(request => request.method === 'chat.send');
+  expect(chatSend?.params.message).toContain(CODING_OPTIMIZATION_PROMPT_MARKER);
+});
+
+test('runtime omits coding optimization when it is disabled for the session', async () => {
+  const { adapter, requests } = createRunTurnAdapter({ codingOptimized: false });
+
+  await adapter.continueSession('session-1', 'Answer without coding optimization.');
+
+  const chatSend = requests.find(request => request.method === 'chat.send');
+  expect(chatSend?.params.message).not.toContain(CODING_OPTIMIZATION_PROMPT_MARKER);
 });
 
 test('annotation-only turn persists structured metadata and builds a trust-separated prompt', async () => {
@@ -4286,10 +4307,10 @@ test('reconcileWithHistory: content mismatch — triggers replace', async () => 
 });
 
 test('subagent history sync preserves visible local user text instead of raw outbound prompt', async () => {
-  const rawOutboundPrompt = `[LobsterAI system instructions]
+  const rawOutboundPrompt = `[智码 GLM Code system instructions]
 hidden setup
 
-[Context bridge from previous LobsterAI conversation]
+[Context bridge from previous 智码 GLM Code conversation]
 previous context
 
 [Current user request]

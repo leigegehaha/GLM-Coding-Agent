@@ -4,11 +4,11 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 当前通过 OpenClaw 执行 MCP。对于 stdio 类型的 MCP，用户常见配置是 `npx -y <package>@latest`。这类配置在 OpenClaw 首次启动 MCP 时会触发 npm 包解析、缓存检查、下载或安装等流程，容易拖慢首次响应。
+智码 GLM Code 当前通过 OpenClaw 执行 MCP。对于 stdio 类型的 MCP，用户常见配置是 `npx -y <package>@latest`。这类配置在 OpenClaw 首次启动 MCP 时会触发 npm 包解析、缓存检查、下载或安装等流程，容易拖慢首次响应。
 
 日志排查显示，启动后首次响应慢主要卡在 OpenClaw MCP 工具物化阶段。由于当前使用的 OpenClaw 版本为 `v2026.4.14`，距离新版已有差距，且本地对 MCP 相关逻辑做过 patch，直接大幅升级 OpenClaw 或替换 OpenClaw MCP 运行时风险较高。
 
-本方案在 LobsterAI MCP 管理侧增加“启动解析”能力：安装或启用 MCP 时，先由 LobsterAI 解析并本地化可优化的启动命令，再把最终可执行路径写给 OpenClaw。OpenClaw 仍负责实际 MCP 进程执行，LobsterAI 只负责把慢路径前置并持久化。
+本方案在 智码 GLM Code MCP 管理侧增加“启动解析”能力：安装或启用 MCP 时，先由 智码 GLM Code 解析并本地化可优化的启动命令，再把最终可执行路径写给 OpenClaw。OpenClaw 仍负责实际 MCP 进程执行，智码 GLM Code 只负责把慢路径前置并持久化。
 
 ### 1.2 目标
 
@@ -22,27 +22,27 @@ LobsterAI 当前通过 OpenClaw 执行 MCP。对于 stdio 类型的 MCP，用户
 
 ### 场景 1: 安装市场中的 npx MCP
 
-**Given** 用户在 MCP 管理页安装一个 stdio MCP，命令为 `npx -y @upstash/context7-mcp@latest`  
-**When** 用户保存并启用该 MCP  
-**Then** LobsterAI 后台进入启动解析阶段，执行 npm metadata 查询和本地安装，并在完成后把优化后的启动命令同步给 OpenClaw。
+**Given** 用户在 MCP 管理页安装一个 stdio MCP，命令为 `npx -y @upstash/context7-mcp@latest`
+**When** 用户保存并启用该 MCP
+**Then** 智码 GLM Code 后台进入启动解析阶段，执行 npm metadata 查询和本地安装，并在完成后把优化后的启动命令同步给 OpenClaw。
 
 ### 场景 2: 解析未完成时开始对话
 
-**Given** 某个 npx MCP 正在安装或等待解析  
-**When** 用户立即发起 Cowork 会话  
-**Then** LobsterAI 不阻塞当次会话启动，该 MCP 暂不写入 OpenClaw 配置；解析完成后再次触发配置同步。
+**Given** 某个 npx MCP 正在安装或等待解析
+**When** 用户立即发起 Cowork 会话
+**Then** 智码 GLM Code 不阻塞当次会话启动，该 MCP 暂不写入 OpenClaw 配置；解析完成后再次触发配置同步。
 
 ### 场景 3: 解析失败后重试
 
-**Given** 某个 npx MCP 因网络、npm registry 或包信息异常解析失败  
-**When** 用户在 MCP 管理页点击“重试”  
-**Then** LobsterAI 重新执行该 MCP 的启动解析，并更新状态与 OpenClaw 配置同步结果。
+**Given** 某个 npx MCP 因网络、npm registry 或包信息异常解析失败
+**When** 用户在 MCP 管理页点击“重试”
+**Then** 智码 GLM Code 重新执行该 MCP 的启动解析，并更新状态与 OpenClaw 配置同步结果。
 
 ### 场景 4: 不支持的 stdio 命令
 
-**Given** 用户配置了暂不支持优化的 stdio 命令，例如复杂 `npx --package` 参数或 `uvx` 命令  
-**When** OpenClaw 配置同步发生  
-**Then** LobsterAI 不破坏原始配置；不支持优化的命令回退到原始启动方式。
+**Given** 用户配置了暂不支持优化的 stdio 命令，例如复杂 `npx --package` 参数或 `uvx` 命令
+**When** OpenClaw 配置同步发生
+**Then** 智码 GLM Code 不破坏原始配置；不支持优化的命令回退到原始启动方式。
 
 ## 3. 功能需求
 
@@ -132,7 +132,7 @@ renderer MCP service 增加 `retryLaunchResolution` 和 `onChanged`。MCP 管理
 
 ### 4.4 OpenClaw 配置写入
 
-OpenClaw 仍是 MCP 的最终执行方。LobsterAI 只在写入 OpenClaw 配置前把 server 配置转换为更稳定的启动路径：
+OpenClaw 仍是 MCP 的最终执行方。智码 GLM Code 只在写入 OpenClaw 配置前把 server 配置转换为更稳定的启动路径：
 
 ```text
 npx -y package@latest

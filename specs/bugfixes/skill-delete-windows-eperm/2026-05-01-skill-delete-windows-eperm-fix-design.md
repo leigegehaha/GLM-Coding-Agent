@@ -2,11 +2,11 @@
 
 ## 问题描述
 
-线上有个别 Windows 用户删除已安装 skill 时“无反应”。  
+线上有个别 Windows 用户删除已安装 skill 时“无反应”。
 从主进程日志看，删除请求实际已触发，但目录删除阶段持续报错：
 
 ```text
-[skills] deleteSkill: id=Desktop, targetDir=C:\Users\jjh\AppData\Roaming\LobsterAI\SKILLs\Desktop, platform=win32
+[skills] deleteSkill: id=Desktop, targetDir=C:\Users\jjh\AppData\Roaming\智码 GLM Code\SKILLs\Desktop, platform=win32
 [skills] deleteSkill: failed to remove "Desktop" ... Error: EPERM, Permission denied
 [skills] Failed to delete skill: Desktop Error: EPERM, Permission denied
 ```
@@ -72,7 +72,7 @@
 
 为进一步降低“安装成功但删除失败”的概率，后续增量优化限定为 Windows：
 
-1. 在 skill 安装落盘后（`cpRecursiveSync` 完成后），对目标目录执行属性归一化  
+1. 在 skill 安装落盘后（`cpRecursiveSync` 完成后），对目标目录执行属性归一化
    `attrib -r -s -h "<targetDir>" /s /d`
 2. 该步骤仅在 `process.platform === 'win32'` 执行
 3. 归一化失败不阻塞安装流程，仅记录 `console.warn`

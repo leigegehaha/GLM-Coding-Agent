@@ -2,7 +2,7 @@
 
 ## 范围
 
-本期只涉及 LobsterAI Electron 客户端和 `lobsterai-server`，不涉及管理员后台。客户端通过主进程携带现有 Electron Bearer JWT 调用接口，Renderer 不接触或持久化 JWT。
+本期只涉及 智码 GLM Code Electron 客户端和 `lobsterai-server`，不涉及管理员后台。客户端通过主进程携带现有 Electron Bearer JWT 调用接口，Renderer 不接触或持久化 JWT。
 
 ## 发布顺序
 

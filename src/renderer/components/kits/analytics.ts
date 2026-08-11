@@ -1,4 +1,4 @@
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { resolveLocalizedText } from '../../services/skill';
 import type { InstalledKit, MarketplaceKit } from '../../types/kit';
 
@@ -47,7 +47,7 @@ export function reportKitAction(
   params: AnalyticsParams = {},
 ): void {
   console.debug('[Kits] reporting analytics action', actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ExpertKitAction,
     actionType,
     ...params,

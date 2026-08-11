@@ -276,7 +276,7 @@ tooltip 展示需要类似 IDE/Codex 小地图预览：
 
 - 第一行加粗显示该轮用户问题摘要。
 - 第二行显示助手回答摘要，最多 2 行截断。
-- 底部显示来源标识，例如 `LobsterAI`，用于说明该 tooltip 来自当前 Cowork 会话。
+- 底部显示来源标识，例如 `智码 GLM Code`，用于说明该 tooltip 来自当前 Cowork 会话。
 - rail index 尚未返回时允许短暂显示“未加载消息”兜底；rail index 成功后所有 item 都应展示真实摘要。
 
 轨道短线样式需要与 Codex 小地图一致：

@@ -107,7 +107,7 @@ export const findBundledExtensionsDir = (): string | null => (
 
 /**
  * Directory of OpenClaw's own runtime-bundled extensions (dist/extensions/…),
- * as opposed to the third-party dir above which holds LobsterAI-synced local
+ * as opposed to the third-party dir above which holds 智码 GLM Code-synced local
  * plugins. Bundled extensions surviving prune-openclaw-runtime.cjs live here.
  */
 export const findRuntimeBundledExtensionsDir = (): string | null => (
@@ -241,7 +241,7 @@ export const findThirdPartyExtensionsDir = (): string | null => {
  * gateway's bundled-channel metadata loader.  Two locations are cleaned:
  *
  * 1. `dist/extensions/{id}` — legacy overlay installs placed plugins here.
- * 2. `extensions/{id}` — prior versions of LobsterAI installed plugins here.
+ * 2. `extensions/{id}` — prior versions of 智码 GLM Code installed plugins here.
  *    Because gateway-bundle.mjs runs from the package root (not dist/),
  *    `RUNNING_FROM_BUILT_ARTIFACT` is false and `resolveBundledPluginScanDir`
  *    falls back to `extensions/`.  Third-party plugins there fail the

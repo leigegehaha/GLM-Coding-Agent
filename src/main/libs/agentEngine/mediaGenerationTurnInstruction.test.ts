@@ -37,7 +37,7 @@ describe('buildMediaGenerationTurnInstruction', () => {
     expect(instruction).not.toContain('you must call the lobsterai_image_generate tool exactly once');
   });
 
-  test('uses the native image route for a skin workflow without LobsterAI image selection', () => {
+  test('uses the native image route for a skin workflow without 智码 GLM Code image selection', () => {
     const instruction = buildMediaGenerationTurnInstruction(
       undefined,
       false,
@@ -50,10 +50,10 @@ describe('buildMediaGenerationTurnInstruction', () => {
     expect(instruction).toContain('(count=1)');
     expect(instruction).toContain('There is no lobsterai_image_generate status step');
     expect(instruction).toContain('lobsterai_skin_manage');
-    expect(instruction).not.toContain('LobsterAI media generation tools - NOT AVAILABLE');
+    expect(instruction).not.toContain('智码 GLM Code media generation tools - NOT AVAILABLE');
   });
 
-  test('uses the LobsterAI image route for auto media selection', () => {
+  test('uses the 智码 GLM Code image route for auto media selection', () => {
     const instruction = buildMediaGenerationTurnInstruction(
       { mode: 'auto', imageModelId: 'image-model' },
       false,
@@ -65,10 +65,10 @@ describe('buildMediaGenerationTurnInstruction', () => {
     expect(instruction).not.toContain('OpenClaw-native image_generate tool');
   });
 
-  test('preserves the media-skill fallback when LobsterAI tools are unavailable', () => {
+  test('preserves the media-skill fallback when 智码 GLM Code tools are unavailable', () => {
     const instruction = buildMediaGenerationTurnInstruction(undefined, true);
 
-    expect(instruction).toContain('LobsterAI media generation tools - NOT AVAILABLE');
+    expect(instruction).toContain('智码 GLM Code media generation tools - NOT AVAILABLE');
     expect(instruction).toContain('You may use it');
   });
 });

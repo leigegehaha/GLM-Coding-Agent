@@ -72,7 +72,7 @@ test('top-k evidence bridge retrieves bounded matching historical evidence', () 
   });
   const bridge = result.bridge;
 
-  expect(bridge).toContain('[LobsterAI retrieved evidence after context compaction]');
+  expect(bridge).toContain('[智码 GLM Code retrieved evidence after context compaction]');
   expect(bridge).toContain('tool result: shell');
   expect(bridge).toContain('src/pages/Bakery.tsx');
   expect(bridge).toContain('expected ja copy');

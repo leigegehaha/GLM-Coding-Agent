@@ -5,6 +5,13 @@ import type { SqliteStore } from '../sqliteStore';
 
 let cachedTestMode: boolean | null = null;
 
+const GLM_CODE_SITE_URL = 'https://glmcoding.cn';
+const GLM_CODE_API_BASE_URL = `${GLM_CODE_SITE_URL}/api`;
+
+const fromEnv = (name: string, fallback: string): string => (
+  process.env[name]?.trim().replace(/\/+$/, '') || fallback
+);
+
 /**
  * Read testMode from store and cache it.
  * Call once at startup and again whenever app_config changes.
@@ -27,49 +34,39 @@ export const isTestModeEnabled = (): boolean => {
  * Used for auth exchange/refresh, models, proxy, etc.
  */
 export const getServerApiBaseUrl = (): string => {
-  return isTestModeEnabled()
-    ? 'https://lobsterai-server.inner.youdao.com'
-    : 'https://lobsterai-server.youdao.com';
+  return fromEnv('GLMCODE_SERVER_API_URL', GLM_CODE_SITE_URL);
 };
 
 export const getHtmlSharePublicBaseUrl = (): string => {
   return `${getServerApiBaseUrl()}${HtmlSharePublicRoute.Root}`;
 };
 
-export const getUpdateCheckUrl = (): string => (
-  isTestModeEnabled()
-    ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/update'
-    : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/update'
+export const getUpdateCheckUrl = (): string => fromEnv(
+  'GLMCODE_UPDATE_CHECK_URL',
+  `${GLM_CODE_API_BASE_URL}/desktop/update`,
 );
 
-export const getManualUpdateCheckUrl = (): string => (
-  isTestModeEnabled()
-    ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/update-manual'
-    : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/update-manual'
+export const getManualUpdateCheckUrl = (): string => fromEnv(
+  'GLMCODE_MANUAL_UPDATE_CHECK_URL',
+  `${GLM_CODE_API_BASE_URL}/desktop/update-manual`,
 );
 
-export const getFallbackDownloadUrl = (): string => (
-  isTestModeEnabled()
-    ? 'https://lobsterai.inner.youdao.com/#/download-list'
-    : 'https://lobsterai.youdao.com/#/download-list'
+export const getFallbackDownloadUrl = (): string => fromEnv(
+  'GLMCODE_DOWNLOAD_URL',
+  `${GLM_CODE_SITE_URL}/download`,
 );
 
-export const getSkillStoreUrl = (): string => (
-  isTestModeEnabled()
-    ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/skill-store'
-    : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/skill-store'
+export const getSkillStoreUrl = (): string => fromEnv(
+  'GLMCODE_SKILL_STORE_URL',
+  `${GLM_CODE_API_BASE_URL}/desktop/skill-store`,
 );
 
 // Portal 页面
-const PORTAL_BASE_TEST = 'https://lobsterai.inner.youdao.com/portal#';
-const PORTAL_BASE_PROD = 'https://lobsterai.youdao.com/portal#';
-
-const getPortalBase = (): string => isTestModeEnabled() ? PORTAL_BASE_TEST : PORTAL_BASE_PROD;
+const getPortalBase = (): string => fromEnv('GLMCODE_PORTAL_URL', GLM_CODE_SITE_URL);
 
 export const getPortalTasksUrl = (): string => `${getPortalBase()}/profile/detail?tab=tasks`;
 
-export const getKitStoreUrl = (): string => (
-  isTestModeEnabled()
-    ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/kit-store'
-    : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/kit-store'
+export const getKitStoreUrl = (): string => fromEnv(
+  'GLMCODE_KIT_STORE_URL',
+  `${GLM_CODE_API_BASE_URL}/desktop/kit-store`,
 );

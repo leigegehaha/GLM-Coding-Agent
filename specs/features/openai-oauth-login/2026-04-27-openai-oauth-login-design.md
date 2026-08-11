@@ -2,7 +2,7 @@
 
 ## 问题描述
 
-LobsterAI 原有 OpenAI 接入只支持自定义 API Key。新增 ChatGPT OAuth 登录后，需要满足以下要求：
+智码 GLM Code 原有 OpenAI 接入只支持自定义 API Key。新增 ChatGPT OAuth 登录后，需要满足以下要求：
 
 1. 用户可在 `设置 → 模型 → OpenAI` 中选择 API Key 或 ChatGPT OAuth 两种认证方式
 2. OAuth 登录成功后，OpenClaw Cowork 能使用 ChatGPT 账号调用 OpenAI/Codex 模型
@@ -16,7 +16,7 @@ LobsterAI 原有 OpenAI 接入只支持自定义 API Key。新增 ChatGPT OAuth 
 
 | 项 | API Key 模式 | OAuth 模式 |
 |---|---|---|
-| LobsterAI provider | `openai` | `openai` |
+| 智码 GLM Code provider | `openai` | `openai` |
 | OpenClaw provider | `openai` | `openai-codex` |
 | OpenClaw API | `openai-responses` / `openai-completions` | `openai-codex-responses` |
 | Base URL | 用户配置，例如 `https://api.openai.com/v1` | `https://chatgpt.com/backend-api/codex` |
@@ -50,7 +50,7 @@ Settings.tsx
 
 1. **OAuth token 不进入 renderer 配置。** Renderer 只保存 `authType: 'oauth'`，真实 token 只写入主进程管理的 `auth.json`。
 2. **OpenAI API Key 模式完全保留。** OAuth 只在 OpenAI provider 显式选择 OAuth 时启用。
-3. **OpenClaw 使用独立 Codex home。** `CODEX_HOME` 指向 LobsterAI app data 下的 `codex` 目录，避免影响系统 Codex CLI。
+3. **OpenClaw 使用独立 Codex home。** `CODEX_HOME` 指向 智码 GLM Code app data 下的 `codex` 目录，避免影响系统 Codex CLI。
 4. **Codex OAuth 走原生 transport。** 通用 OpenAI Responses 请求体会被 ChatGPT Codex 后端拒绝。
 5. **UI 状态优先响应用户操作。** 配置同步和 gateway reload 不阻塞设置页登录/退出状态更新。
 
@@ -189,7 +189,7 @@ OAuth descriptor：
 
 ### 系统代理处理
 
-当 LobsterAI 设置中启用系统代理，并且目标 base URL 不是 loopback 地址时，OpenClaw provider 写入：
+当 智码 GLM Code 设置中启用系统代理，并且目标 base URL 不是 loopback 地址时，OpenClaw provider 写入：
 
 ```json
 {
@@ -231,7 +231,7 @@ OAuth token 写入：
 CODEX_HOME: getCodexHomeDir()
 ```
 
-因此 OpenClaw/pi-ai 会从 LobsterAI 管理的 `CODEX_HOME/auth.json` 读取 ChatGPT OAuth token。
+因此 OpenClaw/pi-ai 会从 智码 GLM Code 管理的 `CODEX_HOME/auth.json` 读取 ChatGPT OAuth token。
 
 ### auth.json 格式
 
@@ -487,7 +487,7 @@ git diff --check
 1. 打开 `设置 → 模型 → OpenAI`
 2. 选择 `ChatGPT 登录`
 3. 完成浏览器 OAuth 登录
-4. 返回 LobsterAI，设置页应立即显示已登录状态
+4. 返回 智码 GLM Code，设置页应立即显示已登录状态
 5. 保存或直接使用 OpenAI 模型启动 Cowork 对话
 6. 检查日志应出现：
 
@@ -515,14 +515,14 @@ endpoint=openai-codex
 | OAuth 登录后刷新设置页 | 状态仍为已登录 |
 | 删除 `auth.json` 后进入 OpenAI tab | 状态回到未登录 / API Key |
 | OAuth 退出登录 | 设置页立即切换，不等待 OpenClaw 同步 |
-| 系统 Codex CLI 已登录 | LobsterAI 不覆盖 `~/.codex/auth.json` |
+| 系统 Codex CLI 已登录 | 智码 GLM Code 不覆盖 `~/.codex/auth.json` |
 
 ---
 
 ## 已知边界
 
 1. OAuth callback 固定使用 `http://localhost:1455/auth/callback`，该端口被占用时登录会失败。
-2. OAuth token refresh 依赖 OpenClaw/pi-ai 读取 `auth.json` 后的 provider 行为；LobsterAI 当前只负责初次 token exchange 和本地持久化。
+2. OAuth token refresh 依赖 OpenClaw/pi-ai 读取 `auth.json` 后的 provider 行为；智码 GLM Code 当前只负责初次 token exchange 和本地持久化。
 3. `chatgpt-account-id` 来自 id token claims；如果 token payload 缺失该字段，Codex headers 不完整，后端可能拒绝请求。
 4. OAuth 模式依赖 ChatGPT/Codex backend，不等价于 OpenAI public API 的 OAuth 支持。
 5. 设置页 UI 乐观更新后，如果后台配置同步失败，会显示通用保存失败提示；token 文件本身仍以主进程操作结果为准。

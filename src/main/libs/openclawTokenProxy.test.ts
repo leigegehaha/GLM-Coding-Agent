@@ -20,7 +20,7 @@ beforeEach(() => {
   consumeRecentOpenClawTokenProxyQuotaError();
 });
 
-test('refreshes LobsterAI credentials for 401 but not 403', () => {
+test('refreshes 智码 GLM Code credentials for 401 but not 403', () => {
   expect(testUtils.shouldRefreshLobsterAIToken(401)).toBe(true);
   expect(testUtils.shouldRefreshLobsterAIToken(403)).toBe(false);
 });
@@ -86,7 +86,7 @@ function flushStreamEvents(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }
 
-test('extracts LobsterAI monthly quota error from proxy SSE packet', () => {
+test('extracts 智码 GLM Code monthly quota error from proxy SSE packet', () => {
   const packet = [
     'event: error',
     'data: {"type":"error","error":{"type":"proxy_error","message":"本月积分已用完","code":40202}}',
@@ -98,7 +98,7 @@ test('extracts LobsterAI monthly quota error from proxy SSE packet', () => {
   });
 });
 
-test('ignores generic HTTP 402 without LobsterAI quota code or message', () => {
+test('ignores generic HTTP 402 without 智码 GLM Code quota code or message', () => {
   const packet = [
     'event: error',
     'data: {"error":{"message":"Request failed with status 402"}}',
@@ -304,8 +304,8 @@ test('adds fixed capability and client version headers without trusting incoming
     Authorization: 'Bearer access-token',
     Accept: 'text/event-stream',
     'Content-Type': 'application/json',
-    'X-LobsterAI-Client-Capabilities': 'kimi-k3-agentic-v1',
-    'X-LobsterAI-Client-Version': '2026.7.23',
+    'X-GLM-Code-Client-Capabilities': 'kimi-k3-agentic-v1',
+    'X-GLM-Code-Client-Version': '2026.7.23',
   });
 });
 

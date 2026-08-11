@@ -10,7 +10,7 @@ import { agentService } from '../../services/agent';
 import { coworkService } from '../../services/cowork';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
 import type { Agent } from '../../types/agent';
@@ -187,7 +187,7 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
     const selectedSkills = options.includeConfigDetails ? getSelectedSkills() : [];
     const imPlatforms = options.includeConfigDetails ? getImPlatformsForAnalytics() : [];
     console.debug(`[AgentSettingsPanel] reporting analytics action ${actionType}`);
-    void reportYdAnalyzer({
+    void reportAnalytics({
       action: LogReporterAction.AgentSettingsAction,
       source: AGENT_SETTINGS_ANALYTICS_SOURCE,
       actionType,

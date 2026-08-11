@@ -2,18 +2,18 @@
 
 ## Overview
 
-Add a simple user-facing setting in LobsterAI to control how long a conversation keeps its existing context before automatically starting a new session.
+Add a simple user-facing setting in 智码 GLM Code to control how long a conversation keeps its existing context before automatically starting a new session.
 
 The goal is to expose one clear product concept while keeping OpenClaw's lower-level session policy details internal.
 
 ## Problem
 
-LobsterAI currently writes only `session.dmScope` into runtime `openclaw.json`, while QClaw also configures `session.reset` and `session.maintenance`.
+智码 GLM Code currently writes only `session.dmScope` into runtime `openclaw.json`, while QClaw also configures `session.reset` and `session.maintenance`.
 
 This creates two product issues:
 
 - Users cannot control when old context should roll over into a new session.
-- Session lifecycle behavior is not explicit in LobsterAI and depends more on OpenClaw defaults than intended.
+- Session lifecycle behavior is not explicit in 智码 GLM Code and depends more on OpenClaw defaults than intended.
 
 At the same time, exposing raw OpenClaw fields such as `dmScope`, `idleMinutes`, `pruneAfter`, or `rotateBytes` would be too technical for most users.
 
@@ -75,7 +75,7 @@ Rationale:
 
 - `dmScope` affects session identity and historical session partitioning, so changing it is too risky for a simple user setting.
 - `maintenance.*` is primarily storage governance, not a user-facing conversational preference.
-- Keeping these internal makes the UI easier to understand and gives LobsterAI freedom to tune defaults later.
+- Keeping these internal makes the UI easier to understand and gives 智码 GLM Code freedom to tune defaults later.
 
 ### Scope
 
@@ -197,7 +197,7 @@ These can be added later only if there is clear user demand.
 ## 实施计划
 
 
-**Goal:** Add a simple global `会话保持时长` setting in LobsterAI, persist it locally, and always generate explicit OpenClaw `session.reset` and `session.maintenance` config from that value.
+**Goal:** Add a simple global `会话保持时长` setting in 智码 GLM Code, persist it locally, and always generate explicit OpenClaw `session.reset` and `session.maintenance` config from that value.
 
 **Architecture:** Introduce a dedicated OpenClaw session policy config owned by the main process instead of overloading `cowork_config` or IM settings. The renderer reads and writes a single enum-like setting, while `openclawConfigSync.ts` maps that value into explicit runtime `session` fields. The UI stays simple, but runtime behavior becomes explicit and testable.
 
@@ -653,7 +653,7 @@ English:
 
 ```ts
 openClawSessionKeepAlive: 'Session continuity',
-openClawSessionKeepAliveHint: 'Continue chatting within this period to keep the same context. After that, LobsterAI starts a new session automatically. Longer durations improve continuity but can also carry older context forward.',
+openClawSessionKeepAliveHint: 'Continue chatting within this period to keep the same context. After that, 智码 GLM Code starts a new session automatically. Longer durations improve continuity but can also carry older context forward.',
 openClawSessionKeepAliveAlways: 'Always continue',
 openClawSessionKeepAliveOneDay: '24 hours',
 openClawSessionKeepAliveSevenDays: '7 days (Recommended)',
@@ -690,7 +690,7 @@ const hasCoworkConfigChanges = coworkAgentEngine !== coworkConfig.agentEngine
   || openClawSessionKeepAlive !== (coworkConfig.openClawSessionPolicy?.keepAlive || '7d');
 ```
 
-- [ ] **Step 4: Render the new control in the existing LobsterAI settings section**
+- [ ] **Step 4: Render the new control in the existing 智码 GLM Code settings section**
 
 Insert a compact select block in the same section that contains agent engine and memory toggles:
 
@@ -785,7 +785,7 @@ Verify:
 
 - Open Settings and find `会话保持时长`
 - Default selection is `7天（推荐）`
-- Change it to `1年`, save settings, and confirm `/Users/wulei/Library/Application Support/LobsterAI/openclaw/state/openclaw.json` includes:
+- Change it to `1年`, save settings, and confirm `/Users/wulei/Library/Application Support/智码 GLM Code/openclaw/state/openclaw.json` includes:
 
 ```json
 "session": {

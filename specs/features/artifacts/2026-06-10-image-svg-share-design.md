@@ -2,7 +2,7 @@
 
 ## 1. 背景
 
-LobsterAI 当前已经实现 HTML Artifact 分享：客户端把 HTML 文件及依赖静态资源打成 zip，通过 `lobsterai-server` 的 `/api/html-shares` 上传，服务端保存 `html_shares` / `html_share_files` 记录，把文件上传到 NOS，并通过 `/s/{shareId}/` 提供分享码访问、状态管理、内容审核和访问统计。
+智码 GLM Code 当前已经实现 HTML Artifact 分享：客户端把 HTML 文件及依赖静态资源打成 zip，通过 `lobsterai-server` 的 `/api/html-shares` 上传，服务端保存 `html_shares` / `html_share_files` 记录，把文件上传到 NOS，并通过 `/s/{shareId}/` 提供分享码访问、状态管理、内容审核和访问统计。
 
 Artifacts 预览当前已经支持图片和 SVG：
 
@@ -408,7 +408,7 @@ Form fields：
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai-server.inner.youdao.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "accessMode": "code",
     "shareCode": "K7Q9P2",
     "shareCodeUnavailable": false,
@@ -584,7 +584,7 @@ Fetch metadata 可作为增强防护：
 
 UI 要求：
 
-- 保留顶部 LobsterAI 品牌栏和“我也来制作”按钮。
+- 保留顶部 智码 GLM Code 品牌栏和“我也来制作”按钮。
 - 图片区域使用中性背景和居中查看器，避免大面积棋盘格影响观感。
 - 图片使用 `max-width: 100%`、`max-height: calc(100vh - header - footer)`、`object-fit: contain`。
 - 移动端不裁切图片。

@@ -4,9 +4,9 @@
 
 ### 1.1 问题
 
-用户在 Cowork 会话中提问后，模型先输出一句类似“我先看看日志”的短回复，随后 LobsterAI 界面认为本轮已经结束。用户需要再发送“继续”，模型才会继续输出完整分析。
+用户在 Cowork 会话中提问后，模型先输出一句类似“我先看看日志”的短回复，随后 智码 GLM Code 界面认为本轮已经结束。用户需要再发送“继续”，模型才会继续输出完整分析。
 
-从日志看，这不是模型真正停止，也不是单纯 UI 没有展示压缩进度。OpenClaw 后续仍然在同一个 run 中触发上下文溢出、自动压缩，并继续生成完整回答；但 LobsterAI 主进程已经把该 run 标记为 completed，后续 assistant stream 被 closed-run guard 当作迟到事件丢弃。
+从日志看，这不是模型真正停止，也不是单纯 UI 没有展示压缩进度。OpenClaw 后续仍然在同一个 run 中触发上下文溢出、自动压缩，并继续生成完整回答；但 智码 GLM Code 主进程已经把该 run 标记为 completed，后续 assistant stream 被 closed-run guard 当作迟到事件丢弃。
 
 ### 1.2 现场证据
 
@@ -25,7 +25,7 @@
 1. `17:14:51`，preflight compaction 检查没有拿到精确 token：`tokenCount=undefined`，`contextWindow=54000`，`threshold=30000`，`promptTokensEst=1869`。因此本轮不是发送前就完成了可见压缩。
 2. `17:14:52`，`context-diag pre-prompt` 显示 `systemPromptChars=47953`、`promptChars=7476`，起始上下文已经很大。
 3. `17:14:56` 至 `17:15:11`，run `e8234edd-add5-4e47-8de9-bcf9b40d9755` 输出短文本，并执行多个日志读取工具。
-4. `17:15:11`，OpenClaw 发出 `chat final`，`finalTextLen=109`。LobsterAI 将 session 状态切到 `idle`，原因是 `run_completed`，随后执行 turn cleanup。
+4. `17:15:11`，OpenClaw 发出 `chat final`，`finalTextLen=109`。智码 GLM Code 将 session 状态切到 `idle`，原因是 `run_completed`，随后执行 turn cleanup。
 5. 同一轮 final 同步从 `chat.history` 回填了大工具结果，其中多个 tool result 长度接近 `39952`、`39961` 字符。
 6. `17:16:09`，同一个 run 后续出现上下文溢出诊断：`Context overflow: estimated context size exceeds safe threshold during tool loop`，并进入 `attempting auto-compaction`。当时 `pre.historyTextChars=125001`、`pre.toolResultChars=117385`。
 7. `17:16:53` 至 `17:17:03`，同一个 run 开始输出完整回答，例如“好的，分析完了！让我把 5月19日 今天网关重启的完整时间线给你梳理出来。”
@@ -38,7 +38,7 @@
 
 1. OpenClaw 在工具调用密集任务中先输出一段可见短文本。
 2. `chat.final` 到达时，该文本非空，因此现有空回复/maintenance 等待逻辑不会介入。
-3. LobsterAI 按普通完成路径调用 `deferChatFinalCompletion()`，短 grace 后将 session 标记 completed。
+3. 智码 GLM Code 按普通完成路径调用 `deferChatFinalCompletion()`，短 grace 后将 session 标记 completed。
 4. `cleanupSessionTurn()` 将该 runId 写入 `recentlyClosedRunIds`。
 5. 随后工具结果导致 OpenClaw 在同一个 run 内触发 context overflow 和 auto-compaction retry。
 6. retry 后同一个 runId 继续输出完整 assistant 文本。
@@ -54,7 +54,7 @@
 修复目标：
 
 1. 工具结果很大、上下文压力很高时，短可见 `chat.final` 不应被立即视为不可逆终局。
-2. OpenClaw 自动压缩、retry 或 continuation 期间，LobsterAI 应保持当前 turn 可恢复。
+2. OpenClaw 自动压缩、retry 或 continuation 期间，智码 GLM Code 应保持当前 turn 可恢复。
 3. 同一个 run 在自动压缩后继续输出的 assistant 文本应显示在原会话中。
 4. 用户不需要发送“继续”来恢复被丢弃的同轮回答。
 5. 保留 `recentlyClosedRunIds` 对真实迟到旧事件的保护。
@@ -75,38 +75,38 @@
 
 ### 场景 1: 工具密集任务自动压缩后继续输出
 
-**Given** 用户要求模型分析多份日志  
-**And** OpenClaw 执行多个工具调用，产生大量 tool result  
-**When** 模型先输出一段短进度回复，随后触发 context overflow 和 auto-compaction  
-**Then** LobsterAI 不应提前把 session 标记 completed  
-**And** 压缩 retry 后的完整 assistant 文本应继续显示在当前回复中  
+**Given** 用户要求模型分析多份日志
+**And** OpenClaw 执行多个工具调用，产生大量 tool result
+**When** 模型先输出一段短进度回复，随后触发 context overflow 和 auto-compaction
+**Then** 智码 GLM Code 不应提前把 session 标记 completed
+**And** 压缩 retry 后的完整 assistant 文本应继续显示在当前回复中
 **And** 日志不应出现该 run 的 continuation 文本被 `dropped late assistant text for a closed run` 丢弃
 
 ### 场景 2: 自动压缩期间用户看到运行状态
 
-**Given** OpenClaw 正在压缩上下文或等待 retry continuation  
-**When** 用户查看对话界面  
-**Then** UI 应展示当前会话仍在运行或正在整理上下文  
+**Given** OpenClaw 正在压缩上下文或等待 retry continuation
+**When** 用户查看对话界面
+**Then** UI 应展示当前会话仍在运行或正在整理上下文
 **And** 发送入口应沿用 running 状态保护，避免用户误以为必须手动发送“继续”
 
 ### 场景 3: 普通短回复正常完成
 
-**Given** 模型没有工具调用，或工具结果很小，且没有上下文压力或 compaction 信号  
-**When** 模型输出一句短回答并 final  
-**Then** LobsterAI 应按普通路径快速完成  
+**Given** 模型没有工具调用，或工具结果很小，且没有上下文压力或 compaction 信号
+**When** 模型输出一句短回答并 final
+**Then** 智码 GLM Code 应按普通路径快速完成
 **And** 不应为了防御本问题而无条件等待很长时间
 
 ### 场景 4: 真实旧 run 迟到事件
 
-**Given** 某个 run 已经真正完成，且没有压缩 retry 或 continuation 信号  
-**When** 后续收到旧 run 的 assistant stream  
+**Given** 某个 run 已经真正完成，且没有压缩 retry 或 continuation 信号
+**When** 后续收到旧 run 的 assistant stream
 **Then** `recentlyClosedRunIds` 仍应丢弃该事件，避免污染当前会话或下一轮
 
 ### 场景 5: 用户主动停止任务
 
-**Given** 用户点击停止当前 Cowork 任务  
-**When** OpenClaw 后续仍发出 assistant stream 或 retry continuation  
-**Then** 用户停止优先级最高，LobsterAI 不应恢复该 turn  
+**Given** 用户点击停止当前 Cowork 任务
+**When** OpenClaw 后续仍发出 assistant stream 或 retry continuation
+**Then** 用户停止优先级最高，智码 GLM Code 不应恢复该 turn
 **And** context maintenance loading 应立即结束
 
 ## 3. 功能需求
@@ -167,7 +167,7 @@ if (runId && this.isRecentlyClosedRunId(runId)) {
 
 ### FR-4: 明确区分 provisional completion 和 terminal completion
 
-LobsterAI 需要区分两个阶段：
+智码 GLM Code 需要区分两个阶段：
 
 | 阶段 | 含义 | 可接受后续同 run 文本 |
 |---|---|---|

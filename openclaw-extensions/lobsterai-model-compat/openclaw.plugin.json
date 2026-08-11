@@ -1,15 +1,14 @@
 {
   "id": "lobsterai-model-compat",
-  "name": "LobsterAI Model Compatibility",
-  "description": "Applies explicit LobsterAI-managed model runtime profiles.",
-  "providers": ["lobsterai-model-compat"],
+  "name": "智码 GLM Code Model Compatibility",
+  "description": "Applies explicit 智码 GLM Code-managed model runtime profiles.",
+  "providers": ["lobsterai-model-compat", "zhima-coding", "lobsterai-server"],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
       "modelProfiles": {
         "type": "object",
-        "minProperties": 1,
         "propertyNames": {
           "pattern": "^[^/\\s]+/[^\\s]+$"
         },

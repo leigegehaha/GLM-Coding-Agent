@@ -4,7 +4,7 @@
 
 ### 1.1 问题/动机
 
-LobsterAI 在 2026-06-16 将 OpenClaw 从 `v2026.4.14` 升级到
+智码 GLM Code 在 2026-06-16 将 OpenClaw 从 `v2026.4.14` 升级到
 `v2026.6.1`。升级后，DeepSeek V4 Pro 用户反馈长会话 token 消耗明显增加。
 日志分析显示，问题不是持续无缓存，而是同一个长会话在部分新用户轮次突然只能命中
 较短的公共前缀：
@@ -25,7 +25,7 @@ LobsterAI 在 2026-06-16 将 OpenClaw 从 `v2026.4.14` 升级到
 1. 保证同一条用户消息作为当前轮和历史轮发送给模型时具有字节稳定的文本表示。
 2. 保留 OpenClaw 的用户时区时间戳能力，但只在统一的 LLM boundary 生成时间戳。
 3. 保持带附件、多文本块、IM envelope、cron marker 和跨会话 prompt 的现有语义。
-4. 以 `v2026.6.1` 版本专属 patch 回补上游修复，不在 LobsterAI 业务层复制
+4. 以 `v2026.6.1` 版本专属 patch 回补上游修复，不在 智码 GLM Code 业务层复制
    OpenClaw 的 transcript/runtime 逻辑。
 5. 明确后续 OpenClaw 升级时的 patch 移除条件。
 
@@ -88,7 +88,7 @@ scripts/patches/v2026.6.1/openclaw-user-turn-cache-stability.patch
 
 该 patch 只移植上游 `1af55bc665` 的用户轮次缓存稳定性改动和相应测试，不引入该
 commit 之后的其他 OpenClaw 功能或重构。移植覆盖所有使用同一 transcript/LLM
-boundary 的入口，避免只修 LobsterAI 桌面 `chat.send` 后，CLI、TUI、agent 或重启
+boundary 的入口，避免只修 智码 GLM Code 桌面 `chat.send` 后，CLI、TUI、agent 或重启
 恢复入口继续产生不一致历史。
 
 核心行为如下：
@@ -117,7 +117,7 @@ OpenClaw patch 内保留上游的字节一致性测试，核心断言是：
 同时覆盖附件消息、已有时间戳 envelope、cron marker、历史 inbound metadata、CLI
 prompt 和各 gateway 入口。
 
-LobsterAI 侧增加 patch 决策测试和强应用校验，防止 patch 文件存在但因部分冲突被
+智码 GLM Code 侧增加 patch 决策测试和强应用校验，防止 patch 文件存在但因部分冲突被
 `apply-openclaw-patches.cjs` 误判为已应用。
 
 ### 3.3 Patch 移除条件
@@ -137,11 +137,11 @@ LobsterAI 侧增加 patch 决策测试和强应用校验，防止 patch 文件�
 ## 4. 实施步骤
 
 1. 从 `release/2026.6.29` 创建修复分支。
-2. 在干净 `v2026.6.1` 上应用现有 LobsterAI patch，建立移植基线。
+2. 在干净 `v2026.6.1` 上应用现有 智码 GLM Code patch，建立移植基线。
 3. 移植上游 `1af55bc665`，处理与现有 runtime safety patch 的单一上下文冲突。
 4. 生成 `openclaw-user-turn-cache-stability.patch`。
-5. 增加 patch 内容、应用结果和回归测试的 LobsterAI 侧门禁。
-6. 从干净 tag 重新应用全部 patch，运行 OpenClaw 定向测试、LobsterAI 测试、lint、
+5. 增加 patch 内容、应用结果和回归测试的 智码 GLM Code 侧门禁。
+6. 从干净 tag 重新应用全部 patch，运行 OpenClaw 定向测试、智码 GLM Code 测试、lint、
    Electron 编译/构建和 runtime 构建。
 
 ## 5. 涉及文件
@@ -150,7 +150,7 @@ LobsterAI 侧增加 patch 决策测试和强应用校验，防止 patch 文件�
 |------|------|
 | `scripts/patches/v2026.6.1/openclaw-user-turn-cache-stability.patch` | 上游用户轮次缓存稳定性修复及测试 |
 | `scripts/apply-openclaw-patches.cjs` | 增加实际源码强校验，拒绝部分应用 |
-| `src/main/libs/openclawPatches/userTurnCacheStability.test.ts` | LobsterAI 侧 patch 决策与源码应用测试 |
+| `src/main/libs/openclawPatches/userTurnCacheStability.test.ts` | 智码 GLM Code 侧 patch 决策与源码应用测试 |
 | `specs/refactors/openclaw-upgrade/2026-06-29-openclaw-user-turn-cache-stability.md` | 背景、方案、移除条件和验证记录 |
 
 ## 6. 验证计划
@@ -186,7 +186,7 @@ npm run openclaw:runtime:host
 ```
 
 runtime 构建完成后，确认 bundle 包含 LLM boundary canonicalization 和 per-message
-timestamp 实现，并再次运行 LobsterAI patch source/runtime 门禁。
+timestamp 实现，并再次运行 智码 GLM Code patch source/runtime 门禁。
 
 ### 6.4 端侧复测建议
 
@@ -207,14 +207,14 @@ Pro thinking on/off 和一个非 DeepSeek 对照模型。验收重点不是冷�
 | OpenClaw gateway 变更断言 | 通过；agent timestamp 2 个用例、restart continuation 1 个用例 |
 | OpenClaw restart sentinel 完整测试 | 通过；26 个用例 |
 | OpenClaw `agent.test.ts` 完整文件 | Windows 本地连续超过 360 秒无输出；本次修改的 2 个定向用例均通过 |
-| LobsterAI OpenClaw patch 测试 | 通过；13 个文件、33 个用例，包含源码和 runtime bundle 门禁 |
+| 智码 GLM Code OpenClaw patch 测试 | 通过；13 个文件、33 个用例，包含源码和 runtime bundle 门禁 |
 | 新增 TypeScript 测试 ESLint | 通过；0 error、0 warning |
 | `npm run compile:electron` | 通过 |
 | `npm run build` | 通过；仅保留既有 Vite chunk/dynamic import warning |
 | `npm run openclaw:runtime:host` | 通过；完成 build、pack、bundle、plugins、extensions、channel deps 和 prune |
 | runtime bundle 内容检查 | 通过；包含 `currentUserTimestampOverride`、`runtimeTimestamp`、`alternateText` 及 canonicalization 实现 |
 
-另执行 LobsterAI 官方完整 `npm test`：147 个文件中 145 个通过，1568 个用例中
+另执行 智码 GLM Code 官方完整 `npm test`：147 个文件中 145 个通过，1568 个用例中
 1565 个通过、1 个跳过。初次运行有两个失败：data migration 用例因并发负载超过
 5 秒，单文件复跑后 19/19 通过；另一个是现有 Windows `localfile` URL 路径分隔符
 断言（期望反斜杠、实际正斜杠），单文件复跑仍稳定失败。该文件及其实现不在本次

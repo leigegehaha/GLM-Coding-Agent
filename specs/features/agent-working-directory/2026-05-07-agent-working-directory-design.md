@@ -4,11 +4,11 @@
 
 ### 1.1 问题/背景
 
-当前 LobsterAI 中用户在 Cowork 首页选择的工作目录来自全局 `cowork_config.workingDirectory`。当用户切换到任一 Agent 并修改工作目录时，实际修改的是同一份全局配置，因此所有 Agent 首页展示的工作目录都会同时变化。
+当前 智码 GLM Code 中用户在 Cowork 首页选择的工作目录来自全局 `cowork_config.workingDirectory`。当用户切换到任一 Agent 并修改工作目录时，实际修改的是同一份全局配置，因此所有 Agent 首页展示的工作目录都会同时变化。
 
 这与 Agent 的产品语义不一致。用户创建多个 Agent 通常是为了让它们承担不同角色或面向不同项目，例如：
 
-- `main` Agent 面向 LobsterAI 主工程。
+- `main` Agent 面向 智码 GLM Code 主工程。
 - `docs` Agent 面向文档仓库。
 - `ops` Agent 面向部署脚本目录。
 
@@ -46,52 +46,52 @@
 
 ### 场景 1: 不同 Agent 使用不同默认工作目录
 
-**Given** 用户有 Agent A 和 Agent B，二者默认工作目录分别为 `/repo/a` 和 `/repo/b`  
-**When** 用户切换到 Agent A 的 Cowork 首页  
+**Given** 用户有 Agent A 和 Agent B，二者默认工作目录分别为 `/repo/a` 和 `/repo/b`
+**When** 用户切换到 Agent A 的 Cowork 首页
 **Then** 目录选择器显示 `/repo/a`
 
-**When** 用户切换到 Agent B 的 Cowork 首页  
+**When** 用户切换到 Agent B 的 Cowork 首页
 **Then** 目录选择器显示 `/repo/b`
 
 ### 场景 2: 在一个 Agent 中切换工作目录不影响其他 Agent
 
-**Given** Agent A 默认工作目录为 `/repo/a`，Agent B 默认工作目录为 `/repo/b`  
-**When** 用户在 Agent A 首页把工作目录改为 `/repo/a-next`  
+**Given** Agent A 默认工作目录为 `/repo/a`，Agent B 默认工作目录为 `/repo/b`
+**When** 用户在 Agent A 首页把工作目录改为 `/repo/a-next`
 **Then** Agent A 默认工作目录更新为 `/repo/a-next`
 
 **And** Agent B 默认工作目录仍为 `/repo/b`
 
 ### 场景 3: 创建 Agent 时指定工作目录
 
-**Given** 用户打开创建 Agent 弹窗  
-**When** 用户填写名称、默认模型、默认工作目录 `/repo/docs` 并保存  
+**Given** 用户打开创建 Agent 弹窗
+**When** 用户填写名称、默认模型、默认工作目录 `/repo/docs` 并保存
 **Then** 新 Agent 被创建，默认工作目录为 `/repo/docs`
 
 **And** 用户切换到该 Agent 后，Cowork 首页默认展示 `/repo/docs`
 
 ### 场景 4: 新建会话保存目录快照
 
-**Given** Agent A 当前默认工作目录为 `/repo/a`  
-**When** 用户在 Agent A 下新建 Cowork session  
+**Given** Agent A 当前默认工作目录为 `/repo/a`
+**When** 用户在 Agent A 下新建 Cowork session
 **Then** 新 session 的 `cwd` 保存为 `/repo/a`
 
-**When** 用户之后把 Agent A 默认工作目录改为 `/repo/a-next`  
+**When** 用户之后把 Agent A 默认工作目录改为 `/repo/a-next`
 **Then** 旧 session 继续使用 `/repo/a`
 
 **And** 新 session 使用 `/repo/a-next`
 
 ### 场景 5: 升级旧版本后不丢失目录
 
-**Given** 旧版本只有全局 `cowork_config.workingDirectory = /repo/old`  
-**When** 用户升级到支持 Agent 独立工作目录的新版本  
+**Given** 旧版本只有全局 `cowork_config.workingDirectory = /repo/old`
+**When** 用户升级到支持 Agent 独立工作目录的新版本
 **Then** 现有 Agent 初始默认工作目录回填为 `/repo/old`
 
 **And** 后续每个 Agent 可以独立修改自己的目录
 
 ### 场景 6: IM 绑定 Agent 使用自己的工作目录
 
-**Given** IM 平台绑定到 Agent B，Agent B 默认工作目录为 `/repo/b`  
-**When** OpenClaw channel session 被同步到 LobsterAI 本地 session  
+**Given** IM 平台绑定到 Agent B，Agent B 默认工作目录为 `/repo/b`
+**When** OpenClaw channel session 被同步到 智码 GLM Code 本地 session
 **Then** 该 session 的 `cwd` 应为 `/repo/b`
 
 **And** 不应使用其他 Agent 的目录或全局 fallback 目录。
@@ -168,7 +168,7 @@ Agent 创建弹窗和设置面板应增加默认工作目录控件。
 
 OpenClaw workspace 与 cwd 需要保持清晰分工：
 
-- `workspace` 仍指向 LobsterAI 管理的 OpenClaw Agent workspace，例如 `{STATE_DIR}/workspace-main` 或 `{STATE_DIR}/workspace-{agentId}`。
+- `workspace` 仍指向 智码 GLM Code 管理的 OpenClaw Agent workspace，例如 `{STATE_DIR}/workspace-main` 或 `{STATE_DIR}/workspace-{agentId}`。
 - `cwd` 表示该 Agent 默认用户项目目录。
 
 `openclawConfigSync.ts` 在构建 `agents.list` 时应为每个 Agent 写入自己的 `cwd`：

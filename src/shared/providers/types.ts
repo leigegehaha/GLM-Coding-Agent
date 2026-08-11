@@ -3,6 +3,10 @@ import type { ApiFormat, ProviderAuthType } from './constants';
 export interface ProviderConfig {
   enabled: boolean;
   apiKey: string;
+  /** Main-process credential reference used when a provider secret must not enter the renderer. */
+  credentialRef?: string;
+  /** Non-secret Coding Plan token identity used only for configured-state display. */
+  codingPlanTokenId?: number;
   baseUrl: string;
   apiFormat?: ApiFormat;
   models?: Array<{

@@ -2,13 +2,13 @@
 
 ## Background
 
-OpenClaw `v2026.6.1`, the version currently pinned by LobsterAI, supports
+OpenClaw `v2026.6.1`, the version currently pinned by 智码 GLM Code, supports
 `/btw <question>` and its `/side` alias as ephemeral side questions. A BTW
 request uses the current session as background context, runs independently from
 the main turn, and returns a live `chat.side_result` event without writing the
 question or answer to transcript history.
 
-LobsterAI does not currently expose that behavior correctly:
+智码 GLM Code does not currently expose that behavior correctly:
 
 - Cowork sends prompt input through the normal `continueSession` path.
 - Normal input is written to the local message store before `chat.send`.
@@ -66,14 +66,14 @@ history, fail during an active turn, or complete without displaying the answer.
 - The side-chat window is not a durable or OpenClaw-native thread. Follow-up
   continuity is assembled from bounded renderer-memory entries and supplied to
   each independent `/btw` request.
-- LobsterAI does not reimplement OpenClaw's context snapshot, model selection,
+- 智码 GLM Code does not reimplement OpenClaw's context snapshot, model selection,
   tool policy, or provider-specific BTW behavior.
 - External IM rendering remains owned by OpenClaw channel integrations. This
   design covers the Cowork desktop surface.
 
 ## OpenClaw Contract
 
-For a valid existing session, LobsterAI sends:
+For a valid existing session, 智码 GLM Code sends:
 
 ```text
 /btw <question>
@@ -109,7 +109,7 @@ interface OpenClawBtwSideResultPayload {
 Cowork draft must send at least one normal message before BTW becomes
 available. The side query is a separate model invocation and can consume
 additional provider tokens even though it does not change the future context.
-OpenClaw does not retain the answer as a native side thread. LobsterAI keeps
+OpenClaw does not retain the answer as a native side thread. 智码 GLM Code keeps
 the visible temporary exchanges in renderer memory and includes recent
 answered exchanges in a later request as bounded single-line context so
 follow-up questions can refer to them.
@@ -416,7 +416,7 @@ and the newly settled thread remain protected.
 
 BTW does not elevate permissions or bypass sandbox/approval policy. Provider,
 Codex harness, tool, and reasoning behavior remains controlled by OpenClaw.
-LobsterAI renders only the final side-result text and existing approval flows
+智码 GLM Code renders only the final side-result text and existing approval flows
 remain authoritative.
 
 ## Compatibility

@@ -11,11 +11,11 @@ OpenClaw 的插件清单（`openclaw.plugin.json`）支持两个字段来声明�
 - `configSchema` — JSON Schema (draft-07)，定义配置结构和类型
 - `uiHints` — UI 元数据，为每个配置项提供 label、help、placeholder、sensitive、advanced 等信息
 
-配置值存储在 `openclaw.json` 的 `plugins.entries[pluginId].config` 中。OpenClaw 自带的 web UI（`/automation` → Plugins tab）能够解析这些字段并动态渲染配置表单。LobsterAI 需要在自身的插件管理页面中提供同等能力。
+配置值存储在 `openclaw.json` 的 `plugins.entries[pluginId].config` 中。OpenClaw 自带的 web UI（`/automation` → Plugins tab）能够解析这些字段并动态渲染配置表单。智码 GLM Code 需要在自身的插件管理页面中提供同等能力。
 
 ### 1.2 目标
 
-- 用户可在 LobsterAI 的插件管理页面中查看并编辑插件的自定义配置项
+- 用户可在 智码 GLM Code 的插件管理页面中查看并编辑插件的自定义配置项
 - 配置项根据插件清单中的 `configSchema` 动态渲染，无需为每个插件硬编码 UI
 - 配置保存后同步到 `openclaw.json`，网关重启生效
 - 没有 `configSchema` 的插件不显示配置入口

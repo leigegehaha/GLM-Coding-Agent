@@ -2,7 +2,7 @@
 
 ## 1. 问题与根因
 
-LobsterAI 当前固定使用 OpenClaw `v2026.6.1`。该版本已经具备原生工具循环检测：当重复调用达到 critical 阈值时，`before_tool_call` 返回 `deniedReason: "tool-loop"`，并记录类似 `Session execution blocked` 的日志。
+智码 GLM Code 当前固定使用 OpenClaw `v2026.6.1`。该版本已经具备原生工具循环检测：当重复调用达到 critical 阈值时，`before_tool_call` 返回 `deniedReason: "tool-loop"`，并记录类似 `Session execution blocked` 的日志。
 
 问题在于，这个 critical 分支只阻止当前工具调用。被阻止的调用仍以普通 tool result 返回给模型，Agent run 本身没有进入终止态。模型可以在下一轮继续调用工具，再次触发相同 veto，造成 provider request 和 token 消耗持续增长。因此，日志宣称 session 已 blocked，而实际只 blocked 了一次 tool call。
 
@@ -81,7 +81,7 @@ scripts/patches/v2026.6.1/openclaw-terminate-run-on-critical-tool-loop.patch
 
 不直接把 `shouldTerminateToolBatch()` 从 `every()` 改为 `some()`，因为 `terminate` 是通用 agent-core 结果字段，改变其全局批处理语义可能影响其他调用方。不在 detector 或 before-tool-call hook 中调用 `AbortController.abort()`，因为这会把安全熔断混同为用户取消，并可能中断同批次的正常工具结果及事件收尾。
 
-LobsterAI 同时增加：
+智码 GLM Code 同时增加：
 
 - patch 强校验，避免应用状态被误判；
 - patch 内容契约测试，固定双层终止和非 critical veto 的兼容边界；
@@ -120,13 +120,13 @@ LobsterAI 同时增加：
 
 ## 7. 验收标准
 
-1. 新 patch 能与 LobsterAI 其余 `v2026.6.1` patches 一起从干净 tag 顺序应用。
+1. 新 patch 能与 智码 GLM Code 其余 `v2026.6.1` patches 一起从干净 tag 顺序应用。
 2. critical `tool-loop` blocked result 包含 `terminate: true`。
 3. 普通插件 veto 的 `terminate` 仍为 `undefined`。
 4. 混合并行批次中正常 sibling 工具执行完成。
 5. 单 critical 和混合批次的 provider turn 均不超过 1 次，且只发出一次 `agent_end`。
 6. OpenClaw 原生 loop detection E2E 中所有 critical 分支均验证 `terminate: true`。
-7. LobsterAI patch 内容测试和强校验通过。
+7. 智码 GLM Code patch 内容测试和强校验通过。
 8. 现场日志中首次 critical `Session execution blocked` 后，不再出现同一 run 的下一次 provider request。
 
 ## 8. 验证计划
@@ -144,7 +144,7 @@ node scripts/run-vitest.mjs run \
   --testNamePattern "loop detection behavior"
 ```
 
-LobsterAI 验证：
+智码 GLM Code 验证：
 
 ```bash
 npm run openclaw:patch

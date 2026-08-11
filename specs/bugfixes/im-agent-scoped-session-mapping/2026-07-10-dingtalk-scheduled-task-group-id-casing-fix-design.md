@@ -28,7 +28,7 @@ cid+wqbmjfbusv8bld+du9t1w==
 
 故障由两个独立问题叠加而成：
 
-1. OpenClaw 为统一 session key，会将钉钉群 peer ID 规范成小写；LobsterAI 的定时任务历史规范化又把该内部索引值写回 `delivery.to`。钉钉 `openConversationId` 是不应改写的通道原生不透明标识，主动投递必须使用入站元数据中的原始值。
+1. OpenClaw 为统一 session key，会将钉钉群 peer ID 规范成小写；智码 GLM Code 的定时任务历史规范化又把该内部索引值写回 `delivery.to`。钉钉 `openConversationId` 是不应改写的通道原生不透明标识，主动投递必须使用入站元数据中的原始值。
 2. 钉钉连接器的 outbound text 适配层虽然能从 `sendTextToDingTalk` 收到 `{ ok: false, error }`，却没有检查 `ok`，而是继续返回占位 `messageId`。上层因此把 API 失败误记为投递成功，日志中也丢失了真实错误。
 
 普通群聊回复不受第一个问题影响，因为它沿用当前入站消息中的原始会话标识，不需要从小写 session key 反向构造投递目标。

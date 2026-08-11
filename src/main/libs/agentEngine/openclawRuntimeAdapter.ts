@@ -28,6 +28,7 @@ import {
   type CoworkBtwSubmitResponse,
   normalizeCoworkBtwQuestion,
 } from '../../../shared/cowork/btw';
+import { prependCodingOptimizationSystemPrompt } from '../../../shared/cowork/codingOptimization';
 import {
   CoworkIpcChannel,
   type CoworkSessionsChangedPayload,
@@ -72,6 +73,7 @@ import { t } from '../../i18n';
 import { MediaGenerationTool } from '../../mediaGenerationPolicy';
 import type { SubagentMessageStore } from '../../subagentMessageStore';
 import type { SubagentRunStore } from '../../subagentRunStore';
+import { publishWebConsoleEvent } from '../../webConsole/eventPublisher';
 import { setCoworkProxySessionId } from '../coworkOpenAICompatProxy';
 import { extractOpenClawAssistantStreamParts,extractOpenClawAssistantStreamText } from '../openclawAssistantText';
 import {
@@ -1648,7 +1650,7 @@ export function resolveOpenClawRuntimeErrorMessage(
 export type OpenClawRuntimeErrorDetailOptions = {
   /** Turn model reference ("providerId/modelId") used when gateway metadata lacks provider/model. */
   fallbackModelRef?: string;
-  /** Classifies an OpenClaw provider id back to its LobsterAI Settings entry. */
+  /** Classifies an OpenClaw provider id back to its 智码 GLM Code Settings entry. */
   resolveModelSource?: (openclawProviderId: string) => OpenClawProviderModelSource | undefined;
 };
 
@@ -2142,7 +2144,7 @@ const buildMediaReferencePromptSection = (mediaReferences?: CoworkMediaAttachmen
   if (refs.length === 0) return '';
 
   const lines = [
-    '[LobsterAI media reference mapping]',
+    '[智码 GLM Code media reference mapping]',
     'The current user request contains explicit @ media tokens. Treat these mappings as authoritative and do not guess which uploaded attachment a token means.',
     'When calling lobsterai_image_generate or lobsterai_video_generate, pass mapped file paths or URLs as tool arguments. Do not pass @ media tokens as image, images, firstFrame, lastFrame, referenceImages, media.url, video, or videos values.',
     'For lobsterai_image_generate, prefer image with the mapped path for one referenced image and images for multiple referenced images.',
@@ -2157,7 +2159,7 @@ const buildMediaReferencePromptSection = (mediaReferences?: CoworkMediaAttachmen
     const locations = [
       ref.localPath ? `localPath "${sanitizeMediaReferenceText(ref.localPath)}"` : '',
       ref.remoteUrl ? `remoteUrl "${sanitizeMediaReferenceText(ref.remoteUrl)}"` : '',
-      !ref.localPath && !ref.remoteUrl && ref.dataUrl ? 'dataUrl fallback available through LobsterAI host' : '',
+      !ref.localPath && !ref.remoteUrl && ref.dataUrl ? 'dataUrl fallback available through 智码 GLM Code host' : '',
     ].filter(Boolean);
     const locationText = locations.length > 0 ? `, ${locations.join(', ')}` : '';
     lines.push(`- ${ref.token}: ${mediaType} attachment #${ref.index}, file "${sanitizeMediaReferenceText(ref.fileName)}", MIME ${sanitizeMediaReferenceText(ref.mimeType)}${locationText}.`);
@@ -2383,7 +2385,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Server-side agent timeout in seconds (mirrors agents.defaults.timeoutSeconds in openclaw config).
    * Used to set a client-side fallback timer that fires slightly after the server timeout,
-   * so LobsterAI can recover even when the gateway fails to deliver the abort event.
+   * so 智码 GLM Code can recover even when the gateway fails to deliver the abort event.
    */
   agentTimeoutSeconds = OPENCLAW_AGENT_TIMEOUT_SECONDS;
   private static readonly CLIENT_TIMEOUT_GRACE_MS = 30_000;
@@ -3532,6 +3534,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     if (normalizedSessionIds.length === 0) return;
 
     const payload: CoworkSessionsChangedPayload = { sessionIds: normalizedSessionIds };
+    publishWebConsoleEvent(CoworkIpcChannel.SessionsChanged, payload);
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
         win.webContents.send(CoworkIpcChannel.SessionsChanged, payload);
@@ -3546,6 +3549,10 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   private notifySessionModelOverrideChanged(sessionId: string, modelOverride: string): void {
+    publishWebConsoleEvent(CoworkIpcChannel.SessionModelOverrideChanged, {
+      sessionId,
+      modelOverride,
+    });
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
         win.webContents.send(CoworkIpcChannel.SessionModelOverrideChanged, {
@@ -3954,7 +3961,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
    * Ensure the gateway WebSocket client is connected.
    * Called when IM channels (e.g. Telegram) are enabled in OpenClaw mode
    * so that channel-originated events can be received without waiting
-   * for a LobsterAI-initiated session.
+   * for a 智码 GLM Code-initiated session.
    */
   async connectGatewayIfNeeded(): Promise<void> {
     this.gatewayReconnectSuppressed = false;
@@ -4187,6 +4194,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       confirmationMode: options.confirmationMode,
       imageAttachments: options.imageAttachments,
       agentId: options.agentId,
+      thinkingLevel: options.thinkingLevel,
       mediaSelection: options.mediaSelection,
       workflowKind: options.workflowKind,
       mediaReferences: options.mediaReferences,
@@ -4592,7 +4600,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         clientSteerId,
         reason,
         error: reason === CoworkSteerRejectReason.RuntimeUnsupported
-          ? 'The current OpenClaw runtime does not expose same-turn steering yet. Rebuild the pinned runtime with LobsterAI patches.'
+          ? 'The current OpenClaw runtime does not expose same-turn steering yet. Rebuild the pinned runtime with 智码 GLM Code patches.'
           : message,
       };
     }
@@ -4877,8 +4885,9 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     sessionKey: string;
     model: string;
     source: SessionModelPatchSource;
+    thinkingLevel?: CoworkStartOptions['thinkingLevel'];
   }): Promise<void> {
-    const { sessionId, sessionKey, model, source } = options;
+    const { sessionId, sessionKey, model, source, thinkingLevel } = options;
     if (!model) {
       this.sessionModelPatchStateBySession.delete(sessionId);
       return;
@@ -4933,6 +4942,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
           sessionKey,
           patch: {
             model,
+            ...(thinkingLevel ? { thinkingLevel } : {}),
             ...(isManagedSessionKey(sessionKey)
               ? { reasoningLevel: OpenClawSessionReasoningLevel.Stream }
               : {}),
@@ -5023,6 +5033,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       confirmationMode?: 'modal' | 'text';
       imageAttachments?: CoworkImageAttachment[];
       agentId?: string;
+      thinkingLevel?: CoworkStartOptions['thinkingLevel'];
       mediaSelection?: CoworkMediaSelection;
       workflowKind?: CoworkStartOptions['workflowKind'];
       mediaReferences?: CoworkMediaAttachmentRef[];
@@ -5165,6 +5176,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         source: session.modelOverride
           ? SessionModelPatchSource.SessionOverride
           : SessionModelPatchSource.AgentModel,
+        thinkingLevel: options.thinkingLevel,
       });
       if (this.cancelTurnStartupIfStopped(sessionId, 'session model sync finished')) {
         return;
@@ -5218,7 +5230,10 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       }
     }
 
-    const systemPromptText = options.systemPrompt ?? session.systemPrompt ?? '';
+    const systemPromptText = prependCodingOptimizationSystemPrompt(
+      options.systemPrompt ?? session.systemPrompt,
+      session.codingOptimized !== false,
+    ) ?? '';
     const hasMediaSkillActive = /\bseedream\b|\bseedance\b/i.test(systemPromptText);
     const planModeExecutionApproved = containsPlanModePrompt(systemPromptText)
       && isPlanImplementationApproval(effectivePrompt)
@@ -5523,9 +5538,9 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
   private buildSystemPromptPrefix(systemPrompt: string): string {
     return [
-      '[LobsterAI system instructions]',
+      '[智码 GLM Code system instructions]',
       'Apply the instructions below as the highest-priority guidance for this session.',
-      'If earlier LobsterAI system instructions exist, replace them with this version.',
+      'If earlier 智码 GLM Code system instructions exist, replace them with this version.',
       systemPrompt,
     ].join('\n');
   }
@@ -5570,7 +5585,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
 
     const sections = [
-      '[Context bridge from previous LobsterAI conversation]',
+      '[Context bridge from previous 智码 GLM Code conversation]',
       'Use this prior context for continuity. Focus your final answer on the current request.',
     ];
 
@@ -5682,7 +5697,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const client = new GatewayClient({
       url: connection.url,
       token: connection.token,
-      clientDisplayName: 'LobsterAI',
+      clientDisplayName: '智码 GLM Code',
       clientVersion: app.getVersion(),
       mode: 'backend',
       caps: [OPENCLAW_GATEWAY_TOOL_EVENTS_CAP],
@@ -6253,7 +6268,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     return this.normalizeModelRef(rawCurrentModel);
   }
 
-  /** Builds the persisted error detail, annotated with the failing model's LobsterAI source. */
+  /** Builds the persisted error detail, annotated with the failing model's 智码 GLM Code source. */
   private buildTurnErrorDetail(
     sessionId: string,
     turn: ActiveTurn | undefined,
@@ -10832,7 +10847,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Sync user messages from gateway chat.history that haven't been added to the local store yet.
    * Used for channel-originated sessions (e.g. Telegram) where user messages arrive via the
-   * gateway rather than the LobsterAI UI.
+   * gateway rather than the 智码 GLM Code UI.
    *
    * Called at the start of a new turn (via prefetchChannelUserMessages) so that user messages
    * appear before the assistant's streaming response. Both chat and agent events are buffered

@@ -35,7 +35,7 @@ const ERROR_RULES: Array<[RegExp, string]> = [
   [/无权访问|没有权限|access denied|access.*forbidden|forbidden|permission denied|\b403\b|auth[_ ]scope/i, CoworkErrorI18nKey.ModelAccessDenied],
   // Auth: Anthropic, DeepSeek, OpenAI, Gemini, HTTP 401
   [new RegExp(`authentication[_ ](error|fails?)|${API_KEY_PATTERN}.*(invalid|expired|deleted|inactive|not[_ ]valid|not\\s+valid)|invalid.*${API_KEY_PATTERN}|incorrect.*${API_KEY_PATTERN}|unauthorized|PERMISSION_DENIED|\\b401\\b`, 'i'), CoworkErrorI18nKey.AuthInvalid],
-  // LobsterAI plan/free quota. Must precede generic 402/billing handling.
+  // 智码 GLM Code plan/free quota. Must precede generic 402/billing handling.
   [LOBSTERAI_QUOTA_EXHAUSTED_PATTERN, CoworkErrorI18nKey.QuotaExhausted],
   // Rate limit: HTTP 429, Anthropic/DeepSeek overloaded, Gemini RESOURCE_EXHAUSTED
   // (must precede billing so "RESOURCE_EXHAUSTED: quota exceeded" maps to rate-limit)

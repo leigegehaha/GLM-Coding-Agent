@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-Computer Use MVP 阶段为了快速验证能力，LobsterAI 直接内置并启用了 `computer-use` skill，并在 OpenClaw 配置同步时自动注入对应 MCP server。这个方式能快速跑通本地桌面控制能力，但存在几个问题：
+Computer Use MVP 阶段为了快速验证能力，智码 GLM Code 直接内置并启用了 `computer-use` skill，并在 OpenClaw 配置同步时自动注入对应 MCP server。这个方式能快速跑通本地桌面控制能力，但存在几个问题：
 
 1. 用户没有明确的启用/关闭入口，无法通过产品 UI 管理 Computer Use。
 2. `computer-use` skill 如果默认出现在 `SKILLs/` 目录下，会被 OpenClaw 的 skill 发现逻辑扫描到，导致未安装状态仍可能被模型感知。
@@ -24,7 +24,7 @@ Computer Use MVP 阶段为了快速验证能力，LobsterAI 直接内置并启�
 
 ### 1.3 非目标
 
-- 不把内部上传接口或临时转换接口写入 LobsterAI 代码或文档。
+- 不把内部上传接口或临时转换接口写入 智码 GLM Code 代码或文档。
 - 不把 Computer Use 实现为远端市场下发的普通 kit；它仍由客户端内置 catalog entry。
 - 不在本次设计中改造通用 MCP 市场安装能力；Computer Use 的 MCP 注入走内置逻辑。
 - 不改变 Kit 在对话中的 capability reference 展示设计。
@@ -33,32 +33,32 @@ Computer Use MVP 阶段为了快速验证能力，LobsterAI 直接内置并启�
 
 ### 场景 1: 默认未安装
 
-**Given** 用户首次安装或启动 LobsterAI  
-**When** OpenClaw 或 SkillManager 扫描 skill 目录  
+**Given** 用户首次安装或启动 智码 GLM Code
+**When** OpenClaw 或 SkillManager 扫描 skill 目录
 **Then** 不应发现 `computer-use` skill，Computer Use MCP server 也不应写入 OpenClaw 配置。
 
 ### 场景 2: 在 Kit 市场安装 Computer Use
 
-**Given** 用户进入专家套件市场  
-**When** 用户选择 Computer Use 并点击安装  
-**Then** LobsterAI 下载 Computer Use skill bundle，安装本地 helper runtime/exe，拷贝并启用 `computer-use` skill，写入 kit 安装记录，最后同步 OpenClaw 配置并按需重启网关。
+**Given** 用户进入专家套件市场
+**When** 用户选择 Computer Use 并点击安装
+**Then** 智码 GLM Code 下载 Computer Use skill bundle，安装本地 helper runtime/exe，拷贝并启用 `computer-use` skill，写入 kit 安装记录，最后同步 OpenClaw 配置并按需重启网关。
 
 ### 场景 3: 安装过程中避免提前重启网关
 
-**Given** OpenClaw 网关正在运行  
-**When** Computer Use 安装流程正在下载、解压、安装 exe 或拷贝 skill  
+**Given** OpenClaw 网关正在运行
+**When** Computer Use 安装流程正在下载、解压、安装 exe 或拷贝 skill
 **Then** 不应因为 skill 目录变化提前触发 `skills-changed` 配置同步；只有全部安装内容完成后，才进行一次明确的 `computer-use-kit-installed` 同步。
 
 ### 场景 4: 卸载 Computer Use
 
-**Given** 用户已安装 Computer Use kit  
-**When** 用户点击卸载  
-**Then** LobsterAI 删除用户目录中的 `computer-use` skill，清理 `skills_state`，移除 kit 安装记录，删除 Computer Use runtime/exe，最后同步 OpenClaw 配置并按需重启网关。
+**Given** 用户已安装 Computer Use kit
+**When** 用户点击卸载
+**Then** 智码 GLM Code 删除用户目录中的 `computer-use` skill，清理 `skills_state`，移除 kit 安装记录，删除 Computer Use runtime/exe，最后同步 OpenClaw 配置并按需重启网关。
 
 ### 场景 5: 安装记录残留或目录残留
 
-**Given** 早期版本或异常中断留下了 `SKILLs/computer-use` 目录  
-**When** Computer Use kit 未安装  
+**Given** 早期版本或异常中断留下了 `SKILLs/computer-use` 目录
+**When** Computer Use kit 未安装
 **Then** SkillManager 应兜底过滤该 skill，不向 UI 或 OpenClaw 暴露。
 
 ## 3. 功能需求

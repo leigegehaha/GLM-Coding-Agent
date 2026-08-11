@@ -1,10 +1,10 @@
-# LobsterAI Cowork 上下文压缩质量优化设计文档
+# 智码 GLM Code Cowork 上下文压缩质量优化设计文档
 
 ## 1. 概述
 
 ### 1.1 背景
 
-`2026-05-08-cowork-context-compaction-design.md` 已完成 LobsterAI 对 OpenClaw 上下文压缩能力的产品接入：上下文使用量展示、手动压缩、自动压缩事件、maintenance/silent 消息过滤，以及压缩 retry 期间的运行态保护。
+`2026-05-08-cowork-context-compaction-design.md` 已完成 智码 GLM Code 对 OpenClaw 上下文压缩能力的产品接入：上下文使用量展示、手动压缩、自动压缩事件、maintenance/silent 消息过滤，以及压缩 retry 期间的运行态保护。
 
 近期用户反馈：压缩后模型回复质量明显下降，感觉“大模型被搞傻了”。反馈中建议结合 RTK/插件能力，从“省 token”和“上下文维持”两个方向继续优化，后续也可考虑接入 claw3d 等更强能力。
 
@@ -28,7 +28,7 @@
 
 1. 不替用户默认指定或切换 compaction model。
 2. 在不改用户模型选择的前提下，提高压缩后任务连续性。
-3. 让 LobsterAI 保存一份可控的任务连续性上下文，而不是完全依赖 OpenClaw summary。
+3. 让 智码 GLM Code 保存一份可控的任务连续性上下文，而不是完全依赖 OpenClaw summary。
 4. 压缩后按需恢复关键原文证据，减少 summary 丢细节导致的退化。
 5. 增加诊断能力，能判断一次压缩是成功、无 checkpoint、summary 过短，还是压缩后上下文仍超限。
 6. 保持现有 OpenClaw compaction 接入和 UI 行为，避免大规模重写。
@@ -40,12 +40,12 @@
 - 不实现自定义模型能力评测或自动选择 compaction model。
 - 不把完整历史重新塞回上下文。
 - 不展示完整 compaction summary 给普通用户。
-- 不把 OpenClaw assembled context 中的 `compactionSummary` 当成 LobsterAI 可见消息。
+- 不把 OpenClaw assembled context 中的 `compactionSummary` 当成 智码 GLM Code 可见消息。
 - 不把 RTK/RAG 作为第一步强依赖；第一阶段先做 continuity capsule 和诊断。
 
 ### 1.5 行业参考
 
-`continuity capsule` 是 LobsterAI 对该能力的命名，本质属于行业内常见的 session-scoped short-term memory / context engineering 模式：
+`continuity capsule` 是 智码 GLM Code 对该能力的命名，本质属于行业内常见的 session-scoped short-term memory / context engineering 模式：
 
 - LangGraph/LangChain memory：把 thread-scoped state 作为短期记忆，并通过 checkpointer 持久化；单份持续更新的 profile/state JSON 是常见模式。
   - https://docs.langchain.com/oss/python/concepts/memory
@@ -58,7 +58,7 @@
 - MemGPT 论文：提出 virtual context management，在有限 context window 内管理热记忆和冷记忆。
   - https://arxiv.org/abs/2310.08560
 
-LobsterAI 不直接引入这些框架，而是采用它们的核心原则：用一份短小、结构化、可持久化的任务状态补足压缩摘要的缺陷。
+智码 GLM Code 不直接引入这些框架，而是采用它们的核心原则：用一份短小、结构化、可持久化的任务状态补足压缩摘要的缺陷。
 
 ## 2. 什么能做，什么不能做
 
@@ -66,7 +66,7 @@ LobsterAI 不直接引入这些框架，而是采用它们的核心原则：用�
 
 #### 不能默认指定更强的 compaction model
 
-用户的模型是自定义的，LobsterAI 不知道哪个模型更适合压缩。强行把 `agents.defaults.compaction.model` 改成某个默认模型会带来问题：
+用户的模型是自定义的，智码 GLM Code 不知道哪个模型更适合压缩。强行把 `agents.defaults.compaction.model` 改成某个默认模型会带来问题：
 
 - 用户可能没有该模型权限。
 - 用户可能使用私有 provider 或内网模型。
@@ -90,7 +90,7 @@ LobsterAI 不直接引入这些框架，而是采用它们的核心原则：用�
 
 1. 修复 context maintenance 事件转发链路，让整理上下文状态稳定展示。
 2. 在压缩完成后读取 checkpoint metadata 做诊断。
-3. 为每个 Cowork session 维护 LobsterAI 自己的 continuity capsule。
+3. 为每个 Cowork session 维护 智码 GLM Code 自己的 continuity capsule。
 4. 压缩后继续会话时，把 continuity capsule 注入为隐藏 bridge。
 5. 压缩后对 coding session 自动补充轻量 workspace state。
 6. 后续先引入 Top-K Evidence，从 session 历史和工具结果中检索相关原文片段；效果不足时再升级到 RTK/RAG。
@@ -100,30 +100,30 @@ LobsterAI 不直接引入这些框架，而是采用它们的核心原则：用�
 
 ### 场景 1: 压缩后继续 coding
 
-**Given** 用户在长 Cowork 任务中已经触发上下文压缩  
-**When** 用户继续追问“继续刚才的实现”或“把测试也补上”  
-**Then** 模型仍能知道当前任务目标、已修改文件、下一步计划和未解决问题  
+**Given** 用户在长 Cowork 任务中已经触发上下文压缩
+**When** 用户继续追问“继续刚才的实现”或“把测试也补上”
+**Then** 模型仍能知道当前任务目标、已修改文件、下一步计划和未解决问题
 **And** 不需要用户重新复述大量上下文
 
 ### 场景 2: 压缩摘要遗漏细节
 
-**Given** OpenClaw compaction summary 只保留了泛化描述  
-**When** 用户后续问题需要具体文件、错误或工具结果  
-**Then** LobsterAI 可以通过 continuity capsule 和检索结果补回关键证据  
+**Given** OpenClaw compaction summary 只保留了泛化描述
+**When** 用户后续问题需要具体文件、错误或工具结果
+**Then** 智码 GLM Code 可以通过 continuity capsule 和检索结果补回关键证据
 **And** 不把完整旧历史重新塞回上下文
 
 ### 场景 3: 压缩期间用户误判
 
-**Given** OpenClaw 正在 memory flush、auto-compaction 或 retry  
-**When** renderer 收到 context maintenance 状态  
-**Then** 输入区和消息列表稳定展示 `正在整理上下文...`  
+**Given** OpenClaw 正在 memory flush、auto-compaction 或 retry
+**When** renderer 收到 context maintenance 状态
+**Then** 输入区和消息列表稳定展示 `正在整理上下文...`
 **And** 用户不会误以为任务已结束
 
 ### 场景 4: 定位压缩质量问题
 
-**Given** 用户反馈压缩后质量下降  
-**When** 开发者查看日志或诊断状态  
-**Then** 可以看到本次压缩是否产生 checkpoint、token 是否下降、summary 是否为空或过短、reason 是 manual 还是 overflow retry  
+**Given** 用户反馈压缩后质量下降
+**When** 开发者查看日志或诊断状态
+**Then** 可以看到本次压缩是否产生 checkpoint、token 是否下降、summary 是否为空或过短、reason 是 manual 还是 overflow retry
 **And** 日志不包含完整 prompt、完整模型回复、完整 summary 或 API key
 
 ## 4. 方案分层
@@ -192,7 +192,7 @@ type ContextCompactionDiagnostic = {
 
 ### 4.2 第二阶段：Continuity Capsule
 
-第二阶段目标是“压缩后仍有任务连续性”。它不是替代 OpenClaw compaction，也不是再做一份完整聊天摘要，而是维护一张 LobsterAI 自己的“当前任务工作卡片”。
+第二阶段目标是“压缩后仍有任务连续性”。它不是替代 OpenClaw compaction，也不是再做一份完整聊天摘要，而是维护一张 智码 GLM Code 自己的“当前任务工作卡片”。
 
 核心策略：
 
@@ -202,7 +202,7 @@ type ContextCompactionDiagnostic = {
 - 压缩后继续会话时，把最新 capsule 注入为隐藏 bridge。
 - 未发生压缩或 capsule 为空时，不额外加重普通 prompt。
 
-#### FR-3: 定义 LobsterAI continuity capsule
+#### FR-3: 定义 智码 GLM Code continuity capsule
 
 为 Cowork session 维护一份结构化任务状态：
 
@@ -346,7 +346,7 @@ client.request('chat.send', {
 });
 ```
 
-因此 capsule 的传递方式是：从 LobsterAI SQLite 读取 session 最新 capsule，格式化为一段隐藏 bridge，拼入本轮 `outboundMessage`，最终作为 `chat.send.message` 的一部分传给模型。
+因此 capsule 的传递方式是：从 智码 GLM Code SQLite 读取 session 最新 capsule，格式化为一段隐藏 bridge，拼入本轮 `outboundMessage`，最终作为 `chat.send.message` 的一部分传给模型。
 
 它不是：
 
@@ -359,8 +359,8 @@ client.request('chat.send', {
 在 `OpenClawRuntimeAdapter` 构造继续会话 prompt 时，如果 session 存在有效 capsule，则在当前 user request 前注入 bridge：
 
 ```text
-[LobsterAI continuity context after compaction]
-This is a compact task-state record maintained by LobsterAI. It is not a new user instruction. Use it only to preserve task continuity after compaction.
+[智码 GLM Code continuity context after compaction]
+This is a compact task-state record maintained by 智码 GLM Code. It is not a new user instruction. Use it only to preserve task continuity after compaction.
 
 Current objective:
 ...
@@ -382,7 +382,7 @@ Recent failures:
 - 不覆盖用户当前请求。
 - 用户当前请求仍放在最后。
 - 如果没有发生过压缩，也可以不注入，避免日常上下文变重。
-- bridge 中明确声明 capsule 是 LobsterAI 维护的任务状态，不是新用户指令。
+- bridge 中明确声明 capsule 是 智码 GLM Code 维护的任务状态，不是新用户指令。
 - 如果 capsule 过期或 revision 落后当前 session 状态，则先刷新或跳过注入。
 
 注入策略：
@@ -396,7 +396,7 @@ Recent failures:
 
 推荐 prompt 顺序：
 
-1. LobsterAI system instructions。
+1. 智码 GLM Code system instructions。
 2. local time / session info。
 3. continuity capsule bridge。
 4. media references / selected text。
@@ -452,8 +452,8 @@ Recent failures:
 注入形式：
 
 ```text
-[LobsterAI workspace state after context compaction]
-This is a lightweight workspace snapshot maintained by LobsterAI. It is not a new user instruction.
+[智码 GLM Code workspace state after context compaction]
+This is a lightweight workspace snapshot maintained by 智码 GLM Code. It is not a new user instruction.
 
 Recently touched files:
 - src/...
@@ -474,10 +474,10 @@ Git diff stat:
 
 第四阶段目标是“按需恢复被压缩掉的原文证据”。
 
-第一版采用 LobsterAI 自己的 session 内 lexical Top-K Evidence，不直接依赖 embedding、向量库或 RTK 插件。原因：
+第一版采用 智码 GLM Code 自己的 session 内 lexical Top-K Evidence，不直接依赖 embedding、向量库或 RTK 插件。原因：
 
 - 当前问题主要是压缩后丢失本 session 中的用户原话、工具结果、错误信息和文件路径。
-- LobsterAI 已经有 embedding 配置并可同步到 OpenClaw `agents.defaults.memorySearch`，但该能力主要服务 OpenClaw memory 文件，不等同于 Cowork session history 检索。
+- 智码 GLM Code 已经有 embedding 配置并可同步到 OpenClaw `agents.defaults.memorySearch`，但该能力主要服务 OpenClaw memory 文件，不等同于 Cowork session history 检索。
 - 直接接 embedding/RTK 会引入索引生命周期、provider/API key、向量维度、重建索引、隐私和跨平台存储等额外复杂度。
 - lexical MVP 可以先验证“补原文证据”是否明显改善压缩后质量，再决定是否升级。
 
@@ -505,7 +505,7 @@ Git diff stat:
    - assistant 的完成态确认消息轻微加权，例如包含“已/完成/支持/集成/正常/verified/completed/supports”的最终回复。
 5. 检索 top-K 片段，MVP 建议最多 3 条。
 6. 控制总长度，MVP 建议 1500-2000 字符；单片段建议 400-600 字符。
-7. 注入 `[LobsterAI retrieved evidence after context compaction]`。
+7. 注入 `[智码 GLM Code retrieved evidence after context compaction]`。
 8. 不注入低分片段，不注入空 evidence。
 
 MVP 不使用 embedding、不使用 SQLite FTS、不接 RTK 插件。后续如果 lexical 效果不足，再升级到 SQLite FTS、OpenClaw memorySearch、embedding 或 RTK 插件。
@@ -531,7 +531,7 @@ RTK/embedding 后续升级边界：
 - OpenClaw memorySearch / memory-core 可作为长期记忆检索来源，但首版不把 Cowork session history 写入 memory 文件。
 - embedding provider 配置可复用现有设置，但必须是用户显式启用后的增强路径。
 - 第三方 memory / vector 插件只作为后续可选适配层，不作为压缩连续性 MVP 的硬依赖。
-- 所有检索结果仍必须通过 LobsterAI 的长度限制、安全声明和 prompt bridge 注入，不能作为用户新指令。
+- 所有检索结果仍必须通过 智码 GLM Code 的长度限制、安全声明和 prompt bridge 注入，不能作为用户新指令。
 
 ## 5. 与现有 OpenClaw 能力的关系
 
@@ -539,13 +539,13 @@ RTK/embedding 后续升级边界：
 
 继续使用 OpenClaw 原生 compaction，不替换它。
 
-LobsterAI 增加的 continuity capsule 是补充层：
+智码 GLM Code 增加的 continuity capsule 是补充层：
 
 - OpenClaw summary 负责压缩旧对话。
-- LobsterAI capsule 负责保留 coding 任务状态。
+- 智码 GLM Code capsule 负责保留 coding 任务状态。
 - Top-K Evidence / RAG evidence 负责按需找回原文细节。
 
-capsule bridge 通过 LobsterAI 发出的 `chat.send.message` 进入模型上下文。它不要求 OpenClaw 增加新 API，也不修改 OpenClaw 的 compaction summary 生成逻辑。
+capsule bridge 通过 智码 GLM Code 发出的 `chat.send.message` 进入模型上下文。它不要求 OpenClaw 增加新 API，也不修改 OpenClaw 的 compaction summary 生成逻辑。
 
 ### 5.2 OpenClaw checkpoint API
 
@@ -741,8 +741,8 @@ type CoworkSessionCapsuleRow = {
 ### 8.1 Capsule bridge
 
 ```text
-[LobsterAI continuity context after context compaction]
-This is a compact task-state record maintained by LobsterAI. Use it to preserve continuity after previous chat history was compressed. Prefer concrete file paths, decisions, failures, and next steps from this section over vague assumptions.
+[智码 GLM Code continuity context after context compaction]
+This is a compact task-state record maintained by 智码 GLM Code. Use it to preserve continuity after previous chat history was compressed. Prefer concrete file paths, decisions, failures, and next steps from this section over vague assumptions.
 
 Current objective:
 {currentObjective}
@@ -793,7 +793,7 @@ Open questions:
 - context maintenance 状态能从 runtime 传到 renderer。
 - 手动 compact 后有安全诊断日志。
 - 自动 compaction completed 后有安全诊断日志。
-- 压缩后继续会话时，prompt 中包含 LobsterAI continuity capsule。
+- 压缩后继续会话时，prompt 中包含 智码 GLM Code continuity capsule。
 - capsule 不作为普通消息出现在 UI 中。
 - 未发生压缩的普通会话 prompt 不额外变重。
 - 用户模型配置不被自动修改。
@@ -876,12 +876,12 @@ Open questions:
 
 ## 12. 结论
 
-本优化不应从“替用户选更强压缩模型”开始。由于 LobsterAI 支持自定义模型和 provider，默认切换 compaction model 不可靠也不合适。
+本优化不应从“替用户选更强压缩模型”开始。由于 智码 GLM Code 支持自定义模型和 provider，默认切换 compaction model 不可靠也不合适。
 
 推荐路线：
 
 1. 先补齐运行态链路和压缩诊断。
-2. 再做 LobsterAI 自己的 continuity capsule。
+2. 再做 智码 GLM Code 自己的 continuity capsule。
 3. 然后补 workspace rehydration。
 4. 最后先接 Top-K Evidence 检索，把被压缩掉的关键原文按需找回；再根据效果评估是否升级 RTK/RAG。
 

@@ -4,7 +4,7 @@
 
 ### 1.1 问题/动机
 
-应用启动时，OpenClaw gateway 进程需要 ~40s 完成初始化（主要耗时在 `authBootstrap` 33.8s）。在此期间，LobsterAI 主进程因多个异步流程并行执行，反复写入 `openclaw.json`，触发 gateway 在启动过程中做多余的 plugin reload。
+应用启动时，OpenClaw gateway 进程需要 ~40s 完成初始化（主要耗时在 `authBootstrap` 33.8s）。在此期间，智码 GLM Code 主进程因多个异步流程并行执行，反复写入 `openclaw.json`，触发 gateway 在启动过程中做多余的 plugin reload。
 
 观察到的现象：
 - 启动阶段插件 `register()` 被调用 4 次（正常应为 1-2 次）
@@ -16,7 +16,7 @@
 
 **问题 1：media-generation 插件配置动态变化**
 
-`lobster-media-generation` 插件的 `enabled` 字段依赖 `canUseMediaGeneration`（订阅状态），导致 entitlement 变化时插件配置发生变更，触发 gateway restart。而实际权限校验在 LobsterAI 回调侧已有兜底（`resolveMediaGenerationGate`），插件本身无需动态开关。
+`lobster-media-generation` 插件的 `enabled` 字段依赖 `canUseMediaGeneration`（订阅状态），导致 entitlement 变化时插件配置发生变更，触发 gateway restart。而实际权限校验在 智码 GLM Code 回调侧已有兜底（`resolveMediaGenerationGate`），插件本身无需动态开关。
 
 **问题 2：启动阶段缓存冷启动导致多余 sync**
 
@@ -56,7 +56,7 @@
 | openclaw/openclaw#75298 | Webhook plugin re-registers repeatedly whenever event loop saturates |
 | openclaw/openclaw#80131 | per-request auth and tool bundling dominate gateway TTFT |
 
-OpenClaw 侧 `plugins.*` 路径一律触发 gateway restart（`config-reload-plan.ts`），粒度过粗。但这是上游问题，本次优化从 LobsterAI 侧减少不必要的配置变更。
+OpenClaw 侧 `plugins.*` 路径一律触发 gateway restart（`config-reload-plan.ts`），粒度过粗。但这是上游问题，本次优化从 智码 GLM Code 侧减少不必要的配置变更。
 
 ### 2.2 现有 syncOpenClawConfig 调用点（启动相关）
 
@@ -72,7 +72,7 @@ OpenClaw 侧 `plugins.*` 路径一律触发 gateway restart（`config-reload-pla
 
 将 `lobster-media-generation` 的 `enabled` 始终设为 `true`，plugin config 的写入不再依赖 `canUseMediaGeneration` 条件。
 
-权限校验由 LobsterAI 回调端兜底：
+权限校验由 智码 GLM Code 回调端兜底：
 - `mcpBridgeServer.onMediaGeneration` — handler 未就绪时返回 error
 - `resolveMediaGenerationGate()` — tool/action 级别拦截
 - UI 层 — 未付费用户无法选择 media model

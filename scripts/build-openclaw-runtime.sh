@@ -89,7 +89,7 @@ node -e 'const [a,b,c]=process.versions.node.split(".").map(Number);const ok=a>2
 # ---------------------------------------------------------------------------
 # Build cache: skip if the runtime was already built for the pinned version.
 # On Windows (Git Bash / MSYS2), paths like $ELECTRON_ROOT are Unix-style
-# (e.g. /d/github/LobsterAI) which Node.js cannot resolve via require().
+# (e.g. /d/github/智码 GLM Code) which Node.js cannot resolve via require().
 # Use "node -" with process.argv so MSYS2 auto-converts the paths.
 # ---------------------------------------------------------------------------
 DESIRED_VERSION=""
@@ -147,7 +147,7 @@ corepack enable >/dev/null 2>&1 || true
 pnpm install --frozen-lockfile
 pnpm build
 # Skip release:check — it validates the openclaw npm package for publishing and
-# is not relevant for LobsterAI embedded runtime builds.  On Windows it also
+# is not relevant for 智码 GLM Code embedded runtime builds.  On Windows it also
 # fails due to spawnSync/execFileSync not finding npm without shell:true, and
 # npm pack producing truncated tarballs.
 echo "[openclaw-runtime] Skipping release:check (not needed for embedded builds)"

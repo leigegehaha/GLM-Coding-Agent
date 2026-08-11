@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在设置中开启「跳过未执行任务」(`skipMissedJobs`) 后，每次启动 LobsterAI，仍然会出现：
+用户在设置中开启「跳过未执行任务」(`skipMissedJobs`) 后，每次启动 智码 GLM Code，仍然会出现：
 
 1. 所有在应用关闭期间「错过时间点」的定时任务，在 gateway 就绪后约 5 秒被**同一时刻全量补跑**；
 2. 补跑的资讯类任务（如「科技早报」）调用 OpenClaw `browser` 工具搜索网页，拉起一个可见的 headful Chrome 窗口——用户直观感受是「应用一启动浏览器就自己弹出来」；
@@ -14,7 +14,7 @@
 2026-07-12 实测证据链（macOS，打包版 2026.7.10，OpenClaw v2026.6.1）：
 
 ```
-21:09:40  LobsterAI started
+21:09:40  智码 GLM Code started
 21:09:48  [gateway] http server listening
 21:09:53  三个过期任务同一秒 action:started
           - 科技早报        原定 15:07（agentTurn，delivery→微信群）
@@ -30,7 +30,7 @@
 
 ### 1.2 现状链路
 
-`skipMissedJobs` 是 LobsterAI 通过版本化 patch 给 OpenClaw 增加的能力，完整链路：
+`skipMissedJobs` 是 智码 GLM Code 通过版本化 patch 给 OpenClaw 增加的能力，完整链路：
 
 1. 渲染层设置 →`cowork_config.skipMissedJobs`（`src/main/coworkStore.ts`，默认 `true`）。
 2. `src/main/libs/openclawConfigSync.ts:1922` 写出 `cron.skipMissedJobs` 到 `openclaw.json`。
@@ -81,13 +81,13 @@
 ### 场景 A: 开启开关后启动应用不补跑
 
 **Given** 「跳过未执行任务」开启，存在每天 15:07 执行的定时任务，应用整个下午处于关闭状态
-**When** 用户 21:09 启动 LobsterAI
+**When** 用户 21:09 启动 智码 GLM Code
 **Then** 该任务不执行（不弹浏览器、不消耗 token、无 IM 推送），其下次执行时间被推进到明天 15:07；日志记录跳过明细。
 
 ### 场景 B: 关闭开关时保持现有补跑行为
 
 **Given** 「跳过未执行任务」关闭，存在多个错过的任务
-**When** 用户启动 LobsterAI
+**When** 用户启动 智码 GLM Code
 **Then** 走 OpenClaw 原生 startup catch-up：最多立即补 `maxMissedJobsPerRestart` 个，agentTurn 任务延迟约 2 分钟，行为与修复前的关闭态完全一致。
 
 ### 场景 C: 运行中正常到点执行不受影响
@@ -139,12 +139,12 @@
 
 ### FR-4: 跳过行为必须可观测
 
-skip 分支执行时以 info 级日志输出：跳过的 job 数量、每个 job 的 `id`/`name`、原 `nextRunAtMs`、推进后的 `nextRunAtMs`。cron event 流如可行则同步发出等价事件，便于 LobsterAI 端未来在任务运行历史中展示「已跳过 N 次」。
+skip 分支执行时以 info 级日志输出：跳过的 job 数量、每个 job 的 `id`/`name`、原 `nextRunAtMs`、推进后的 `nextRunAtMs`。cron event 流如可行则同步发出等价事件，便于 智码 GLM Code 端未来在任务运行历史中展示「已跳过 N 次」。
 
 ### FR-5: 行为级测试兜底
 
 - patch 内为 OpenClaw `src/cron/service/timer.regression.test.ts`（或新建同级测试文件）增加行为用例：`skipMissedJobs=true` + 过期 job → `start()` + 首次 tick → 任务未执行且 `nextRunAtMs` 已推进到未来；`skipMissedJobs=false` → 原 catch-up 行为。
-- LobsterAI 侧 `cronSkipMissedJobs.test.ts` 的文本断言同步更新，至少覆盖「skip 分支包含快进调用」的关键代码行，防止未来 rebase patch 时把快进逻辑丢掉。
+- 智码 GLM Code 侧 `cronSkipMissedJobs.test.ts` 的文本断言同步更新，至少覆盖「skip 分支包含快进调用」的关键代码行，防止未来 rebase patch 时把快进逻辑丢掉。
 
 ### FR-6: 一次性任务不受本开关影响
 
@@ -206,7 +206,7 @@ if (cronConfig.skipMissedJobs === true) {
 
 - **在 `isRunnableJob`/`onTimer` 加迟到窗口**：会误伤运行中长任务后的正常迟到执行（场景 D），且与上游语义冲突，rebase 成本高。
 - **修改 `recomputeNextRunsForMaintenance` 使其推进未执行 slot**：直接破坏上游 #13992/#16156 修复的「任务被静默跳过」问题，影响面远超本开关。
-- **LobsterAI 侧启动后经 cron API 批量禁用/启用或改写任务**：与 gateway 首次 tick 存在竞态（本次实测 tick 在 listening 后 ~5 秒就收割了任务），且把 OpenClaw 内部调度语义泄漏到产品层。
+- **智码 GLM Code 侧启动后经 cron API 批量禁用/启用或改写任务**：与 gateway 首次 tick 存在竞态（本次实测 tick 在 listening 后 ~5 秒就收割了任务），且把 OpenClaw 内部调度语义泄漏到产品层。
 - **只把浏览器改成 headless 或在任务 prompt 里禁用 browser 工具**：掩盖症状，token 浪费与错误补跑依旧。
 - **只加日志**：不改变行为。
 
@@ -244,15 +244,15 @@ if (cronConfig.skipMissedJobs === true) {
 3. 应用保持运行，任务到点正常执行、正常推送（场景 C 回归）。
 4. 长任务占用调度后的正常迟到执行不受影响（场景 D 回归）。
 5. 开关开启时，错过的 `at` 一次性任务仍被补跑（FR-6），周期任务被跳过——两者在同一次启动中行为可同时验证。
-6. 端到端复现用户原始场景：白天关闭应用错过多个任务，晚间启动 LobsterAI，浏览器不弹出、无 token 消耗、无 stale-delivery 丢弃日志。
-7. OpenClaw 侧新增行为测试通过；LobsterAI `npm test` 通过；`npm run compile:electron` 通过（若触及主进程文件）。
+6. 端到端复现用户原始场景：白天关闭应用错过多个任务，晚间启动 智码 GLM Code，浏览器不弹出、无 token 消耗、无 stale-delivery 丢弃日志。
+7. OpenClaw 侧新增行为测试通过；智码 GLM Code `npm test` 通过；`npm run compile:electron` 通过（若触及主进程文件）。
 
 ## 8. 验证计划
 
 ### 单元/回归测试
 
 ```bash
-# LobsterAI 侧 patch 文本断言
+# 智码 GLM Code 侧 patch 文本断言
 npm test -- cronSkipMissedJobs
 
 # OpenClaw 侧（patch 应用后的源码树内）
@@ -273,7 +273,7 @@ npm test -- cronSkipMissedJobs
 
 - 正例指纹：`cron: skipping missed jobs after restart` + 每任务 `old nextRunAtMs → new nextRunAtMs`。
   ⚠️ 实测（2026-07-13）：该日志经 `getChildLogger({ module: "cron" })` 走 OpenClaw 子系统日志管道，
-  **不进入 gateway stdout / LobsterAI main log**（上游自己的 catch-up 日志同样如此，属 logger 管道
+  **不进入 gateway stdout / 智码 GLM Code main log**（上游自己的 catch-up 日志同样如此，属 logger 管道
   全局行为）。以任务状态为准做验收：任务列表的下次执行时间被推进到未来、`cron_run_logs` 无启动窗口
   内的新执行记录、`state_json.lastRunAtMs` 保持旧值。
 - 反例指纹（修复前）：gateway listening 后数秒内多个 job 同一秒 `action:started`、`skipping stale delivery ... late`。

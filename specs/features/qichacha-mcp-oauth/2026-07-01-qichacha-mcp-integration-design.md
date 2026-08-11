@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-企查查提供多个按业务领域拆分的 MCP server。LobsterAI 需要让用户通过一次账号授权完成配置，同时在管理界面将这些 server 作为一个产品管理，而不是展示为多个互不相关的 MCP。
+企查查提供多个按业务领域拆分的 MCP server。智码 GLM Code 需要让用户通过一次账号授权完成配置，同时在管理界面将这些 server 作为一个产品管理，而不是展示为多个互不相关的 MCP。
 
 本方案采用登录辅助获取 API Key 的方式，不维护 OAuth access token、refresh token 或登录会话。底层仍保留独立 MCP server 记录，以兼容现有存储和 OpenClaw 配置格式。
 
@@ -10,26 +10,26 @@
 
 ### 场景 1：授权企查查
 
-**Given** 用户尚未配置企查查 MCP  
-**When** 用户在 MCP 市场点击“登录授权”并完成企查查登录  
+**Given** 用户尚未配置企查查 MCP
+**When** 用户在 MCP 市场点击“登录授权”并完成企查查登录
 **Then** 应用自动获取 API Key，并创建企查查的全部 MCP server 配置。
 
 ### 场景 2：查看授权状态
 
-**Given** 企查查 MCP 已配置  
-**When** 用户查看 MCP 市场  
+**Given** 企查查 MCP 已配置
+**When** 用户查看 MCP 市场
 **Then** 企查查卡片显示“已授权”，不在市场提供卸载操作。
 
 ### 场景 3：管理企查查服务
 
-**Given** 企查查包含多个已安装 server  
-**When** 用户进入已安装页  
+**Given** 企查查包含多个已安装 server
+**When** 用户进入已安装页
 **Then** 页面只显示一张企查查卡片，并支持统一启停和卸载。
 
 ### 场景 4：兼容多 server 产品
 
-**Given** 其他 registry 条目声明为 bundle，或历史数据中多条 server 共享同一 `registryId`  
-**When** 用户进入已安装页  
+**Given** 其他 registry 条目声明为 bundle，或历史数据中多条 server 共享同一 `registryId`
+**When** 用户进入已安装页
 **Then** 这些 server 复用相同的聚合和批量管理逻辑。
 
 ## 3. 功能需求

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import https from 'https';
 
 import { McpIpcChannel } from '../../../shared/mcp/constants';
@@ -344,9 +344,7 @@ export function registerMcpHandlers(deps: McpHandlerDeps): void {
   });
 
   ipcMain.handle(McpIpcChannel.FetchMarketplace, async () => {
-    const url = app.isPackaged
-      ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/mcp-marketplace'
-      : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/mcp-marketplace';
+    const url = 'https://glmcoding.cn/api/desktop/mcp-marketplace';
     try {
       const data = await fetchText(url);
       const json = JSON.parse(data);

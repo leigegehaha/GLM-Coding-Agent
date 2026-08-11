@@ -1,3 +1,5 @@
+import type { SkillMarketplaceItem } from '../../shared/skills/constants';
+
 // Skill type definition
 export interface Skill {
   id: string;
@@ -27,16 +29,4 @@ export interface LocalSkillInfo {
   version: string;
 }
 
-export interface MarketplaceSkill {
-  id: string;
-  name: string;
-  description: string | LocalizedText;
-  tags?: string[];
-  url: string;              // Download URL (.zip)
-  version: string;
-  source: {
-    from: string;           // e.g. "Github"
-    url: string;            // Source repo URL
-    author?: string;        // Author name
-  };
-}
+export type MarketplaceSkill = SkillMarketplaceItem;

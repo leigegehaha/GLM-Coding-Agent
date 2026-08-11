@@ -4,12 +4,13 @@ import {
   CheckCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
 import type { SkillSecurityReport as SkillSecurityReportData } from '../../../main/libs/skillSecurity/skillSecurityTypes';
 import { ENABLE_OPENCLAW_SKILL_SYNC } from '../../../shared/featureFlags';
+import { SkillMarketplaceSource } from '../../../shared/skills/constants';
 import { i18nService } from '../../services/i18n';
 import { compareVersions,resolveLocalizedText, skillService } from '../../services/skill';
 import { RootState } from '../../store';
@@ -37,6 +38,10 @@ type ImportSourceType = 'github' | 'clawhub';
 type DirectImportSource = 'zip' | 'folder' | 'remote';
 
 const importSourceTypes: ImportSourceType[] = ['github', 'clawhub'];
+
+const isClawHubMarketplaceSkill = (skill: MarketplaceSkill): boolean => (
+  skill.tags?.includes(SkillMarketplaceSource.ClawHub) === true
+);
 
 const importTabConfig: Record<ImportSourceType, {
   tabLabelKey: string;
@@ -82,6 +87,11 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
   const [marketTags, setMarketTags] = useState<MarketTag[]>([]);
   const [activeMarketTag, setActiveMarketTag] = useState('all');
   const [isLoadingMarketplace, setIsLoadingMarketplace] = useState(false);
+  const [isLoadingMoreMarketplace, setIsLoadingMoreMarketplace] = useState(false);
+  const [isSearchingMarketplace, setIsSearchingMarketplace] = useState(false);
+  const [clawHubNextCursor, setClawHubNextCursor] = useState<string | null>(null);
+  const [clawHubSearchResults, setClawHubSearchResults] = useState<MarketplaceSkill[] | null>(null);
+  const [marketplaceRefreshToken, setMarketplaceRefreshToken] = useState(0);
   const [installingSkillId, setInstallingSkillId] = useState<string | null>(null);
   const [selectedMarketplaceSkill, setSelectedMarketplaceSkill] = useState<MarketplaceSkill | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
@@ -142,10 +152,42 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
       if (!isActive) return;
       setMarketplaceSkills(data.skills);
       setMarketTags(data.tags);
+      setClawHubNextCursor(data.clawHubNextCursor);
       setIsLoadingMarketplace(false);
     });
     return () => { isActive = false; };
   }, []);
+
+  useEffect(() => {
+    const query = skillSearchQuery.trim().replace(/\s+/g, ' ');
+    const shouldSearchClawHub = activeTab === 'marketplace'
+      && query.length > 0
+      && (activeMarketTag === 'all' || activeMarketTag === SkillMarketplaceSource.ClawHub);
+    if (!shouldSearchClawHub) {
+      setClawHubSearchResults(null);
+      setIsSearchingMarketplace(false);
+      return undefined;
+    }
+
+    let isActive = true;
+    setClawHubSearchResults(null);
+    const timer = window.setTimeout(async () => {
+      setIsSearchingMarketplace(true);
+      try {
+        const page = await skillService.searchClawHubSkills(query);
+        if (isActive) setClawHubSearchResults(page.skills);
+      } catch (error) {
+        console.warn('[SkillsManager] Failed to search ClawHub:', error);
+        if (isActive) setSkillActionError(i18nService.t('skillMarketplaceSearchFailed'));
+      } finally {
+        if (isActive) setIsSearchingMarketplace(false);
+      }
+    }, 350);
+    return () => {
+      isActive = false;
+      window.clearTimeout(timer);
+    };
+  }, [activeMarketTag, activeTab, marketplaceRefreshToken, skillSearchQuery]);
 
   useEffect(() => {
     if (!ENABLE_OPENCLAW_SKILL_SYNC) return;
@@ -231,7 +273,19 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
   const filteredMarketplaceSkills = useMemo(() => {
     const query = skillSearchQuery.trim().replace(/\s+/g, ' ').toLowerCase();
     let results = marketplaceSkills;
-    if (query) {
+    const usesRemoteClawHubSearch = query
+      && (activeMarketTag === 'all' || activeMarketTag === SkillMarketplaceSource.ClawHub);
+    if (usesRemoteClawHubSearch) {
+      const matchingPrimarySkills = marketplaceSkills
+        .filter(skill => !isClawHubMarketplaceSkill(skill))
+        .filter(skill => (
+          skill.name.toLowerCase().includes(query)
+          || resolveLocalizedText(skill.description).toLowerCase().includes(query)
+        ));
+      results = activeMarketTag === SkillMarketplaceSource.ClawHub
+        ? clawHubSearchResults ?? []
+        : [...matchingPrimarySkills, ...(clawHubSearchResults ?? [])];
+    } else if (query) {
       results = results.filter(skill => {
         return skill.name.toLowerCase().includes(query)
           || resolveLocalizedText(skill.description).toLowerCase().includes(query);
@@ -241,7 +295,7 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
       results = results.filter(skill => skill.tags?.includes(activeMarketTag));
     }
     return results;
-  }, [marketplaceSkills, skillSearchQuery, activeMarketTag]);
+  }, [marketplaceSkills, clawHubSearchResults, skillSearchQuery, activeMarketTag]);
 
   useEffect(() => {
     const query = skillSearchQuery.trim();
@@ -819,6 +873,43 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
     }
   };
 
+  const handleRefreshMarketplace = useCallback(async () => {
+    setIsLoadingMarketplace(true);
+    setSkillActionError('');
+    setClawHubSearchResults(null);
+    try {
+      const data = await skillService.fetchMarketplaceSkills({ forceRefresh: true });
+      setMarketplaceSkills(data.skills);
+      setMarketTags(data.tags);
+      setClawHubNextCursor(data.clawHubNextCursor);
+      setMarketplaceRefreshToken(value => value + 1);
+    } catch (error) {
+      console.warn('[SkillsManager] Failed to refresh marketplace:', error);
+      setSkillActionError(i18nService.t('skillMarketplaceRefreshFailed'));
+    } finally {
+      setIsLoadingMarketplace(false);
+    }
+  }, []);
+
+  const handleLoadMoreMarketplace = useCallback(async () => {
+    if (isLoadingMoreMarketplace || !clawHubNextCursor) return;
+    setIsLoadingMoreMarketplace(true);
+    setSkillActionError('');
+    try {
+      const page = await skillService.loadMoreClawHubSkills();
+      setMarketplaceSkills(previous => [
+        ...previous.filter(skill => !isClawHubMarketplaceSkill(skill)),
+        ...page.skills,
+      ]);
+      setClawHubNextCursor(page.nextCursor);
+    } catch (error) {
+      console.warn('[SkillsManager] Failed to load more ClawHub skills:', error);
+      setSkillActionError(i18nService.t('skillMarketplaceLoadMoreFailed'));
+    } finally {
+      setIsLoadingMoreMarketplace(false);
+    }
+  }, [clawHubNextCursor, isLoadingMoreMarketplace]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -848,8 +939,11 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
             placeholder={i18nService.t('searchSkills')}
             value={skillSearchQuery}
             onChange={(e) => setSkillSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-surface text-foreground placeholder-secondary border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-9 pr-14 py-2 text-sm rounded-xl bg-surface text-foreground placeholder-secondary border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           />
+          {activeTab === 'marketplace' && isSearchingMarketplace && (
+            <ArrowPathIcon className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-secondary" />
+          )}
           {skillSearchQuery && (
             <button
               type="button"
@@ -871,6 +965,18 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
             </button>
           )}
         </div>
+        {activeTab === 'marketplace' && (
+          <button
+            type="button"
+            onClick={() => void handleRefreshMarketplace()}
+            disabled={isLoadingMarketplace}
+            title={i18nService.t('refresh')}
+            aria-label={i18nService.t('refresh')}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-secondary transition-colors hover:bg-surface-raised hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${isLoadingMarketplace ? 'animate-spin' : ''}`} />
+          </button>
+        )}
         <div className="relative">
           <button
             ref={addSkillButtonRef}
@@ -1232,7 +1338,7 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
                   };
                   return (
               <div
-                key={skill.id}
+                key={`${skill.source?.from ?? 'marketplace'}:${skill.source?.url ?? skill.id}`}
                 role="button"
                 tabIndex={0}
                 className="flex flex-col cursor-pointer rounded-xl border border-border bg-surface p-3 shadow-subtle transition-all hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -1331,6 +1437,24 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat 
                 })}
           </div>
             )}
+            {!skillSearchQuery.trim()
+              && clawHubNextCursor
+              && (activeMarketTag === 'all' || activeMarketTag === SkillMarketplaceSource.ClawHub)
+              && (
+                <div className="flex justify-center pt-4">
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadMoreMarketplace()}
+                    disabled={isLoadingMoreMarketplace}
+                    className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ArrowPathIcon className={`h-4 w-4 ${isLoadingMoreMarketplace ? 'animate-spin' : ''}`} />
+                    {i18nService.t(
+                      isLoadingMoreMarketplace ? 'skillMarketplaceLoadingMore' : 'skillMarketplaceLoadMore',
+                    )}
+                  </button>
+                </div>
+              )}
           </>
         )
       )}

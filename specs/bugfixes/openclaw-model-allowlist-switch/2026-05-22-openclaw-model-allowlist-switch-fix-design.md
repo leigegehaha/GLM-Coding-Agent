@@ -20,13 +20,13 @@
 - `lobsterai-server/glm-5.1-YoudaoInner`
 - `deepseek/deepseek-v4-pro`
 
-这些模型在 LobsterAI 的可用模型列表和 OpenClaw `models.providers` catalog 中都存在，但在已有会话执行 `sessions.patch` 时被 OpenClaw gateway 拒绝。
+这些模型在 智码 GLM Code 的可用模型列表和 OpenClaw `models.providers` catalog 中都存在，但在已有会话执行 `sessions.patch` 时被 OpenClaw gateway 拒绝。
 
 ### 1.2 根因
 
-根因是 LobsterAI 生成 OpenClaw 配置时，把 `agents.defaults.models` 当成“每模型参数配置表”使用，但 OpenClaw 同时把这个字段解释为“允许切换的模型 allowlist”。
+根因是 智码 GLM Code 生成 OpenClaw 配置时，把 `agents.defaults.models` 当成“每模型参数配置表”使用，但 OpenClaw 同时把这个字段解释为“允许切换的模型 allowlist”。
 
-当前 LobsterAI 的配置生成逻辑：
+当前 智码 GLM Code 的配置生成逻辑：
 
 1. `openclawConfigSync.ts` 遍历本地 provider 模型，只把带 `customParams` 的模型写入 `perModelCustomParams`。
 2. 当 `perModelCustomParams` 非空时，把它写入 `agents.defaults.models`。
@@ -48,7 +48,7 @@ OpenClaw 的模型校验逻辑：
 [ClaudeSettings] resolved raw API config ... "MiniMax-M2.7-YoudaoInner" ...
 ```
 
-会话发送前或底部模型切换时，LobsterAI 正确把 UI 模型转换为 OpenClaw ref：
+会话发送前或底部模型切换时，智码 GLM Code 正确把 UI 模型转换为 OpenClaw ref：
 
 ```text
 model=lobsterai-server/MiniMax-M2.7-YoudaoInner source=sessionOverride
@@ -75,35 +75,35 @@ sessions.patch ... errorCode=INVALID_REQUEST errorMessage=model not allowed: lob
 
 ### 场景 A：有自定义参数的电脑切换普通模型
 
-**Given** 用户在某个模型上配置过自定义参数  
-**And** OpenClaw 配置中生成了非空 `agents.defaults.models`  
-**When** 用户在已完成首轮回复的任务会话底部切换到未写入 `agents.defaults.models` 的模型  
+**Given** 用户在某个模型上配置过自定义参数
+**And** OpenClaw 配置中生成了非空 `agents.defaults.models`
+**When** 用户在已完成首轮回复的任务会话底部切换到未写入 `agents.defaults.models` 的模型
 **Then** 当前会话模型切换应成功，不应出现 `model not allowed`
 
 ### 场景 B：没有自定义参数的电脑
 
-**Given** 用户没有配置任何模型自定义参数  
-**When** LobsterAI 同步 OpenClaw 配置  
-**Then** 可以继续不生成 `agents.defaults.models`  
+**Given** 用户没有配置任何模型自定义参数
+**When** 智码 GLM Code 同步 OpenClaw 配置
+**Then** 可以继续不生成 `agents.defaults.models`
 **And** OpenClaw 保持 `allowAny = true`
 
 ### 场景 C：服务端模型列表更新
 
-**Given** LobsterAI 从服务端拉到新的 `lobsterai-server` 模型  
-**When** 任意模型存在 `customParams`，需要生成 `agents.defaults.models`  
+**Given** 智码 GLM Code 从服务端拉到新的 `lobsterai-server` 模型
+**When** 任意模型存在 `customParams`，需要生成 `agents.defaults.models`
 **Then** 新服务端模型也应进入 allowlist，否则 UI 可见但会话切换会失败
 
 ### 场景 D：第三方 provider 模型切换
 
-**Given** 用户配置了 DeepSeek、MiniMax、Qwen 等第三方 provider  
-**When** 任意模型存在 `customParams`  
+**Given** 用户配置了 DeepSeek、MiniMax、Qwen 等第三方 provider
+**When** 任意模型存在 `customParams`
 **Then** 所有可选 provider/model 都应保留切换能力，不应只允许带自定义参数的模型
 
 ## 3. 功能需求
 
 ### FR-1：`agents.defaults.models` 一旦生成，必须完整覆盖可选模型
 
-当 LobsterAI 需要写入 `agents.defaults.models` 时，不能只写带 `customParams` 的模型。
+当 智码 GLM Code 需要写入 `agents.defaults.models` 时，不能只写带 `customParams` 的模型。
 
 应以 `allProvidersMap` 中最终生成的 OpenClaw catalog 为准，为每个可选模型生成一个 allowlist entry：
 
@@ -160,7 +160,7 @@ sessions.patch ... errorCode=INVALID_REQUEST errorMessage=model not allowed: lob
 
 ### FR-5：模型列表与 OpenClaw allowlist 保持一致
 
-后续如果 UI 模型列表来自 LobsterAI 的 `availableModels`，而 OpenClaw runtime 使用 `models.list` 或 `sessions.patch` 校验，就必须保证两边模型集合一致。
+后续如果 UI 模型列表来自 智码 GLM Code 的 `availableModels`，而 OpenClaw runtime 使用 `models.list` 或 `sessions.patch` 校验，就必须保证两边模型集合一致。
 
 可选增强：在当前会话模型选择器中使用 OpenClaw `models.list` 的 allowed catalog 过滤模型，避免显示当前 runtime 不接受的模型。但主修复仍应在配置生成层解决 allowlist 不完整。
 
@@ -214,7 +214,7 @@ lobsterai-server/<modelId>
 
 当前会话内切换模型必须继续调用 OpenClaw `sessions.patch`，因为它是让当前 runtime 会话即时生效的唯一来源。
 
-需要修的是 patch 前的 OpenClaw 配置 allowlist，而不是改成只更新 LobsterAI SQLite。
+需要修的是 patch 前的 OpenClaw 配置 allowlist，而不是改成只更新 智码 GLM Code SQLite。
 
 ### 4.4 可选：错误提示增强
 

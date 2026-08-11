@@ -4,12 +4,12 @@
 
 ### 1.1 问题
 
-LobsterAI 同时存在两类目录：
+智码 GLM Code 同时存在两类目录：
 
 - 用户可见的任务工作目录（session cwd），用于项目源码、生成文档、图片、构建中间产物和最终交付物；
-- OpenClaw Agent Workspace，位于 LobsterAI `userData/openclaw/state/workspace-*`，用于 `AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、`MEMORY.md` 和 `memory/**` 等持久化 Agent 文件。
+- OpenClaw Agent Workspace，位于 智码 GLM Code `userData/openclaw/state/workspace-*`，用于 `AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、`MEMORY.md` 和 `memory/**` 等持久化 Agent 文件。
 
-当前 LobsterAI 已在工具执行层把两者分开，但 OpenClaw system prompt 仍把 Agent Workspace 描述为唯一工作目录：
+当前 智码 GLM Code 已在工具执行层把两者分开，但 OpenClaw system prompt 仍把 Agent Workspace 描述为唯一工作目录：
 
 ```text
 ## Workspace
@@ -21,13 +21,13 @@ Treat this directory as the single global workspace for file operations unless e
 
 ### 1.2 根因
 
-OpenClaw 上游默认把 `workspaceDir` 同时视为 Agent 引导文件目录和运行工作目录。LobsterAI 的现有 OpenClaw 补丁已经引入 `effectiveWorkspace` 与 `effectiveCwd`：
+OpenClaw 上游默认把 `workspaceDir` 同时视为 Agent 引导文件目录和运行工作目录。智码 GLM Code 的现有 OpenClaw 补丁已经引入 `effectiveWorkspace` 与 `effectiveCwd`：
 
 - bootstrap、skills、memory 及 Agent 持久文件继续使用 `effectiveWorkspace`；
 - 普通文件工具与 shell 工具使用 `effectiveCwd`；
 - 但 `buildEmbeddedSystemPrompt()` 只接收 `workspaceDir: effectiveWorkspace`，导致提示词与实际工具相对路径基准不一致。
 
-这不是 LobsterAI 配置同步层可以完整解决的问题，因为错误文案由 OpenClaw 内部 system prompt 构建器生成，且普通运行和 compact 重建提示词都经过该构建器。因此采用与固定 OpenClaw 版本绑定的小型源码 patch。
+这不是 智码 GLM Code 配置同步层可以完整解决的问题，因为错误文案由 OpenClaw 内部 system prompt 构建器生成，且普通运行和 compact 重建提示词都经过该构建器。因此采用与固定 OpenClaw 版本绑定的小型源码 patch。
 
 ## 2. 调研结论
 
@@ -36,10 +36,10 @@ OpenClaw 上游默认把 `workspaceDir` 同时视为 Agent 引导文件目录和
 调研固定版本 `v2026.6.1`、当前 OpenClaw 主线和本地集成代码后，结论如下：
 
 1. OpenClaw 的默认模型是“一个 workspace 承担所有目录角色”，system prompt 明确使用“single global workspace”。
-2. LobsterAI 的 session cwd 与 Agent Workspace 是产品层有意分离的两个概念，工具层已经按此执行。
+2. 智码 GLM Code 的 session cwd 与 Agent Workspace 是产品层有意分离的两个概念，工具层已经按此执行。
 3. 普通 `read/write/edit/apply_patch/exec` 的相对路径基于 task cwd；自动 memory flush 的写入根目录则被单独限制在 Agent Workspace。
 4. 普通对话中的“记住这个”仍可能由通用文件工具执行。若完全隐藏 Agent Workspace 的绝对路径，模型会把 `MEMORY.md` 或 `memory/**` 相对写到 task cwd。因此不能只显示 task cwd，也不能简单把传入 prompt 的 `workspaceDir` 替换成 cwd。
-5. OpenClaw 社区也持续出现 cwd/workspace 混用诉求，例如 [#32637](https://github.com/openclaw/openclaw/issues/32637)、[#40825](https://github.com/openclaw/openclaw/issues/40825) 和 [#43900](https://github.com/openclaw/openclaw/issues/43900)。其中每 Agent 独立 cwd 的提案未被上游采纳，LobsterAI 仍需维护集成层行为。
+5. OpenClaw 社区也持续出现 cwd/workspace 混用诉求，例如 [#32637](https://github.com/openclaw/openclaw/issues/32637)、[#40825](https://github.com/openclaw/openclaw/issues/40825) 和 [#43900](https://github.com/openclaw/openclaw/issues/43900)。其中每 Agent 独立 cwd 的提案未被上游采纳，智码 GLM Code 仍需维护集成层行为。
 
 ### 2.2 运行数据
 
@@ -136,9 +136,9 @@ OpenClaw 上游默认把 `workspaceDir` 同时视为 Agent 引导文件目录和
 
 补丁文件使用 `zz-` 前缀，使其在已有 cwd/workspace 分离补丁之后应用。
 
-### 5.2 LobsterAI 契约测试与补丁校验
+### 5.2 智码 GLM Code 契约测试与补丁校验
 
-LobsterAI 增加补丁内容契约测试，并在 `apply-openclaw-patches.cjs` 中登记关键目标和哨兵文本，确保版本升级或补丁冲突时尽早失败，而不是静默丢失 runtime cwd 传递。
+智码 GLM Code 增加补丁内容契约测试，并在 `apply-openclaw-patches.cjs` 中登记关键目标和哨兵文本，确保版本升级或补丁冲突时尽早失败，而不是静默丢失 runtime cwd 传递。
 
 ### 5.3 最终提示词形态
 
@@ -177,5 +177,5 @@ Agent workspace: <agent-workspace>
 4. 普通 embedded attempt 与 compact 均传递 `effectiveCwd`。
 5. 同一 workspace、不同 runtime cwd 生成各自正确的稳定提示词，不发生缓存串用。
 6. prompt 明确保留 `MEMORY.md` 与 `memory/**` 的 Agent Workspace 写入语义。
-7. OpenClaw 定向测试、LobsterAI 补丁契约测试、补丁强校验及 Electron TypeScript 编译通过。
+7. OpenClaw 定向测试、智码 GLM Code 补丁契约测试、补丁强校验及 Electron TypeScript 编译通过。
 8. 不覆盖 `D:\github\openclaw` 中与本功能无关的既有未提交改动。

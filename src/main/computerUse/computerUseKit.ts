@@ -41,7 +41,7 @@ export function buildComputerUseMarketplaceKit(): Record<string, unknown> {
     name: ComputerUseKitMetadata.Name,
     description: ComputerUseKitMetadata.Description,
     icon: COMPUTER_USE_KIT_ICON_URL,
-    author: 'LobsterAI',
+    author: '智码 GLM 科技',
     version: ComputerUseRuntime.Version,
     tryAsking: [
       {

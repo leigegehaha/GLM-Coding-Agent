@@ -246,7 +246,7 @@ node --test tests/openclawHistory.test.mjs
 |--------|------|----------|
 | 用户消息实时显示 | 通过 IM 发送消息 | 用户消息在 assistant 回复前出现在 UI 中，无需切换会话 |
 | 重复文本同步 | 连续发送两次 "你好" | 两条消息均显示，无丢失 |
-| 消息与 Dashboard 一致 | 多轮对话后对比 LobsterAI UI 和 OpenClaw Dashboard | 用户/助手消息数量和内容完全一致 |
+| 消息与 Dashboard 一致 | 多轮对话后对比 智码 GLM Code UI 和 OpenClaw Dashboard | 用户/助手消息数量和内容完全一致 |
 | Turn 完成状态 | 发送消息等待回复 | 回复后会话状态从 "执行中" 变为 "已完成"，不超过 5 秒 |
 | 飞书文本清洁 | 通过飞书发送消息 | UI 中不显示 `System: [timestamp] Feishu[...]` 头部 |
 | Discord 文本清洁 | 通过 Discord @mention bot | UI 中不显示 `@BotName` 前缀 |

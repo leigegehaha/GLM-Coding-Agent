@@ -35,7 +35,7 @@ sessions.patch ... errorCode=INVALID_REQUEST errorMessage=model not allowed: lob
 
 分层归因：
 
-1. **直接原因**：配置写入落在网关刚完成启动的窗口内（ready 后约 0.5 秒），网关文件 watcher 漏检（baseline 快照晚于写入，或 watcher 挂载晚于 ready——具体机理在 vendor 内部，无法也无需从 LobsterAI 侧确认）。
+1. **直接原因**：配置写入落在网关刚完成启动的窗口内（ready 后约 0.5 秒），网关文件 watcher 漏检（baseline 快照晚于写入，或 watcher 挂载晚于 ready——具体机理在 vendor 内部，无法也无需从 智码 GLM Code 侧确认）。
 2. **结构缺陷**：`syncOpenClawConfig` 的热载分支（`src/main/main.ts` `NO RESTART, hot-reload only`）是"祈祷式"交付——写完文件就报告 success，把生效完全押在网关 watcher 上，**没有确认、没有重试、没有升级路径**。
 3. **触发面**：`restartImpact` 仅对 `mcp` 键升级为重启（`openclawConfigSync.ts:2781`），`models`/`agents` 变更全部依赖热载。而升级、换号、entitlement 变更这类事件天然聚集在启动窗口附近（本次 41 秒内两次硬重启加一次配置写入），碰撞不是小概率巧合，是启动编排的固有时序。
 
@@ -57,7 +57,7 @@ sessions.patch ... errorCode=INVALID_REQUEST errorMessage=model not allowed: lob
 
 - `config.get`：返回**磁盘快照**（`readConfigFileSnapshot`）的脱敏视图及快照 hash。注意它**不反映网关内存态**，不能用作"是否已生效"的探针；但可提供乐观锁 `baseHash`。
 - `config.set`：接收完整配置（`raw` 字符串）+ `baseHash` 乐观锁 → schema 校验 → secret refs 可解析性校验 → **网关自己落盘**（`commitGatewayConfigWrite` → `replaceConfigFile({ afterWrite: { mode: "auto" } })`）→ 按其内置 reload plan 处理后续。hash 不匹配时返回 `INVALID_REQUEST: config changed since last load`。
-- `config.apply` / `config.patch`：额外带自主重启调度（`scheduleGatewaySigusr1Restart`），会与 LobsterAI 的 engineManager 进程监管相冲突，**不采用**。
+- `config.apply` / `config.patch`：额外带自主重启调度（`scheduleGatewaySigusr1Restart`），会与 智码 GLM Code 的 engineManager 进程监管相冲突，**不采用**。
 - 网关内置 reload plan（`config-reload-plan-Dz0Yrapy.js`）中 `models`、`agents.defaults.models`、`agents.list` 均为 `kind: "hot"`——模型表变更本就是热载支持范围。
 
 也就是说：**网关自己的写入管线不依赖文件 watcher，且带正向 ACK**。让运行中的网关通过 `config.set` 接收配置，watcher 盲区从机制上消失，无需任何轮询校验。
@@ -119,7 +119,7 @@ sessions.patch ... errorCode=INVALID_REQUEST errorMessage=model not allowed: lob
 
 ### FR-3：配置内容来源不变，config.get 仅供 baseHash
 
-发送给 `config.set` 的完整配置必须来自 LobsterAI 本地生成的 managedConfig 合并结果（现有 `openclawConfigSync` 逻辑），**严禁**把 `config.get` 返回的脱敏快照（含 `***` 占位）回写——那会破坏 `gateway.auth` 等真实秘密字段。
+发送给 `config.set` 的完整配置必须来自 智码 GLM Code 本地生成的 managedConfig 合并结果（现有 `openclawConfigSync` 逻辑），**严禁**把 `config.get` 返回的脱敏快照（含 `***` 占位）回写——那会破坏 `gateway.auth` 等真实秘密字段。
 
 ### FR-4：降级链路与防环闸
 
@@ -128,7 +128,7 @@ RPC 失败的处理顺序：
 1. `baseHash` 冲突（并发写）：重新 `config.get` → `config.set`，最多重试 1 次；
 2. 仍失败 / 超时 / 校验错误：文件直写（幂等，内容与 RPC 版相同）+ `scheduleDeferredGatewayRestart(reason='config-delivery-fallback')`；
 3. 自动重启限频：同 reason 的自动升级重启 10 分钟内至多一次，防止校验类系统性错误导致重启循环；
-4. schema / secret refs 校验失败要打 `console.error`——这说明 LobsterAI 生成了网关不认的配置，是需要独立跟进的生成层 bug 信号。
+4. schema / secret refs 校验失败要打 `console.error`——这说明 智码 GLM Code 生成了网关不认的配置，是需要独立跟进的生成层 bug 信号。
 
 ### FR-5：needsHardRestart 分支零改动
 
@@ -147,7 +147,7 @@ secret env 变化、bindingsChanged、`mcp` restartImpact、显式 `restartGatew
 1. **热载语义**：网关 running 且内存配置为 X 时，`config.set` 内容 Y（含新增 lobsterai-server 模型）→ 验证网关日志出现 hot reload 应用记录，且 `sessions.patch` 立即接受 Y 中的新模型、无需重启。
 2. **幂等边界**：`config.set` 与磁盘内容完全相同的 Y → 验证无害 no-op（不报错、不重启）。这决定降级路径中"先 RPC 后文件写"与"先文件写后 RPC"的顺序约束——**若网关的 reload diff 以磁盘快照为基线，则 running 状态下绝不能先直写文件再 RPC**（diff 为空会吞掉本应触发的热载），交付顺序必须是 RPC 优先、文件直写仅作 stopped/降级路径。
 3. **参数契约**：确认 `config.get` 响应中 hash 字段名与 `config.set` 的 `baseHash` 参数名（`resolveBaseHashParam` / `validateConfigSetParams`）、`raw` 的格式要求（JSON/JSON5）。
-4. **格式往返**：网关 `replaceConfigFile` 落盘后的文件，再被 LobsterAI 下次 sync 读取时不产生伪 diff（现有 diff 是语义级 deep-diff，预期无影响，验证一轮即可）。
+4. **格式往返**：网关 `replaceConfigFile` 落盘后的文件，再被 智码 GLM Code 下次 sync 读取时不产生伪 diff（现有 diff 是语义级 deep-diff，预期无影响，验证一轮即可）。
 
 若实验 1 不成立（pinned 版本的 `config.set` 不触发热载），退回**方案 B**：保留文件直写，写后 3~5 秒用语义探针（如 `agents.list` 中的活动模型目录）校验生效，未生效则补写一次 `meta.lastTouchedAt` 制造 watcher 边沿，再未生效升级 `scheduleDeferredGatewayRestart`。方案 B 的收敛保证弱于方案 A（依赖探针的可得性），仅作兜底记录。
 
@@ -211,13 +211,13 @@ if (!needsHardRestart) {
 
 改为：`syncResult.changed === true` 时调用 `deliverOpenClawConfig` 并把交付结果并入返回值与日志；`changed === false` 时维持直接返回（无变更无交付）。
 
-配套调整 `openclawConfigSync.sync()` 的写文件时机：running 状态下生成但**不落盘**，由交付层决定落盘方（网关 RPC 自落盘 / LobsterAI 直写）。这是本次改动里侵入性最高的一处，需注意与 sync 内部"读取既有文件做 diff/保留 gateway 自有 section"逻辑的先后关系——diff 基线仍是磁盘现状，仅"写"这一步延后移交。
+配套调整 `openclawConfigSync.sync()` 的写文件时机：running 状态下生成但**不落盘**，由交付层决定落盘方（网关 RPC 自落盘 / 智码 GLM Code 直写）。这是本次改动里侵入性最高的一处，需注意与 sync 内部"读取既有文件做 diff/保留 gateway 自有 section"逻辑的先后关系——diff 基线仍是磁盘现状，仅"写"这一步延后移交。
 
 ### 4.4 明确不做
 
 - **models/agents 变更一律升级为硬重启**：`getModels` 在聊天后、配额刷新时高频触发，模型表有变就重启会打断活跃会话与 IM 通道。RPC 交付失败时的延迟重启是它的正确子集。
-- **现在就 patch OpenClaw 的文件 watcher**：失效机理仍是推测，且本仓库 patch 政策要求优先使用 LobsterAI 侧挂点；`config.set` 就是那个挂点。交付层日志会把每次 watcher 失效变成有据可查的事件，若未来证明高频复现，再拿实证去做 version-scoped patch。
-- **`config.apply`/`config.patch`**：其自主 SIGUSR1 重启会与 engineManager 的进程监管状态机冲突。重启决策权必须留在 LobsterAI 侧。
+- **现在就 patch OpenClaw 的文件 watcher**：失效机理仍是推测，且本仓库 patch 政策要求优先使用 智码 GLM Code 侧挂点；`config.set` 就是那个挂点。交付层日志会把每次 watcher 失效变成有据可查的事件，若未来证明高频复现，再拿实证去做 version-scoped patch。
+- **`config.apply`/`config.patch`**：其自主 SIGUSR1 重启会与 engineManager 的进程监管状态机冲突。重启决策权必须留在 智码 GLM Code 侧。
 
 ## 5. 边界情况
 
@@ -233,7 +233,7 @@ if (!needsHardRestart) {
 | secret env / bindings / mcp 变更 | 不进交付层，`needsHardRestart` 路径现状不变 |
 | sync 串行队列中有更新的 sync 排队 | 交付层跟随现有串行链（`startAfterPrevious`），天然不交叠 |
 | 修复上线前已存在的 file-vs-live 分歧 | 首次真实配置变更经 RPC 交付即收敛；不做主动扫描 |
-| 网关落盘格式与 LobsterAI 直写格式差异 | 语义级 deep-diff 不受键序/格式影响（P0-4 验证）；若有伪 diff，多一次幂等交付，无功能影响 |
+| 网关落盘格式与 智码 GLM Code 直写格式差异 | 语义级 deep-diff 不受键序/格式影响（P0-4 验证）；若有伪 diff，多一次幂等交付，无功能影响 |
 | IM sync、设置保存等既有调用方 | 交付层封装在 `syncOpenClawConfig` 内部，调用方零改动 |
 
 ## 6. 涉及文件

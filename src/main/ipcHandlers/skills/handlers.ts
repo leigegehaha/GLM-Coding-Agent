@@ -1,8 +1,16 @@
-import { ipcMain } from 'electron';
+import { ipcMain, net } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import {
+  type ClawHubMarketplaceQuery,
+  SkillIpcChannel,
+} from '../../../shared/skills/constants';
 import { updatePluginSkillIdsFromReport } from '../../skills';
+import {
+  buildClawHubMarketplaceUrl,
+  parseClawHubMarketplacePage,
+} from '../../skills/publicSkillMarketplace';
 import type { SkillManager } from '../../skills/skillManager';
 
 export interface SkillHandlerDeps {
@@ -19,6 +27,23 @@ export interface SkillHandlerDeps {
     } | null;
   } | null;
 }
+
+const fetchHttpsText = async (url: string): Promise<string> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await net.fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.text();
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('Request timeout');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 export function registerSkillHandlers(deps: SkillHandlerDeps): void {
   const { getSkillManager, getSkillStoreUrl, getOpenClawRuntimeAdapter } = deps;
@@ -157,32 +182,41 @@ export function registerSkillHandlers(deps: SkillHandlerDeps): void {
     return getSkillManager().testEmailConnectivity(skillId, config);
   });
 
-  ipcMain.handle('skills:fetchMarketplace', async () => {
+  ipcMain.handle(SkillIpcChannel.FetchMarketplace, async () => {
     const url = getSkillStoreUrl();
     console.log(`[SkillMarketplace] fetching from: ${url}`);
     try {
-      const https = await import('https');
-      const data = await new Promise<string>((resolve, reject) => {
-        const req = https.get(url, { timeout: 10000 }, (res) => {
-          if (res.statusCode !== 200) {
-            reject(new Error(`HTTP ${res.statusCode}`));
-            res.resume();
-            return;
-          }
-          let body = '';
-          res.setEncoding('utf8');
-          res.on('data', (chunk: string) => { body += chunk; });
-          res.on('end', () => resolve(body));
-          res.on('error', reject);
-        });
-        req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Request timeout')); });
-      });
-      return { success: true, data };
+      return {
+        success: true,
+        data: await fetchHttpsText(url),
+      };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch skill marketplace' };
+      console.warn('[SkillMarketplace] primary catalog unavailable:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch skill marketplace',
+      };
     }
   });
+
+  ipcMain.handle(
+    SkillIpcChannel.FetchClawHub,
+    async (_event, query: ClawHubMarketplaceQuery = {}) => {
+      try {
+        const data = await fetchHttpsText(buildClawHubMarketplaceUrl(query));
+        return {
+          success: true,
+          page: parseClawHubMarketplacePage(data, Boolean(query.query?.trim())),
+        };
+      } catch (error) {
+        console.warn('[SkillMarketplace] ClawHub request failed:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to fetch ClawHub skills',
+        };
+      }
+    },
+  );
 
   ipcMain.handle('skills:detectFromOpenClaw', async () => {
     try {

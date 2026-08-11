@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 当前通过 OpenClaw 提供 `browser` 和 `web_fetch` 能力，但浏览器相关配置在 LobsterAI 中几乎没有产品化暴露。当前同步到 `openclaw.json` 的配置只有：
+智码 GLM Code 当前通过 OpenClaw 提供 `browser` 和 `web_fetch` 能力，但浏览器相关配置在 智码 GLM Code 中几乎没有产品化暴露。当前同步到 `openclaw.json` 的配置只有：
 
 ```typescript
 browser: {
@@ -17,13 +17,13 @@ browser: {
 近期问题暴露出两个主要失败来源：
 
 1. **全局系统代理与 browser 严格 SSRF 策略冲突**
-   - LobsterAI 的“使用系统代理”会把系统代理写入进程环境变量，并传给 OpenClaw gateway。
+   - 智码 GLM Code 的“使用系统代理”会把系统代理写入进程环境变量，并传给 OpenClaw gateway。
    - OpenClaw browser 默认将未配置的 `browser.ssrfPolicy` 解析为 fail-closed 严格策略。
    - 当 gateway 进程存在 `HTTP_PROXY` / `HTTPS_PROXY` 等环境变量时，browser 导航会报错：`strict browser SSRF policy cannot be enforced while env proxy variables are set`。
-   - 对 LobsterAI 本地桌面应用来说，默认拦截牺牲了常见浏览器任务成功率。
+   - 对 智码 GLM Code 本地桌面应用来说，默认拦截牺牲了常见浏览器任务成功率。
 
 2. **`web_fetch` 被用来抓搜索结果页，容易触发 429**
-   - 当前 LobsterAI 管理配置中禁用了内置 `web_search`，agent 容易退化为用 `web_fetch` 抓 Google 搜索页。
+   - 当前 智码 GLM Code 管理配置中禁用了内置 `web_search`，agent 容易退化为用 `web_fetch` 抓 Google 搜索页。
    - Google 等站点会对代理出口、自动化请求或频繁访问返回 429 / CAPTCHA。
    - `SECURITY NOTICE / EXTERNAL_UNTRUSTED_CONTENT` 是 OpenClaw 对外部内容的安全包装，不是失败根因。
 
@@ -33,7 +33,7 @@ browser: {
 
 - 新增“浏览器”设置页，集中管理 browser 的常用配置。
 - 保留“系统代理作为全局代理”的产品语义，不把代理限制到模型调用。
-- 不默认开启系统代理；当用户已开启 LobsterAI 的“使用系统代理”时，browser 默认采用代理兼容策略，减少全局代理环境下的导航失败。
+- 不默认开启系统代理；当用户已开启 智码 GLM Code 的“使用系统代理”时，browser 默认采用代理兼容策略，减少全局代理环境下的导航失败。
 - 严格 SSRF / 内网访问防护改为用户主动开启，而不是默认阻断常见浏览器任务。
 - 普通用户第一屏只暴露少量易理解选项：网络访问模式、允许页面内执行脚本、无界面运行浏览器、允许的域名、屏蔽的域名。
 - 不展示“启用浏览器”“我的 Chrome”“远程 CDP”“网页抓取参数”等容易造成误解或隐藏失败的设置。
@@ -55,7 +55,7 @@ browser: {
 
 ### 场景 1: 开启系统代理后浏览器仍可打开网页
 
-**Given** 用户开启了 LobsterAI 的“使用系统代理”
+**Given** 用户开启了 智码 GLM Code 的“使用系统代理”
 **When** agent 调用 browser 打开普通公网网页
 **Then** 默认使用“优先保证网页能打开（推荐）”模式，browser 不应因为严格 SSRF 策略与 env proxy 冲突而直接失败
 
@@ -81,7 +81,7 @@ browser: {
 
 **Given** 用户开启严格网络保护，或希望阻止特定域名
 **When** 用户填写“允许的域名”或“屏蔽的域名”
-**Then** LobsterAI 保存清洗后的域名列表；允许列表同步到 browser SSRF policy，屏蔽列表作为 LobsterAI 侧规则预留
+**Then** 智码 GLM Code 保存清洗后的域名列表；允许列表同步到 browser SSRF policy，屏蔽列表作为 智码 GLM Code 侧规则预留
 
 ## 3. 功能需求
 
@@ -99,8 +99,8 @@ browser: {
 
 ### FR-2: 浏览器基础配置
 
-- 不展示“启用浏览器工具”开关，LobsterAI 始终开启 browser tool。
-- 不展示“使用哪种浏览器”选择，当前版本统一使用 LobsterAI 独立浏览器。
+- 不展示“启用浏览器工具”开关，智码 GLM Code 始终开启 browser tool。
+- 不展示“使用哪种浏览器”选择，当前版本统一使用 智码 GLM Code 独立浏览器。
 - 不展示“我的 Chrome / user profile”，避免用户选择后触发 existing-session attach 失败。
 - 不展示“自定义浏览器 / 远程浏览器 / CDP / Browserless”等高级连接项。
 - 默认值：
@@ -113,7 +113,7 @@ browser: {
   - 优先保证网页能打开（推荐）：默认值。跟随应用现有“使用系统代理”总开关，并使用代理兼容策略。
   - 严格保护本机和内网：用户主动开启后，阻止访问本机、内网和特殊地址段。
 - “跟随应用全局代理”不作为独立开关暴露，避免用户误解为“默认开启系统代理”。
-  - 在推荐模式下，browser / web_fetch 默认跟随 LobsterAI 现有的“使用系统代理”总开关。
+  - 在推荐模式下，browser / web_fetch 默认跟随 智码 GLM Code 现有的“使用系统代理”总开关。
   - 如果应用全局系统代理未开启，推荐模式不会主动打开系统代理。
 - 在当前 OpenClaw 能力下：
   - 推荐模式可通过写入 `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork = true` 实现第一阶段兼容。
@@ -127,8 +127,8 @@ browser: {
   - 映射 `browser.ssrfPolicy.allowedHostnames` / `hostnameAllowlist`。
   - 支持 exact hostname 和 `*.example.com`。
 - 提供“屏蔽的域名”列表。
-  - OpenClaw 当前 browser 配置没有对应字段，第一阶段可仅作为 LobsterAI 侧配置预留。
-  - 第二阶段在 OpenClaw browser 导航 guard 或 LobsterAI tool 调用前增加拦截。
+  - OpenClaw 当前 browser 配置没有对应字段，第一阶段可仅作为 智码 GLM Code 侧配置预留。
+  - 第二阶段在 OpenClaw browser 导航 guard 或 智码 GLM Code tool 调用前增加拦截。
 - 屏蔽规则优先级高于允许规则。
 
 ### FR-5: 网页抓取配置
@@ -161,7 +161,7 @@ tools: {
 - 允许页面内执行 JS，映射 `browser.evaluateEnabled`。
 - 无界面运行浏览器，映射 `browser.headless`。
 - 允许的域名，映射 `browser.ssrfPolicy.allowedHostnames` / `hostnameAllowlist`。
-- 屏蔽的域名，第一阶段作为 LobsterAI 侧配置预留。
+- 屏蔽的域名，第一阶段作为 智码 GLM Code 侧配置预留。
 
 以下项目不在设置页展示，也不应继续从旧配置同步到 OpenClaw，避免隐藏配置继续影响用户：
 
@@ -278,12 +278,12 @@ browser: {
 
 ### 4.3 Browser target 策略
 
-LobsterAI 当前版本不支持 sandbox browser，因此设置页不提供 sandbox / host / node 的目标选择。
+智码 GLM Code 当前版本不支持 sandbox browser，因此设置页不提供 sandbox / host / node 的目标选择。
 
 - 所有 `browser` 工具调用必须显式使用 `target="host"`。
 - 不允许模型主动使用 `target="sandbox"` 或 `target="node"`。
 - 如果 OpenClaw 返回 `Sandbox browser is unavailable`，应使用同样参数改为 `target="host"` 重试。
-- 该策略先通过 LobsterAI 托管的 AGENTS 指令下发；如果后续仍出现模型误传 `target="sandbox"`，再推动 OpenClaw browser 插件增加 LobsterAI 侧的 target override 或禁用 sandbox target。
+- 该策略先通过 智码 GLM Code 托管的 AGENTS 指令下发；如果后续仍出现模型误传 `target="sandbox"`，再推动 OpenClaw browser 插件增加 智码 GLM Code 侧的 target override 或禁用 sandbox target。
 
 ### 4.4 web_fetch 配置映射
 
@@ -343,7 +343,7 @@ UI 交互：
 | 高级设置 | 允许页面内执行脚本 | 开启 | 关闭后更保守，但复杂网页操作可能不可用 |
 | 高级设置 | 无界面运行浏览器 | 关闭 | 适合自动化环境，日常桌面使用不建议开启 |
 | 高级设置 | 允许的域名 | 空 | 严格保护模式下仍允许访问的域名 |
-| 高级设置 | 屏蔽的域名 | 空 | 预留为 LobsterAI 侧导航拦截规则 |
+| 高级设置 | 屏蔽的域名 | 空 | 预留为 智码 GLM Code 侧导航拦截规则 |
 
 - 网络模式使用分段选择：
   - 优先保证网页能打开（推荐）
@@ -391,7 +391,7 @@ export const BrowserDiagnosticStep = {
 - 不要用 `web_fetch` 抓 Google 搜索结果页作为搜索工具替代。
 - 已知文章 URL、文档 URL、轻量页面使用 `web_fetch`。
 - 登录态、JS-heavy、反自动化页面使用 `browser`。
-- 使用 `browser` 时必须显式设置 `target="host"`，因为 LobsterAI 当前不支持 sandbox browser。
+- 使用 `browser` 时必须显式设置 `target="host"`，因为 智码 GLM Code 当前不支持 sandbox browser。
 
 这不能彻底解决 Google 429，但能减少错误工具选择导致的失败。
 
@@ -412,7 +412,7 @@ export const BrowserDiagnosticStep = {
 
 ## 6. 涉及文件
 
-### LobsterAI
+### 智码 GLM Code
 
 | 文件 | 变更 |
 |------|------|
@@ -439,7 +439,7 @@ export const BrowserDiagnosticStep = {
 
 ### 阶段 1: 最小可用
 
-1. 新增 LobsterAI `browserWebAccess` 配置模型和默认值。
+1. 新增 智码 GLM Code `browserWebAccess` 配置模型和默认值。
 2. 新增“浏览器”设置页。
 3. 第一屏只实现普通用户选项：网络访问模式、允许页面内执行脚本、无界面运行浏览器、允许的域名、屏蔽的域名。
 4. `OpenClawConfigSync` 固定写入 browser enabled、managed defaultProfile、ssrfPolicy、evaluateEnabled、headless。
@@ -450,7 +450,7 @@ export const BrowserDiagnosticStep = {
 ### 阶段 2: web_fetch 代理兼容
 
 1. 在 OpenClaw 增加 `tools.web.fetch.useEnvProxy`。
-2. LobsterAI 根据全局代理和默认配置写入该配置，不在浏览器设置页展示。
+2. 智码 GLM Code 根据全局代理和默认配置写入该配置，不在浏览器设置页展示。
 3. 补充 `web_fetch` 代理模式测试。
 4. 更新工具路由提示，减少用 `web_fetch` 抓搜索结果页。
 

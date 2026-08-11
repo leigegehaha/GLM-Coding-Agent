@@ -4,11 +4,11 @@
 
 ### 1.1 问题/背景
 
-模型提供商会不断引入新的 API 参数（如 DeepSeek 的 `reasoning_effort` 新增 `smart` 选项、Anthropic 的 `thinking` 配置等）。这些参数通常是模型/提供商特有的，LobsterAI 无法为每个新参数都预设 UI 字段。
+模型提供商会不断引入新的 API 参数（如 DeepSeek 的 `reasoning_effort` 新增 `smart` 选项、Anthropic 的 `thinking` 配置等）。这些参数通常是模型/提供商特有的，智码 GLM Code 无法为每个新参数都预设 UI 字段。
 
 OpenClaw 的 `agents.defaults.models["provider/model"].params` 支持部分参数透传，但内部使用白名单机制，仅允许 `temperature`、`maxTokens` 等少数已知参数。其他参数（如 `enable_thinking`、`reasoning_effort`）会被静默忽略。
 
-本功能通过 LobsterAI 侧 patch OpenClaw runtime，增加 `extra_body` 通用透传机制，将 `params.extra_body` 中的字段直接合并到 API 请求 body，绕过白名单限制。
+本功能通过 智码 GLM Code 侧 patch OpenClaw runtime，增加 `extra_body` 通用透传机制，将 `params.extra_body` 中的字段直接合并到 API 请求 body，绕过白名单限制。
 
 ### 1.2 目标
 
@@ -20,20 +20,20 @@ OpenClaw 的 `agents.defaults.models["provider/model"].params` 支持部分参�
 
 ### 场景 1：配置 DeepSeek 推理强度
 
-**Given** 用户已配置 DeepSeek 提供商并添加了 `deepseek-r1` 模型  
-**When** 用户编辑该模型，在"自定义参数"文本框中输入 `{"reasoning_effort": "smart"}`  
+**Given** 用户已配置 DeepSeek 提供商并添加了 `deepseek-r1` 模型
+**When** 用户编辑该模型，在"自定义参数"文本框中输入 `{"reasoning_effort": "smart"}`
 **Then** 该参数保存到模型配置，并在每次调用该模型时透传至 API 请求
 
 ### 场景 2：JSON 格式校验
 
-**Given** 用户正在编辑模型的自定义参数  
-**When** 用户输入非法 JSON（如 `{reasoning_effort: smart}`）并点击保存  
+**Given** 用户正在编辑模型的自定义参数
+**When** 用户输入非法 JSON（如 `{reasoning_effort: smart}`）并点击保存
 **Then** 表单显示错误提示，不保存
 
 ### 场景 3：空参数
 
-**Given** 用户不需要自定义参数  
-**When** 自定义参数文本框留空  
+**Given** 用户不需要自定义参数
+**When** 自定义参数文本框留空
 **Then** 模型正常保存，不生成额外的 `params` 配置
 
 ## 3. 功能需求

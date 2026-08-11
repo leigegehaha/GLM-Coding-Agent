@@ -11,7 +11,7 @@ import type {
   ScheduledTaskRun,
   ScheduledTaskRunWithName,
 } from '../../../scheduledTask/types';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import type { Model } from '../../store/slices/modelSlice';
 import { resolveOpenClawModelRef } from '../../utils/openclawModelRef';
 import type { PlanType } from './utils';
@@ -33,7 +33,7 @@ export function reportScheduledTaskAction(
   params: AnalyticsParams = {},
 ): void {
   console.debug('[ScheduledTasks] reporting analytics action', actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ScheduledTaskAction,
     actionType,
     ...params,

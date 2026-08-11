@@ -1,8 +1,8 @@
 /**
  * NIM Media Utilities
  * 云信媒体消息处理：下载、发送、类型推断、清理
- * 
- * 参考 openclaw-nim/src/media.ts 实现，适配 LobsterAI Gateway 架构
+ *
+ * 参考 openclaw-nim/src/media.ts 实现，适配 智码 GLM Code Gateway 架构
  */
 
 import * as fs from 'fs';
@@ -198,7 +198,7 @@ function downloadFile(url: string, destPath: string, maxBytes: number = MAX_FILE
 
 /**
  * 下载 NIM 媒体文件并返回 IMMediaAttachment
- * 
+ *
  * @param url NOS 媒体 URL
  * @param attachment V2 消息的 attachment 对象
  * @param mediaType 消息类型 (image/audio/video/file)
@@ -261,7 +261,7 @@ export async function downloadNimMedia(
 
 /**
  * 通过 NIM SDK 发送媒体消息
- * 
+ *
  * @param messageService V2NIMMessageService 实例
  * @param messageCreator V2NIMMessageCreator 实例
  * @param conversationId 目标会话 ID

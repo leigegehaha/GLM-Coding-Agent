@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
+import type { CodingPlanAccountUser } from '../../shared/codingPlanAccount/constants';
 import inviteCreditsIconUrl from '../assets/icons/invite-credits.svg';
 import logoutIconUrl from '../assets/icons/logout.svg';
 import promoSubscriptionIconUrl from '../assets/icons/promo-subscription.svg';
@@ -15,7 +16,7 @@ import {
   getPortalRechargeUrl,
 } from '../services/endpoints';
 import { i18nService } from '../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../services/logReporter';
 import { RootState } from '../store';
 import type {
   CreditItem,
@@ -37,7 +38,7 @@ const reportAccountMenuAction = (
   } = {},
 ): void => {
   console.debug('[LoginButton] reporting account menu analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AccountMenuAction,
     source: ACCOUNT_MENU_ANALYTICS_SOURCE,
     actionType,
@@ -447,10 +448,16 @@ const formatRewardExpiry = (expiresAt: string): string => {
 };
 
 interface LoginButtonProps {
+  codingPlanAccount?: CodingPlanAccountUser | null;
   contentLeftOffset?: number;
+  onShowLogin?: () => void;
 }
 
-const LoginButton: React.FC<LoginButtonProps> = ({ contentLeftOffset = 0 }) => {
+const LoginButton: React.FC<LoginButtonProps> = ({
+  codingPlanAccount,
+  contentLeftOffset = 0,
+  onShowLogin,
+}) => {
   const { isLoggedIn, isLoading, profileSummary, user } = useSelector((state: RootState) => state.auth);
   const [showMenu, setShowMenu] = useState(false);
   const [finalRewardOpen, setFinalRewardOpen] = useState(false);
@@ -506,7 +513,7 @@ const LoginButton: React.FC<LoginButtonProps> = ({ contentLeftOffset = 0 }) => {
       return;
     }
     try {
-      await authService.login();
+      onShowLogin?.();
       reportAccountMenuAction('login', {
         isLoggedIn: false,
         result: 'success',
@@ -564,6 +571,11 @@ const LoginButton: React.FC<LoginButtonProps> = ({ contentLeftOffset = 0 }) => {
               <UserAvatarIcon className="h-4 w-4 shrink-0" />
             )}
             <span className="truncate max-w-[80px]">{i18nService.t('myAccount')}</span>
+          </>
+        ) : codingPlanAccount ? (
+          <>
+            <UserAvatarIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate max-w-[100px]">{codingPlanAccount.name}</span>
           </>
         ) : (
           <>

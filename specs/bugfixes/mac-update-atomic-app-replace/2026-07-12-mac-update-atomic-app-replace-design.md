@@ -32,7 +32,7 @@ await execAsync(
 逐个 rename 到临时目录、失败会 `un.restoreFiles` 回滚;新文件解包失败有
 5 次自动重试 + 用户 Retry 对话框,且全程有安装器 UI、安装包保留可重跑。
 风险窗口存在但被多层缓解,且属于 electron-builder 固有语义,改动成本与
-引入风险远大于收益。macOS 端是 LobsterAI 自己的代码,修复完全可控。
+引入风险远大于收益。macOS 端是 智码 GLM Code 自己的代码,修复完全可控。
 
 ### 1.2 根因
 

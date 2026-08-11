@@ -10,7 +10,7 @@ import { agentService } from '../../services/agent';
 import { coworkService } from '../../services/cowork';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import type { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
 import type { PresetAgent } from '../../types/agent';
@@ -177,7 +177,7 @@ const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
     const imPlatforms = options.includeConfigDetails ? getImPlatformsForAnalytics() : [];
     const template = options.template === undefined ? selectedTemplate : options.template;
     console.debug(`[AgentCreateModal] reporting analytics action ${actionType}`);
-    void reportYdAnalyzer({
+    void reportAnalytics({
       action: LogReporterAction.AgentCreateAction,
       source,
       actionType,

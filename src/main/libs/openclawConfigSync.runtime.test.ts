@@ -202,7 +202,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     } as never);
   };
 
-  test('writes OpenClaw config fields required by LobsterAI patches', async () => {
+  test('writes OpenClaw config fields required by 智码 GLM Code patches', async () => {
     const legacyWorkingDirectory = path.join(tmpDir, 'legacy-working-directory');
     const mainAgentWorkingDirectory = path.join(tmpDir, 'main-agent-working-directory');
 
@@ -750,7 +750,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     ];
     mockRuntimeState.rawApiConfig = {
       config: {
-        baseURL: 'https://lobsterai-server.youdao.com/api/proxy/v1',
+        baseURL: 'https://glmcoding.cn/api/proxy/v1',
         apiKey: 'access-token',
         model: 'qwen3.5-plus-YoudaoInner',
         apiType: 'openai',
@@ -895,7 +895,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     mockRuntimeState.serverModels = [];
     mockRuntimeState.rawApiConfig = {
       config: {
-        baseURL: 'https://lobsterai-server.youdao.com/api/proxy/v1',
+        baseURL: 'https://glmcoding.cn/api/proxy/v1',
         apiKey: 'access-token',
         model: 'claude-sonnet-4-6',
         apiType: 'openai',
@@ -2641,7 +2641,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     const agentsMdPath = path.join(stateDir, 'workspace-main', 'AGENTS.md');
     const agentsMd = fs.readFileSync(agentsMdPath, 'utf8');
-    expect(agentsMd).toContain('LobsterAI does not support sandbox browser execution in this version.');
+    expect(agentsMd).toContain('智码 GLM Code does not support sandbox browser execution in this version.');
     expect(agentsMd).toContain('For every `browser` tool call, set `target="host"` explicitly.');
   });
 
@@ -2718,7 +2718,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           timeoutSeconds: 25,
           maxRedirects: 4,
           maxChars: 12000,
-          userAgent: 'LobsterAI Test',
+          userAgent: '智码 GLM Code Test',
           readability: false,
           allowRfc2544BenchmarkRange: true,
         },
@@ -2773,7 +2773,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       timeoutSeconds: 25,
       maxRedirects: 4,
       maxChars: 12000,
-      userAgent: 'LobsterAI Test',
+      userAgent: '智码 GLM Code Test',
       ssrfPolicy: { allowRfc2544BenchmarkRange: true },
     });
     expect(config.tools.web.fetch.useEnvProxy).toBeUndefined();
@@ -2834,7 +2834,7 @@ describe('resolveModelSourceForOpenClawProvider', () => {
     mockRuntimeState.providerSourceEntries = [];
   });
 
-  test('classifies the LobsterAI plan without any Settings entry', async () => {
+  test('classifies the 智码 GLM Code plan without any Settings entry', async () => {
     const { resolveModelSourceForOpenClawProvider } = await import('./openclawConfigSync');
     expect(resolveModelSourceForOpenClawProvider('lobsterai-server')).toEqual({
       source: 'lobsterai-plan',

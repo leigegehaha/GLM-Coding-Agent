@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户反馈 LobsterAI 的 Windows 更新脚本仍在使用 VBScript，而 Windows 11 正在逐步淘汰 VBScript 支持。截图中出现两个关键信息：
+用户反馈 智码 GLM Code 的 Windows 更新脚本仍在使用 VBScript，而 Windows 11 正在逐步淘汰 VBScript 支持。截图中出现两个关键信息：
 
 1. Windows 兼容性提示检测到 `Wscript.exe` VBScript 使用。
 2. Windows Script Host 报错无法找到临时文件中的 `VBScript` 脚本，路径形如 `%TEMP%\lobsterai-update-<timestamp>.vbs`。
@@ -14,7 +14,7 @@
 1. 生成 `%TEMP%\lobsterai-update-<timestamp>.ps1`。
 2. 生成 `%TEMP%\lobsterai-update-<timestamp>.vbs`。
 3. 通过 `wscript.exe` 运行 `.vbs`。
-4. `.vbs` 再隐藏启动 `powershell.exe`，由 PowerShell 等待 LobsterAI 退出后打开 NSIS 安装器。
+4. `.vbs` 再隐藏启动 `powershell.exe`，由 PowerShell 等待 智码 GLM Code 退出后打开 NSIS 安装器。
 
 当前 VBS 内容本质上只是一个隐藏 PowerShell 窗口的 launcher：
 
@@ -22,7 +22,7 @@
 CreateObject("WScript.Shell").Run "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File ""<scriptPath>""", 0, False
 ```
 
-因此用户说的“LobsterAI 还在使用 vbs”是准确的。问题不在 NSIS 安装包本身，也不是手动下载链接，而是应用内“下载完成后点击立即更新”的 Windows 安装启动链路。
+因此用户说的“智码 GLM Code 还在使用 vbs”是准确的。问题不在 NSIS 安装包本身，也不是手动下载链接，而是应用内“下载完成后点击立即更新”的 Windows 安装启动链路。
 
 ### 1.2 外部环境变化
 
@@ -41,13 +41,13 @@ CreateObject("WScript.Shell").Run "powershell.exe -ExecutionPolicy Bypass -Windo
 
 当前设计要解决的是 Windows 更新时的两个工程约束：
 
-1. NSIS 安装器需要在 LobsterAI 当前进程退出后再运行，避免安装时文件仍被占用。
+1. NSIS 安装器需要在 智码 GLM Code 当前进程退出后再运行，避免安装时文件仍被占用。
 2. 等待和启动安装器的辅助脚本不应显示额外控制台窗口。
 
 为此现有实现使用了“两层脚本”：
 
 ```text
-LobsterAI main process
+智码 GLM Code main process
   -> wscript.exe lobsterai-update-<ts>.vbs
     -> powershell.exe -WindowStyle Hidden -File lobsterai-update-<ts>.ps1
       -> wait current app PID exits
@@ -82,36 +82,36 @@ P0 修复目标：
 
 ### 场景 1：Windows 11 24H2 禁用 VBScript 后安装更新
 
-**Given** 用户使用 Windows 11 24H2，VBScript FoD 未启用或被企业策略禁用  
-**When** LobsterAI 下载更新完成，用户点击立即更新  
-**Then** 应用不生成 `.vbs`，不调用 `wscript.exe`，不弹出 Windows 兼容性助手或 Windows Script Host 错误  
-**And** LobsterAI 退出后 NSIS 安装器正常出现。
+**Given** 用户使用 Windows 11 24H2，VBScript FoD 未启用或被企业策略禁用
+**When** 智码 GLM Code 下载更新完成，用户点击立即更新
+**Then** 应用不生成 `.vbs`，不调用 `wscript.exe`，不弹出 Windows 兼容性助手或 Windows Script Host 错误
+**And** 智码 GLM Code 退出后 NSIS 安装器正常出现。
 
 ### 场景 2：普通 Windows 10/11 环境安装更新
 
-**Given** 用户系统仍支持 VBScript  
-**When** 用户点击立即更新  
-**Then** 行为与现有体验一致：等待脚本隐藏执行，安装器正常显示  
+**Given** 用户系统仍支持 VBScript
+**When** 用户点击立即更新
+**Then** 行为与现有体验一致：等待脚本隐藏执行，安装器正常显示
 **And** 不因为去掉 VBS 改变安装路径、快捷方式、开始菜单、安装后运行等 NSIS 行为。
 
 ### 场景 3：PowerShell launcher 启动失败
 
-**Given** 系统无法启动 `powershell.exe`，或脚本文件写入失败  
-**When** 用户点击立即更新  
-**Then** LobsterAI 不应先退出  
+**Given** 系统无法启动 `powershell.exe`，或脚本文件写入失败
+**When** 用户点击立即更新
+**Then** 智码 GLM Code 不应先退出
 **And** 更新状态进入安装失败，UI 可显示现有 `updateInstallFailed` 文案并允许用户重试或手动安装。
 
 ### 场景 4：当前 app 退出较慢
 
-**Given** 当前 LobsterAI 进程退出需要清理 OpenClaw Gateway、IM Gateway 或文件句柄  
-**When** launcher 已启动  
-**Then** PowerShell 脚本继续按现有逻辑等待当前 app PID，最多等待既有超时时间  
+**Given** 当前 智码 GLM Code 进程退出需要清理 OpenClaw Gateway、IM Gateway 或文件句柄
+**When** launcher 已启动
+**Then** PowerShell 脚本继续按现有逻辑等待当前 app PID，最多等待既有超时时间
 **And** 等待结束后启动 NSIS 安装器。
 
 ### 场景 5：下载好的 ready update 跨重启安装
 
-**Given** 更新文件已下载并持久化为 ready file  
-**When** 用户重启应用后点击立即更新  
+**Given** 更新文件已下载并持久化为 ready file
+**When** 用户重启应用后点击立即更新
 **Then** 新 launcher 对 persisted ready file 同样生效，不要求重新下载。
 
 ## 3. 功能需求
@@ -157,7 +157,7 @@ spawn('powershell.exe', [
 
 - 使用参数数组，不拼接整条命令，降低路径包含空格、中文或特殊字符时的转义风险。
 - 设置 `windowsHide: true`，避免 PowerShell 控制台闪窗。
-- 保留 `detached: true` 和 `unref()`，使等待脚本不依赖 LobsterAI 主进程生命周期。
+- 保留 `detached: true` 和 `unref()`，使等待脚本不依赖 智码 GLM Code 主进程生命周期。
 - 使用 `-NoProfile`，避免用户 PowerShell profile 影响更新脚本。
 
 ### FR-3：保留现有 PowerShell 等待和安装逻辑
@@ -333,14 +333,14 @@ npm run compile:electron
 
 在 Windows 11 24H2 或已禁用 VBScript FoD 的环境验证：
 
-1. 准备一个可检测到新版本的 LobsterAI build。
+1. 准备一个可检测到新版本的 智码 GLM Code build。
 2. 等待或手动触发更新下载。
 3. 点击立即更新。
 4. 确认不会出现 Windows 兼容性助手的 `Wscript.exe VBScript` 提示。
 5. 确认不会出现 Windows Script Host 的 `.vbs` 错误。
 6. 确认 `%TEMP%` 下没有新生成的 `lobsterai-update-<ts>.vbs`。
 7. 确认 `%TEMP%\lobsterai-update-<ts>.ps1` 和 `.log` 存在。
-8. 确认 LobsterAI 退出后 NSIS 安装器正常出现。
+8. 确认 智码 GLM Code 退出后 NSIS 安装器正常出现。
 9. 完成安装后确认桌面快捷方式、开始菜单、安装后运行行为不回退。
 
 补充验证：
@@ -356,7 +356,7 @@ npm run compile:electron
 - [ ] Windows 更新安装流程不再调用 `wscript.exe` 或 `cscript.exe`。
 - [ ] Windows 11 24H2 禁用 VBScript 时，点击立即更新不会弹兼容性助手或 Windows Script Host 错误。
 - [ ] PowerShell 等待脚本隐藏执行，不出现控制台闪窗。
-- [ ] LobsterAI 当前进程退出后，NSIS 安装器正常出现。
+- [ ] 智码 GLM Code 当前进程退出后，NSIS 安装器正常出现。
 - [ ] 安装器仍以正常交互 UI 运行，不变为静默安装。
 - [ ] 安装完成后的快捷方式、开始菜单和安装后运行行为不回退。
 - [ ] launcher 启动失败时 app 不提前退出，更新状态进入安装失败。

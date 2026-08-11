@@ -2,12 +2,12 @@
 
 ## Background
 
-LobsterAI goal mode should match the Codex/OpenClaw interaction model: users set
+智码 GLM Code goal mode should match the Codex/OpenClaw interaction model: users set
 a durable session goal from the prompt, see the goal state above the composer,
 and can edit, pause/resume, or clear it without exposing `/goal ...` commands in
 the visible conversation.
 
-The initial LobsterAI integration forwarded `/goal ...` as normal chat input.
+The initial 智码 GLM Code integration forwarded `/goal ...` as normal chat input.
 That made command prefixes leak into messages/titles and prevented pause/clear
 while a session was running because normal Cowork turns are serialized.
 
@@ -28,7 +28,7 @@ OpenClaw goal mode supports these local command actions:
 
 - `status`: read current goal state.
 - `start`, `create`: create a new active goal.
-- `set`: GUI replacement semantics in LobsterAI's gateway patch; replaces the
+- `set`: GUI replacement semantics in 智码 GLM Code's gateway patch; replaces the
   objective by clearing and recreating the goal.
 - `pause`: mark current goal paused.
 - `resume`: mark current goal active again.
@@ -77,7 +77,7 @@ Runtime adapter:
 - For `start`, `create`, `set`, and `resume`, starts a normal continuation turn
   only when no turn is currently active.
 - If `start`, `create`, `set`, or `resume` is called while a turn is already
-  active, OpenClaw updates the persisted goal immediately and LobsterAI queues
+  active, OpenClaw updates the persisted goal immediately and 智码 GLM Code queues
   one continuation for the updated goal after the active turn completes. This
   avoids interrupting in-flight tools while ensuring the next model turn sees
   the new goal. Pause, block, complete, and clear commands remove any queued

@@ -1094,7 +1094,7 @@ async function installWindowsNsis(
   // offers a retry instead of quitting into nothing.
   //
   // Quitting in parallel with the installer running is safe: the NSIS
-  // customCheckAppRunning macro stops remaining LobsterAI processes by image
+  // customCheckAppRunning macro stops remaining 智码 GLM Code processes by image
   // name and polls until they are gone before replacing files. The installer
   // process itself is named lobsterai-update-*, so it is not affected by that
   // kill.

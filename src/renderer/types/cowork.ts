@@ -20,6 +20,7 @@ import type {
   OpenClawEnginePhase as SharedOpenClawEnginePhase,
   OpenClawGatewayRepairErrorCode,
 } from '../../shared/openclawEngine/constants';
+import type { ModelThinkingLevel } from '../../shared/providers';
 
 // Cowork image attachment for vision-capable models
 export type CoworkImageAttachment = CoworkImageAttachmentPayload;
@@ -152,6 +153,7 @@ export interface CoworkSession {
   cwd: string;
   systemPrompt: string;
   modelOverride: string;
+  codingOptimized?: boolean;
   executionMode: CoworkExecutionMode;
   activeSkillIds: string[];
   activeKitIds?: string[];
@@ -179,6 +181,7 @@ export interface CoworkConfig {
   systemPrompt: string;
   executionMode: CoworkExecutionMode;
   agentEngine: CoworkAgentEngine;
+  codingOptimizationEnabled?: boolean;
   memoryEnabled: boolean;
   memoryImplicitUpdateEnabled: boolean;
   memoryLlmJudgeEnabled: boolean;
@@ -217,6 +220,7 @@ export type CoworkConfigUpdate = Partial<Pick<
   | 'workingDirectory'
   | 'executionMode'
   | 'agentEngine'
+  | 'codingOptimizationEnabled'
   | 'memoryEnabled'
   | 'memoryImplicitUpdateEnabled'
   | 'memoryLlmJudgeEnabled'
@@ -363,6 +367,8 @@ export interface CoworkStartOptions {
   resolvedKitCapabilities?: ResolvedKitCapabilities;
   agentId?: string;
   modelOverride?: string;
+  thinkingLevel?: ModelThinkingLevel;
+  codingOptimized?: boolean;
   imageAttachments?: CoworkImageAttachment[];
   mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string };
   mediaReferences?: import('./mediaGeneration').MediaAttachmentRef[];
@@ -385,6 +391,7 @@ export interface CoworkContinueOptions {
   mediaReferences?: import('./mediaGeneration').MediaAttachmentRef[];
   selectedTextSnippets?: CoworkSelectedTextSnippet[];
   browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
+  codingOptimized?: boolean;
 }
 
 // IPC result types

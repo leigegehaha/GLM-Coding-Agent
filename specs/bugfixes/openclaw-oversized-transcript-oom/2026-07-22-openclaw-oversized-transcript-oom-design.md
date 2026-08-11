@@ -13,7 +13,7 @@
 
 | 项目 | 版本 |
 | --- | --- |
-| LobsterAI | `2026.7.17` |
+| 智码 GLM Code | `2026.7.17` |
 | OpenClaw | `v2026.6.1` |
 | Node.js | `24.11.1` |
 
@@ -48,7 +48,7 @@ FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - JavaScript heap out of memo
 
 但是压缩前后的 transcript 文件分别约为 326 MB 和 331 MB。压缩结果被追加到 JSONL 文件中，已经被摘要替代的旧消息仍保留在同一个活动文件内，因此 compaction 没有降低磁盘文件大小。
 
-当前 LobsterAI 生成的 OpenClaw 配置没有设置：
+当前 智码 GLM Code 生成的 OpenClaw 配置没有设置：
 
 ```text
 agents.defaults.compaction.truncateAfterCompaction
@@ -82,7 +82,7 @@ OpenClaw 在开始 embedded run 时会通过 `SessionManager.open(params.session
 
 #### 1.2.4 Gateway 会重启，但客户端恢复链路不完整
 
-LobsterAI 的 Engine Manager 能在 Gateway 崩溃后自动拉起进程，但本次环境的完整启动耗时约 55～62 秒，其中插件和 provider 加载占用约 39～42 秒。
+智码 GLM Code 的 Engine Manager 能在 Gateway 崩溃后自动拉起进程，但本次环境的完整启动耗时约 55～62 秒，其中插件和 provider 加载占用约 39～42 秒。
 
 同时，`openclawRuntimeAdapter` 中的 `gatewayReconnectSuppressed` 是粘性的：调用 `disconnectGatewayClient()` 后会置为 `true`，部分正常任务路径直接调用 `ensureGatewayClientReady()` 建立新连接，但成功握手没有清除该状态。后续再发生意外断开时，日志出现：
 
@@ -112,7 +112,7 @@ GatewayReconnect skipped ... reconnect is suppressed
 2. 对已经存在的超大 transcript 在进入 OpenClaw 完整加载前进行保护，避免再次拖垮整个 Gateway。
 3. 在 compaction 后保留必要的摘要和最近上下文，同时归档旧 transcript，不静默删除用户历史。
 4. 将 Gateway heap OOM 与普通网络断开区分开，向用户提供可执行的恢复提示。
-5. Gateway 自动重启后恢复 WebSocket 客户端，使新任务无需重启 LobsterAI 即可继续使用。
+5. Gateway 自动重启后恢复 WebSocket 客户端，使新任务无需重启 智码 GLM Code 即可继续使用。
 6. 保证崩溃中的原任务不会被自动重发，避免工具调用或外部副作用重复执行。
 
 ### 1.5 非目标
@@ -131,7 +131,7 @@ GatewayReconnect skipped ... reconnect is suppressed
 
 ### 2.1 长期任务自动压缩
 
-用户在同一任务中持续对话、上传图片并执行工具。当活动 transcript 达到大小阈值或正常 token compaction 触发时，OpenClaw 在 compaction 成功后自动创建更小的 successor transcript。用户继续在原 LobsterAI 任务中工作，不需要手动新建任务。
+用户在同一任务中持续对话、上传图片并执行工具。当活动 transcript 达到大小阈值或正常 token compaction 触发时，OpenClaw 在 compaction 成功后自动创建更小的 successor transcript。用户继续在原 智码 GLM Code 任务中工作，不需要手动新建任务。
 
 ### 2.2 手动压缩
 
@@ -139,7 +139,7 @@ GatewayReconnect skipped ... reconnect is suppressed
 
 ### 2.3 打开或继续历史超大任务
 
-用户继续一个已经达到硬保护阈值的旧任务。LobsterAI 在发送运行请求之前检测到风险，不再让 Gateway 完整加载该文件，也不再造成整个 AI 引擎崩溃。
+用户继续一个已经达到硬保护阈值的旧任务。智码 GLM Code 在发送运行请求之前检测到风险，不再让 Gateway 完整加载该文件，也不再造成整个 AI 引擎崩溃。
 
 界面应明确说明“该任务历史记录过大，为保护 AI 引擎已停止继续加载”，并提供“在新任务中继续”的恢复路径，而不是只显示网络或 Gateway 断开。
 
@@ -155,7 +155,7 @@ GatewayReconnect skipped ... reconnect is suppressed
 
 ### 3.1 FR-1：启用 OpenClaw 原生 transcript 轮转
 
-LobsterAI 生成的 managed OpenClaw 配置必须写入：
+智码 GLM Code 生成的 managed OpenClaw 配置必须写入：
 
 ```json
 {
@@ -172,7 +172,7 @@ LobsterAI 生成的 managed OpenClaw 配置必须写入：
 
 要求：
 
-- 初始软阈值为 32 MiB，必须由 LobsterAI 侧集中常量管理，不散落裸数字；
+- 初始软阈值为 32 MiB，必须由 智码 GLM Code 侧集中常量管理，不散落裸数字；
 - 保留 OpenClaw 现有的 token compaction 规则，不覆盖用户有效的 context window 配置；
 - 无论 compaction 是 token、文件大小还是手动触发，成功后均执行 successor transcript 轮转；
 - 新 transcript 保留最新 compaction summary 和未被摘要覆盖的尾部消息；
@@ -185,7 +185,7 @@ LobsterAI 生成的 managed OpenClaw 配置必须写入：
 
 仅依赖 OpenClaw 的 compaction 不能安全修复已经达到数百 MB 的旧文件，因为首次 compaction/repair 本身也可能完整读取 transcript 并 OOM。
 
-LobsterAI 必须在向 Gateway 发出会加载 transcript 的运行请求前执行本地安全检查：
+智码 GLM Code 必须在向 Gateway 发出会加载 transcript 的运行请求前执行本地安全检查：
 
 1. 根据 agent ID、OpenClaw session key 和 session store 定位活动 transcript；
 2. 只读取体积较小的 session metadata，并通过 `fs.stat` 获取文件大小；
@@ -222,7 +222,7 @@ LobsterAI 必须在向 Gateway 发出会加载 transcript 的运行请求前执�
 
 P1 应提供“一键在新任务中继续”：
 
-- 使用 LobsterAI 已持久化的 continuity capsule、最近可用的 Cowork 消息和当前用户输入创建干净任务；
+- 使用 智码 GLM Code 已持久化的 continuity capsule、最近可用的 Cowork 消息和当前用户输入创建干净任务；
 - 不通过 Gateway 读取旧 transcript；
 - 新任务不得继承旧的 OpenClaw session ID 或 session file；
 - 原 Cowork session 与新任务建立来源关联，便于用户返回查看；
@@ -261,7 +261,7 @@ Engine Manager 必须在当前 Gateway 进程代次内识别以下组合信号�
 - Gateway 进程尚未 ready 时按现有退避机制等待，不创建并行连接风暴；
 - Engine Manager 自动拉起进程并 ready 后，WebSocket 客户端自动重新握手；
 - 当前已经失败的运行保持失败，不自动重新发送用户消息或工具调用；
-- 重连成功后，下一次用户操作可以正常工作，无需重启 LobsterAI。
+- 重连成功后，下一次用户操作可以正常工作，无需重启 智码 GLM Code。
 
 ### 3.6 FR-6：恢复阶段的任务状态与提示
 
@@ -353,7 +353,7 @@ Adapter 在 session key 确定后、运行真正开始前调用该模块，并�
 - 不得留下 session store 指向不存在或半写入文件；
 - 不得删除原文件；
 - 当前 compaction 返回失败或保持原状态；
-- LobsterAI 记录可定位的结构化错误；
+- 智码 GLM Code 记录可定位的结构化错误；
 - 如果原文件已经超过硬保护阈值，禁止继续尝试普通运行。
 
 ### 4.4 OOM 失败分类
@@ -388,7 +388,7 @@ stderrSignature
 
 P0 复用现有错误展示和新建任务能力，增加专用错误类型及 i18n 文案。
 
-P1 的“一键在新任务中继续”应复用已有 Cowork session/capsule/fork 基础设施；创建新 OpenClaw session，而不是尝试把 333 MB JSONL 重新提交给 Gateway。恢复摘要来源必须是 LobsterAI 本地已持久化数据，不能依赖读取超大 transcript。
+P1 的“一键在新任务中继续”应复用已有 Cowork session/capsule/fork 基础设施；创建新 OpenClaw session，而不是尝试把 333 MB JSONL 重新提交给 Gateway。恢复摘要来源必须是 智码 GLM Code 本地已持久化数据，不能依赖读取超大 transcript。
 
 ## 5. 状态与边界处理
 
@@ -510,7 +510,7 @@ P1 增加：
 
 使用当前固定版本 `v2026.6.1` 验证：
 
-1. LobsterAI 生成配置能够被 Gateway 接受；
+1. 智码 GLM Code 生成配置能够被 Gateway 接受；
 2. size preflight 能在 32 MiB 阈值触发；
 3. 自动和手动 compaction 均创建 successor transcript；
 4. session store 指向新文件；
@@ -559,7 +559,7 @@ npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 <tou
 
 ## 9. 验收标准
 
-- [ ] LobsterAI 生成的 OpenClaw 配置启用 `truncateAfterCompaction` 和文件大小阈值。
+- [ ] 智码 GLM Code 生成的 OpenClaw 配置启用 `truncateAfterCompaction` 和文件大小阈值。
 - [ ] 自动、手动和 token compaction 成功后均能轮转活动 transcript。
 - [ ] 轮转后 session store 指向有效 successor 文件，旧文件仍被归档保留。
 - [ ] 活动 transcript 不再因已经被摘要的历史记录持续无界增长。
@@ -568,7 +568,7 @@ npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 <tou
 - [ ] OOM 能与普通 WebSocket 断开、provider 错误和人工停止区分。
 - [ ] Gateway 崩溃后能自动重启，客户端能自动重新握手。
 - [ ] 崩溃中的旧 run 不会被自动重发，工具副作用不会重复执行。
-- [ ] 引擎恢复后，用户无需重启 LobsterAI 即可创建或运行其他任务。
+- [ ] 引擎恢复后，用户无需重启 智码 GLM Code 即可创建或运行其他任务。
 - [ ] 普通小型任务的发送、流式响应、模型选择和工具权限无回归。
 - [ ] 修复不依赖提高默认 4 GB heap，不要求用户重装或切换模型。
 - [ ] 日志包含文件大小、轮转、OOM 和恢复阶段的必要诊断信息，但不包含 transcript 正文。
@@ -593,7 +593,7 @@ Successor transcript 依赖 compaction summary 保持模型上下文。需要结
 
 ### 10.5 OpenClaw 原生轮转兼容性
 
-当前固定版本已存在相应配置和 successor transcript 实现，但必须以打包 runtime 集成测试为准。如果存在上游缺陷，按 LobsterAI OpenClaw patch policy 提交最小、版本化 patch，并在后续升级 OpenClaw 时重新验证和移除。
+当前固定版本已存在相应配置和 successor transcript 实现，但必须以打包 runtime 集成测试为准。如果存在上游缺陷，按 智码 GLM Code OpenClaw patch policy 提交最小、版本化 patch，并在后续升级 OpenClaw 时重新验证和移除。
 
 ## 11. 与既有设计的关系
 

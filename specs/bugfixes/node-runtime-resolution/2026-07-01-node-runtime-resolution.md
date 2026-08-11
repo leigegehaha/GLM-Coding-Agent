@@ -21,20 +21,20 @@ MCP 和部分技能模块把 shell shim 当作原生可执行 Node 使用，触�
 
 ### 场景 1：Windows 安装包无系统 Node
 
-**Given** 用户只安装 LobsterAI，没有安装系统 Node.js  
-**When** 用户启用 `npx` 类型 MCP 或启动需要 Node 的技能脚本  
-**Then** 应使用 LobsterAI 自带 Electron runtime 以 Node 模式运行，而不是依赖系统 Node
+**Given** 用户只安装 智码 GLM Code，没有安装系统 Node.js
+**When** 用户启用 `npx` 类型 MCP 或启动需要 Node 的技能脚本
+**Then** 应使用 智码 GLM Code 自带 Electron runtime 以 Node 模式运行，而不是依赖系统 Node
 
 ### 场景 2：Windows 安装包已有系统 Node
 
-**Given** 用户系统 PATH 中有真实 `node.exe`，但 LobsterAI shim 目录在 PATH 前面  
-**When** LobsterAI 需要原生 spawn Node 进程  
+**Given** 用户系统 PATH 中有真实 `node.exe`，但 智码 GLM Code shim 目录在 PATH 前面
+**When** 智码 GLM Code 需要原生 spawn Node 进程
 **Then** 应跳过无扩展名 shim，使用真实 `node.exe`
 
 ### 场景 3：macOS/Linux
 
-**Given** 用户在 macOS/Linux 上运行 LobsterAI  
-**When** 相关模块解析 Node runtime  
+**Given** 用户在 macOS/Linux 上运行 智码 GLM Code
+**When** 相关模块解析 Node runtime
 **Then** 保持原有行为：能找到系统 Node 则使用系统 Node，否则回退 Electron-as-node
 
 ## 3. 功能需求
@@ -62,7 +62,7 @@ MCP 和部分技能模块把 shell shim 当作原生可执行 Node 使用，触�
 
 | 场景 | 处理方式 |
 |------|---------|
-| Windows 只有 LobsterAI shim，没有系统 Node | 使用 Electron-as-node |
+| Windows 只有 智码 GLM Code shim，没有系统 Node | 使用 Electron-as-node |
 | Windows shim 在 PATH 前、系统 Node 在后 | 跳过 shim，选择真实 `node.exe` |
 | Windows 只有 `node.cmd` | 不作为原生 Node runtime；需要时回退 Electron-as-node |
 | bundled npm-cli.js 不存在 | fallback 到系统 `npm.cmd` 并使用 shell |

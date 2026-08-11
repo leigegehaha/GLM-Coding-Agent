@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI Cowork 中执行一个较长任务时，工具调用本身已经成功，但界面随后展示系统错误：
+用户在 智码 GLM Code Cowork 中执行一个较长任务时，工具调用本身已经成功，但界面随后展示系统错误：
 
 ```text
 Unexpected end of JSON input
@@ -22,7 +22,7 @@ Unexpected end of JSON input
 |---|---|
 | `gateway-2026-05-21.log` | OpenClaw gateway / agent 运行日志 |
 | `openclaw-2026-05-21.log` | OpenClaw 结构化日志 |
-| `main-2026-05-21.log` | LobsterAI 主进程透传和 session 状态日志 |
+| `main-2026-05-21.log` | 智码 GLM Code 主进程透传和 session 状态日志 |
 
 第一次失败链路：
 
@@ -43,7 +43,7 @@ From chunk: [ 'data:' ]
 error=Unexpected end of JSON input rawError=Unexpected end of JSON input
 ```
 
-7. gateway 发出 `stream=lifecycle phase=error error=Unexpected end of JSON input`，LobsterAI UI 显示该错误。
+7. gateway 发出 `stream=lifecycle phase=error error=Unexpected end of JSON input`，智码 GLM Code UI 显示该错误。
 
 第二次继续对话后，链路相同：
 
@@ -92,7 +92,7 @@ data:
 Unexpected end of JSON input
 ```
 
-因此，问题根因位于 **自定义 provider / AIGW / proxy 返回了不规范空 data 帧，以及 OpenClaw parser 没有容忍该空帧** 这一层。LobsterAI 主进程只是通过 lifecycle error fallback 把 OpenClaw 的错误透传到了 UI。
+因此，问题根因位于 **自定义 provider / AIGW / proxy 返回了不规范空 data 帧，以及 OpenClaw parser 没有容忍该空帧** 这一层。智码 GLM Code 主进程只是通过 lifecycle error fallback 把 OpenClaw 的错误透传到了 UI。
 
 ### 1.4 目标
 
@@ -103,7 +103,7 @@ Unexpected end of JSON input
 3. 非空但非法的 JSON 仍必须报错，不能被静默跳过。
 4. 如果上游持续只发送空 `data:`，不能无限等待，应通过 idle timeout 或连续空帧阈值给出明确错误。
 5. 诊断日志应能说明“收到空 SSE data 帧”，并包含 provider/model/runId 等上下文，但不能刷屏。
-6. LobsterAI UI 不再直接暴露低层 `Unexpected end of JSON input`，至少应在兜底路径中显示更可诊断的模型流格式错误。
+6. 智码 GLM Code UI 不再直接暴露低层 `Unexpected end of JSON input`，至少应在兜底路径中显示更可诊断的模型流格式错误。
 
 ### 1.5 非目标
 
@@ -120,42 +120,42 @@ Unexpected end of JSON input
 
 ### 场景 1: 模型流中偶发空 data 帧
 
-**Given** 用户使用 `custom_0/deepseek-v4-pro` 等 OpenAI-compatible 自定义模型  
-**And** 模型代理在正常 JSON chunk 之间返回一个空 `data:`  
-**When** OpenClaw 解析流式响应  
-**Then** OpenClaw 应跳过该空帧  
-**And** 后续合法 JSON chunk 应继续被消费  
-**And** LobsterAI 不应显示 `Unexpected end of JSON input`
+**Given** 用户使用 `custom_0/deepseek-v4-pro` 等 OpenAI-compatible 自定义模型
+**And** 模型代理在正常 JSON chunk 之间返回一个空 `data:`
+**When** OpenClaw 解析流式响应
+**Then** OpenClaw 应跳过该空帧
+**And** 后续合法 JSON chunk 应继续被消费
+**And** 智码 GLM Code 不应显示 `Unexpected end of JSON input`
 
 ### 场景 2: 工具结果返回后继续生成
 
-**Given** OpenClaw 已成功执行 `process poll` 并返回 `err=false`  
-**When** 模型继续生成下一步 assistant 回复  
-**And** provider 在流里插入空 `data:` 心跳或空帧  
-**Then** 当前 run 不应因此进入 `phase=error`  
+**Given** OpenClaw 已成功执行 `process poll` 并返回 `err=false`
+**When** 模型继续生成下一步 assistant 回复
+**And** provider 在流里插入空 `data:` 心跳或空帧
+**Then** 当前 run 不应因此进入 `phase=error`
 **And** 会话应继续等待模型输出或正常结束
 
 ### 场景 3: 非空非法 JSON
 
-**Given** provider 返回了 `data: {bad-json`、`data: <html>` 或其他非空非法 payload  
-**When** OpenClaw 解析该帧  
-**Then** OpenClaw 必须抛出明确的 provider stream parse error  
-**And** 错误日志应包含安全截断后的 payload 预览或 hash  
+**Given** provider 返回了 `data: {bad-json`、`data: <html>` 或其他非空非法 payload
+**When** OpenClaw 解析该帧
+**Then** OpenClaw 必须抛出明确的 provider stream parse error
+**And** 错误日志应包含安全截断后的 payload 预览或 hash
 **And** 不能静默跳过该帧
 
 ### 场景 4: 上游持续发送空帧
 
-**Given** provider 一直返回空 `data:`，没有任何合法 JSON chunk 或 `[DONE]`  
-**When** 超过配置的 idle timeout 或连续空帧阈值  
-**Then** OpenClaw 应中止当前模型流  
-**And** 对 LobsterAI 返回明确错误，例如“模型流式响应一直为空”  
+**Given** provider 一直返回空 `data:`，没有任何合法 JSON chunk 或 `[DONE]`
+**When** 超过配置的 idle timeout 或连续空帧阈值
+**Then** OpenClaw 应中止当前模型流
+**And** 对 智码 GLM Code 返回明确错误，例如“模型流式响应一直为空”
 **And** 不应让 UI 无限 loading
 
 ### 场景 5: 标准 SSE comment 心跳
 
-**Given** provider 使用标准 SSE comment 心跳，例如 `: ping`  
-**When** parser 遇到该行  
-**Then** parser 应忽略该 comment  
+**Given** provider 使用标准 SSE comment 心跳，例如 `: ping`
+**When** parser 遇到该行
+**Then** parser 应忽略该 comment
 **And** 不应把它当作 JSON 数据
 
 ## 3. 功能需求
@@ -181,7 +181,7 @@ data:
 以及：
 
 ```text
-data:    
+data:
 ```
 
 都应作为空 data 帧处理。
@@ -263,9 +263,9 @@ const MODEL_STREAM_NO_VALID_DATA_TIMEOUT_MS = 60_000;
 
 日志应使用英文，且遵守仓库日志规范：自然语言、单行、包含必要上下文、不在热路径刷 info。
 
-### FR-6: LobsterAI 侧兜底错误提示应更可诊断
+### FR-6: 智码 GLM Code 侧兜底错误提示应更可诊断
 
-如果 OpenClaw 仍然向 LobsterAI 抛出底层 parse 错误，`OpenClawRuntimeAdapter` 可以在不吞错的前提下把用户可见文案包装得更明确。
+如果 OpenClaw 仍然向 智码 GLM Code 抛出底层 parse 错误，`OpenClawRuntimeAdapter` 可以在不吞错的前提下把用户可见文案包装得更明确。
 
 示例：
 
@@ -293,9 +293,9 @@ const MODEL_STREAM_NO_VALID_DATA_TIMEOUT_MS = 60_000;
 provider=custom_0 api=openai-completions endpoint=custom route=proxy-like
 ```
 
-因此重点路径是自定义 provider 的 OpenAI-compatible streaming 适配层，而不是 LobsterAI 的 `OpenClawRuntimeAdapter`、renderer 或工具展示层。
+因此重点路径是自定义 provider 的 OpenAI-compatible streaming 适配层，而不是 智码 GLM Code 的 `OpenClawRuntimeAdapter`、renderer 或工具展示层。
 
-如果该 parser 位于 OpenClaw 独立仓库或 bundled runtime 中，应在 OpenClaw 源码修复后更新 LobsterAI `package.json` 中 pinned OpenClaw 版本，并通过 LobsterAI 集成测试验证。
+如果该 parser 位于 OpenClaw 独立仓库或 bundled runtime 中，应在 OpenClaw 源码修复后更新 智码 GLM Code `package.json` 中 pinned OpenClaw 版本，并通过 智码 GLM Code 集成测试验证。
 
 ### 4.2 解析逻辑调整
 
@@ -366,9 +366,9 @@ try {
 
 这样可以避免把本次空心跳问题和真实 provider 响应损坏混为一类。
 
-### 4.5 LobsterAI 兜底映射
+### 4.5 智码 GLM Code 兜底映射
 
-若短期内无法升级 OpenClaw runtime，可在 LobsterAI 侧做低风险兜底：
+若短期内无法升级 OpenClaw runtime，可在 智码 GLM Code 侧做低风险兜底：
 
 1. 当 lifecycle error message 精确等于 `Unexpected end of JSON input`。
 2. 且 OpenClaw stderr 近期出现 `From chunk: [ 'data:' ]`。
@@ -402,11 +402,11 @@ try {
 - gateway / embedded agent 模型流错误包装逻辑
 - 对应 parser 单元测试
 
-LobsterAI 仓库可能涉及：
+智码 GLM Code 仓库可能涉及：
 
 - `package.json`：更新 OpenClaw pinned version
 - `src/main/libs/agentEngine/openclawRuntimeAdapter.ts`：可选的用户可见错误文案兜底
-- `src/main/libs/agentEngine/openclawRuntimeAdapter.test.ts`：如果增加 LobsterAI 侧错误映射，需要补测试
+- `src/main/libs/agentEngine/openclawRuntimeAdapter.test.ts`：如果增加 智码 GLM Code 侧错误映射，需要补测试
 - `specs/bugfixes/openclaw-empty-sse-data/`：本设计文档
 
 如果 OpenClaw parser 不在当前仓库内，本 spec 应作为升级 OpenClaw runtime 前的修复依据。
@@ -445,7 +445,7 @@ parser 必须报错，且错误不应被吞掉或转换成成功空回复。
 
 - 不抛原生 `Unexpected end of JSON input`。
 - 超过阈值或 timeout 后报明确 empty stream / empty data 错误。
-- LobsterAI session 不应永久保持 running。
+- 智码 GLM Code session 不应永久保持 running。
 
 ### AC-4: 真实任务链路不再误报
 
@@ -459,7 +459,7 @@ parser 必须报错，且错误不应被吞掉或转换成成功空回复。
 期望：
 
 - OpenClaw 不发出 `phase=error error=Unexpected end of JSON input`。
-- LobsterAI 不展示该系统错误。
+- 智码 GLM Code 不展示该系统错误。
 - 后续合法模型输出正常进入会话。
 
 ### AC-5: 日志可诊断且不刷屏
@@ -480,7 +480,7 @@ parser 必须报错，且错误不应被吞掉或转换成成功空回复。
    - valid chunk after empty data still emitted
    - continuous empty data triggers timeout or threshold error
 2. 使用本次日志抽取的 `From chunk: [ 'data:' ]` 场景做 fixture replay。
-3. 在 LobsterAI 中使用自定义 OpenAI-compatible provider 做一次手动验证：
+3. 在 智码 GLM Code 中使用自定义 OpenAI-compatible provider 做一次手动验证：
    - 长任务工具调用后继续生成。
    - 插入空 data 心跳。
    - 确认 UI 不出现 `Unexpected end of JSON input`。

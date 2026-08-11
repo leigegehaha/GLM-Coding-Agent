@@ -2,18 +2,18 @@
 
 > 状态：Implemented（客户端与 OpenClaw runtime 已完成；套餐服务端门禁和真实密钥 E2E 为发版前置）
 >
-> 适用范围：LobsterAI 自定义模型、内置 Moonshot Provider、套餐模型与 OpenClaw runtime
+> 适用范围：智码 GLM Code 自定义模型、内置 Moonshot Provider、套餐模型与 OpenClaw runtime
 >
-> 目标版本：本次 LobsterAI 发版
+> 目标版本：本次 智码 GLM Code 发版
 
 ## 1. 概述
 
 ### 1.1 问题背景
 
-LobsterAI 当前版本为 `2026.7.17`，固定使用 OpenClaw `v2026.6.1`。这一版本早于 OpenClaw 对 Kimi K3 的原生适配，当前代码和运行配置还存在以下问题：
+智码 GLM Code 当前版本为 `2026.7.17`，固定使用 OpenClaw `v2026.6.1`。这一版本早于 OpenClaw 对 Kimi K3 的原生适配，当前代码和运行配置还存在以下问题：
 
 1. 内置 Moonshot 模型目录只有 Kimi K2.6 / K2.5，没有 Kimi K3。
-2. 用户可以手工添加 `kimi-k3`，但 LobsterAI 只能向 OpenClaw 写出通用模型字段，无法表达 K3 官方要求的 `thinkingLevelMap` 和 `compat`。
+2. 用户可以手工添加 `kimi-k3`，但 智码 GLM Code 只能向 OpenClaw 写出通用模型字段，无法表达 K3 官方要求的 `thinkingLevelMap` 和 `compat`。
 3. 自定义参数 `customParams` 会进入请求体 `extra_body`；它不能替代 OpenClaw transport metadata，也不应被用来粘贴官方 `compat` 配置。
 4. OpenClaw 新版的原生 K3 wrapper 只对 `moonshot/kimi-k3` 生效，自定义 Provider 和 `lobsterai-server/<套餐模型 ID>` 不会自动命中。
 5. 套餐模型虽然由服务端返回 `provider`、`apiFormat`、图片和思考能力等元数据，但没有受控的模型兼容档案、工具调用能力或 Agent 上线状态。
@@ -26,7 +26,7 @@ LobsterAI 当前版本为 `2026.7.17`，固定使用 OpenClaw `v2026.6.1`。这�
 
 因此，本次支持不能只是在模型列表中新增一个 ID，也不能只升级 OpenClaw。需要同时补齐：
 
-1. LobsterAI 模型元数据与配置同步；
+1. 智码 GLM Code 模型元数据与配置同步；
 2. OpenClaw K3 请求、流式响应和多轮回放；
 3. 自定义 Provider 与套餐 Provider 的兼容路由；
 4. 截断、流异常和套餐灰度的失败保护。
@@ -45,9 +45,9 @@ OpenClaw 在 2026 年 7 月合并了以下关键修复：
 
 当前 `v2026.6.1` 不包含这些修复。最新版 `v2026.7.2-beta.3` 已包含它们，但截至本文创建时还不是稳定版。
 
-#### B. LobsterAI Provider 身份与兼容档案缺口
+#### B. 智码 GLM Code Provider 身份与兼容档案缺口
 
-OpenClaw 的原生 K3 逻辑按 `provider=moonshot` 和 `model=kimi-k3` 匹配。LobsterAI 套餐模型必须继续使用：
+OpenClaw 的原生 K3 逻辑按 `provider=moonshot` 和 `model=kimi-k3` 匹配。智码 GLM Code 套餐模型必须继续使用：
 
 ```text
 lobsterai-server/<服务端原始 modelId>
@@ -67,7 +67,7 @@ custom_N/<用户原始 modelId>
 
 1. 内置 Moonshot Provider 默认提供 `kimi-k3`，并按 Kimi 官方 OpenClaw 配置运行。
 2. 用户在任一内置或自定义 Provider 中配置 K3 时，可以获得完整的 K3 transport 与工具调用兼容。
-3. LobsterAI 套餐 K3 保持 `lobsterai-server/<原始 modelId>`，同时应用与直连一致的 K3 协议规则。
+3. 智码 GLM Code 套餐 K3 保持 `lobsterai-server/<原始 modelId>`，同时应用与直连一致的 K3 协议规则。
 4. 自定义 API Key、套餐 Token、Provider Base URL 和模型 ID 始终保持各自路由，不发生隐式切换。
 5. 工具调用后的 `reasoning_content`、`tool_calls` 和 `tool_call_id` 能正确保存并回放。
 6. `stopReason=length`、异常 SSE EOF 和缺失终止包不得显示为任务成功。
@@ -88,7 +88,7 @@ custom_N/<用户原始 modelId>
 7. 模型设置页面整体重做。
 8. 根据模型自然语言判断“是否撒谎说已落盘”。
 9. Provider 间自动 failover。
-10. 允许用户或 LobsterAI 服务端远程注入任意 OpenClaw `compat` JSON。
+10. 允许用户或 智码 GLM Code 服务端远程注入任意 OpenClaw `compat` JSON。
 
 ## 2. 核心设计决策
 
@@ -100,7 +100,7 @@ custom_N/<用户原始 modelId>
 |---|---|---|
 | 内置 Provider（含 Moonshot） | `<原 providerId>/<原始 modelId>` | 规范化后精确 `kimi-k3` 自动解析 |
 | 用户自定义 Provider | `custom_N/<原始 modelId>` | 仅规范化后精确 `kimi-k3` 自动解析 |
-| LobsterAI 套餐 | `lobsterai-server/<服务端原始 modelId>` | 仅接受服务端下发的受控枚举 |
+| 智码 GLM Code 套餐 | `lobsterai-server/<服务端原始 modelId>` | 仅接受服务端下发的受控枚举 |
 
 禁止：
 
@@ -192,7 +192,7 @@ lobsterai-model-compat
 
 职责：
 
-1. 按完整 `provider/model` 精确读取 LobsterAI 生成的受控 profile 映射。
+1. 按完整 `provider/model` 精确读取 智码 GLM Code 生成的受控 profile 映射。
 2. 注册受控 API owner `lobsterai-model-compat`，并委托真实的 model-level
    transport。
 3. 仅对映射为 `moonshot-kimi-k3` 的模型应用 K3 wrapper 和 replay policy。
@@ -218,7 +218,7 @@ lobsterai-model-compat
 - **And** 使用官方 `https://api.moonshot.cn/v1` OpenAI Chat Completions 路由
 - **And** 未启用 Kimi Coding Plan
 - **When** 用户在模型列表中选择 Kimi K3
-- **Then** LobsterAI 使用 `moonshot/kimi-k3`
+- **Then** 智码 GLM Code 使用 `moonshot/kimi-k3`
 - **And** 生成完整 K3 profile
 - **And** 使用用户自己的 Moonshot API Key
 - **And** 可以完成真实工具调用和多轮回放
@@ -226,7 +226,7 @@ lobsterai-model-compat
 ### 场景 2：已有用户升级后不出现重复 K3
 
 - **Given** 用户已经手工添加 `kimi-k3`、`Kimi_K3` 或 `kimi.k3`
-- **When** LobsterAI 执行本次模型目录迁移
+- **When** 智码 GLM Code 执行本次模型目录迁移
 - **Then** 不再添加第二个等价 K3
 - **And** 保留用户原有名称、排序、自定义参数和选择状态
 - **And** 为该模型解析正确的 K3 profile
@@ -244,7 +244,7 @@ lobsterai-model-compat
 
 - **Given** 用户代理把 K3 命名为 `my-kimi-prod`
 - **When** 保存并使用该模型
-- **Then** LobsterAI 按普通 OpenAI-compatible 模型处理
+- **Then** 智码 GLM Code 按普通 OpenAI-compatible 模型处理
 - **And** 不提供手动强制启用 K3 profile 的入口
 - **And** 同 Provider 下其他模型保持原行为
 
@@ -280,7 +280,7 @@ lobsterai-model-compat
 
 - **Given** K3 返回部分文本或 thinking
 - **And** `stopReason=length`
-- **When** LobsterAI 收到最终事件
+- **When** 智码 GLM Code 收到最终事件
 - **Then** 保留已有部分文本和已完成工具结果
 - **And** 不显示“任务已完成”
 - **And** 会话进入可恢复的不完整状态
@@ -336,7 +336,7 @@ trim -> lowercase -> 删除非字母数字字符
 其中：
 
 - `supportsToolCalling` 表示供应商声明的能力；
-- `agenticReady` 表示 LobsterAI 已完成真实端到端验证；
+- `agenticReady` 表示 智码 GLM Code 已完成真实端到端验证；
 - 两者不能合并为同一个字段。
 
 ### FR-4：内置 Moonshot 目录与迁移
@@ -427,7 +427,7 @@ agents.defaults.models.<ref>.params.extra_body
 
 OpenClaw `v2026.6.1` 的 TypeScript model type 虽然已有
 `thinkingLevelMap`，严格 Zod `ModelDefinitionSchema` 尚未接受该字段；仅修改
-LobsterAI 输出会导致 Gateway 拒绝配置。本次版本 patch 必须同时补齐：
+智码 GLM Code 输出会导致 Gateway 拒绝配置。本次版本 patch 必须同时补齐：
 
 1. `thinkingLevelMap` 的配置 Schema；
 2. `lobsterai-model-compat` 的 `ModelApi` 枚举与 Schema；
@@ -507,7 +507,7 @@ LobsterAI 输出会导致 Gateway 拒绝配置。本次版本 patch 必须同时
 
 新增集中终止原因常量并处理：
 
-| 终止原因 | LobsterAI 行为 |
+| 终止原因 | 智码 GLM Code 行为 |
 |---|---|
 | 正常 stop / 完整结束 | `completed` |
 | `toolUse` / `tool_use` | 保持 `running`，等待工具及续轮 |
@@ -707,7 +707,7 @@ type OpenClawModelCompat = {
 type OpenClawThinkingLevelMap = Record<string, string | null>;
 ```
 
-`OpenClawApiOwner.LobsterAIModelCompat` 必须同时存在于 LobsterAI 类型和当前
+`OpenClawApiOwner.LobsterAIModelCompat` 必须同时存在于 智码 GLM Code 类型和当前
 OpenClaw runtime 的 `MODEL_APIS` / Zod Schema 中，并由契约测试保证两侧一致。
 不能只用 TypeScript 类型断言绕过 runtime 校验。
 
@@ -823,7 +823,7 @@ OpenClaw runtime 的 `MODEL_APIS` / Zod Schema 中，并由契约测试保证两
 2. 每个 model 层继续保留真实 transport `api`。
 3. 插件只修改 `modelProfiles` 中精确命中的模型。
 4. 非 K3 模型的最终请求和回放必须与改动前一致。
-5. LobsterAI 本地类型只加入该受控 owner 常量，不能把
+5. 智码 GLM Code 本地类型只加入该受控 owner 常量，不能把
    `OpenClawProviderApi` 放宽为任意字符串。
 
 Provider merge 使用与输入顺序无关的确定性规则：
@@ -900,7 +900,7 @@ scripts/patches/v2026.6.1/
 6. `apply-openclaw-patches.cjs` 可重复执行。
 7. sibling OpenClaw checkout 中不能保留未转成 patch 的手工修改。
 8. 升级到包含修复的稳定版本时删除已上游化 patch，并保留
-   LobsterAI-specific API owner patch，直到上游提供等价的动态插件 API
+   智码 GLM Code-specific API owner patch，直到上游提供等价的动态插件 API
    Schema。
 
 尚未合并的 `#110138` 不作为必选依赖。只有真实测试证明 K3 因 `anyOf` / `oneOf` 等 Schema 返回明确错误时，才增加 K3 profile 限定的最小规范化，并满足：
@@ -916,7 +916,7 @@ scripts/patches/v2026.6.1/
 
 - 套餐鉴权和刷新；
 - 目标 URL 路由；
-- 向 LobsterAI 套餐服务附加客户端版本和
+- 向 智码 GLM Code 套餐服务附加客户端版本和
   `kimi-k3-agentic-v1` capability header；
 - 请求和流式响应透明转发；
 - 现有 SSE 终包与异常 EOF 检查；
@@ -1260,7 +1260,7 @@ OpenClaw patch 自带的 targeted tests 也必须通过。
 ### 11.6 OpenClaw 严格 Schema
 
 `v2026.6.1` 的 runtime type 与严格 Zod Schema 不完全一致，且 `ModelApi` 是
-固定枚举。若只修改 LobsterAI 配置生成，Gateway 会在启动阶段拒绝配置。因此
+固定枚举。若只修改 智码 GLM Code 配置生成，Gateway 会在启动阶段拒绝配置。因此
 “打包 Gateway 真实加载并 ready”是硬性门禁，不能用 TypeScript 编译或配置
 快照测试替代。
 

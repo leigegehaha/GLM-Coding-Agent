@@ -4,7 +4,7 @@
 
 ### 现状
 
-`buildProviderSelection`（`src/main/libs/openclawConfigSync.ts`，搜索 `const buildProviderSelection` 定位）负责将 LobsterAI 的 provider 配置映射为 OpenClaw 的 `OpenClawProviderSelection` 结构。当前存在三个核心问题：
+`buildProviderSelection`（`src/main/libs/openclawConfigSync.ts`，搜索 `const buildProviderSelection` 定位）负责将 智码 GLM Code 的 provider 配置映射为 OpenClaw 的 `OpenClawProviderSelection` 结构。当前存在三个核心问题：
 
 **1. 覆盖不完整**
 
@@ -72,7 +72,7 @@
 
 ```typescript
 // ─── Provider Name ──────────────────────────────────────────────────────
-// providerName 用于标识 LobsterAI 内部的 provider（对应 config key）
+// providerName 用于标识 智码 GLM Code 内部的 provider（对应 config key）
 export const ProviderName = {
   OpenAI: 'openai',
   Gemini: 'gemini',

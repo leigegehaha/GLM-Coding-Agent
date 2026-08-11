@@ -1,10 +1,18 @@
 {
-  "name": "lobsterai",
+  "name": "zhima-glm-code",
   "private": true,
   "author": {
-    "name": "LobsterAI",
-    "email": "lobsterai.project@rd.netease.com"
+    "name": "智码 GLM 科技",
+    "url": "https://glmcoding.cn/"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leigegehaha/GLM-Coding-Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leigegehaha/GLM-Coding-Agent/issues"
+  },
+  "homepage": "https://glmcoding.cn/",
   "license": "MIT",
   "version": "2026.7.31",
   "openclaw": {
@@ -72,8 +80,10 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:web": "cross-env GLM_CODE_TARGET=web vite --port 5176",
     "prebuild": "node scripts/generate-keyfrom-build-info.cjs",
     "build": "tsc && vite build",
+    "build:web": "tsc && cross-env GLM_CODE_TARGET=web vite build",
     "lint": "eslint src/",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -92,19 +102,19 @@
     "electron:dev": "rimraf dist-electron && npm run compile:electron && concurrently \"vite --port 5175\" \"wait-on -v -t 120000 -d 20000 http://localhost:5175 dist-electron/.electron-ready && npm run start:electron\"",
     "electron:dev:openclaw": "npm run openclaw:runtime:host && npm run electron:dev",
     "postinstall": "patch-package && electron-builder install-app-deps",
-    "pack": "npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --dir --config scripts/electron-builder-config.cjs",
-    "dist": "npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --config scripts/electron-builder-config.cjs",
+    "pack": "npm run setup:python-runtime && npm run build && npm run build:web && npm run compile:electron && npm run build:skills && electron-builder --dir --config scripts/electron-builder-config.cjs",
+    "dist": "npm run setup:python-runtime && npm run build && npm run build:web && npm run compile:electron && npm run build:skills && electron-builder --config scripts/electron-builder-config.cjs",
     "dist:mac": "electron-builder --mac --config scripts/electron-builder-config.cjs",
-    "predist:mac": "npm run build && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-arm64",
-    "dist:mac:x64": "npm run build && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-x64 && electron-builder --mac --x64 --config scripts/electron-builder-config.cjs",
-    "dist:mac:arm64": "npm run build && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-arm64 && electron-builder --mac --arm64 --config scripts/electron-builder-config.cjs",
-    "dist:mac:universal": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --mac --universal --config scripts/electron-builder-config.cjs",
+    "predist:mac": "npm run build && npm run build:web && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-arm64",
+    "dist:mac:x64": "npm run build && npm run build:web && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-x64 && electron-builder --mac --x64 --config scripts/electron-builder-config.cjs",
+    "dist:mac:arm64": "npm run build && npm run build:web && npm run compile:electron && npm run build:skills && npm run openclaw:runtime:mac-arm64 && electron-builder --mac --arm64 --config scripts/electron-builder-config.cjs",
+    "dist:mac:universal": "npm run build && npm run build:web && npm run compile:electron && npm run build:skills && electron-builder --mac --universal --config scripts/electron-builder-config.cjs",
     "predist:win": "npm run openclaw:runtime:win-x64",
-    "dist:win": "npm run setup:python-runtime && npm run build && npm run compile:electron && npm run build:skills && electron-builder --win --x64 --config scripts/electron-builder-config.cjs",
+    "dist:win": "npm run setup:python-runtime && npm run build && npm run build:web && npm run compile:electron && npm run build:skills && electron-builder --win --x64 --config scripts/electron-builder-config.cjs",
     "dist:win:channel": "node scripts/dist-win-channel.cjs",
     "dist:win:web": "node scripts/dist-win-web.cjs",
     "predist:linux": "npm run openclaw:runtime:linux-x64",
-    "dist:linux": "npm run build && npm run compile:electron && npm run build:skills && electron-builder --linux --config scripts/electron-builder-config.cjs",
+    "dist:linux": "npm run build && npm run build:web && npm run compile:electron && npm run build:skills && electron-builder --linux --config scripts/electron-builder-config.cjs",
     "clean:release": "rimraf release",
     "generate:tray-icons": "node scripts/generate-tray-icons.js",
     "setup:mingit": "node scripts/setup-mingit.js",
@@ -140,6 +150,9 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@fastify/multipart": "10.1.0",
+    "@fastify/static": "10.1.2",
+    "@fastify/websocket": "11.3.0",
     "@heroicons/react": "^2.1.1",
     "@larksuite/openclaw-lark-tools": "~1.0.26",
     "@larksuiteoapi/node-sdk": "^1.58.0",
@@ -159,6 +172,7 @@
     "dompurify": "^3.3.1",
     "electron-log": "^5.4.3",
     "extract-zip": "^2.0.1",
+    "fastify": "5.11.0",
     "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
     "katex": "^0.16.21",

@@ -5,6 +5,7 @@ import { configService } from './config';
 
 export interface ApiConfig {
   apiKey: string;
+  credentialRef?: string;
   baseUrl: string;
   provider?: string;
   apiFormat?: 'anthropic' | 'openai' | 'gemini';
@@ -267,7 +268,7 @@ class ApiService {
     if (
       normalizedHint
       && (
-        ['openai', 'deepseek', 'moonshot', 'zhipu', 'minimax', 'youdaozhiyun', 'qwen', 'openrouter', 'gemini', 'anthropic', 'xiaomi', 'stepfun', 'volcengine', 'github-copilot', 'ollama', 'lm-studio'].includes(normalizedHint)
+        ['openai', 'deepseek', 'moonshot', 'zhima-coding', 'zhipu', 'minimax', 'youdaozhiyun', 'qwen', 'openrouter', 'gemini', 'anthropic', 'xiaomi', 'stepfun', 'volcengine', 'github-copilot', 'ollama', 'lm-studio'].includes(normalizedHint)
         || normalizedHint.startsWith('custom_')
       )
     ) {
@@ -306,7 +307,14 @@ class ApiService {
 
     if (appConfig?.providers?.[provider]) {
       const providerConfig = appConfig.providers[provider];
-      if (providerConfig.enabled && (providerConfig.apiKey || !this.providerRequiresApiKey(provider))) {
+      if (
+        providerConfig.enabled
+        && (
+          providerConfig.apiKey
+          || providerConfig.credentialRef
+          || !this.providerRequiresApiKey(provider)
+        )
+      ) {
         let baseUrl = providerConfig.baseUrl;
         let apiFormat = this.normalizeApiFormat(providerConfig.apiFormat);
         const runtimeCredential = this.providerRuntimeCredentials[provider];
@@ -319,6 +327,7 @@ class ApiService {
         
         return {
           apiKey: runtimeCredential?.apiKey ?? providerConfig.apiKey,
+          credentialRef: providerConfig.credentialRef,
           baseUrl: runtimeCredential?.baseUrl ?? baseUrl,
           provider: provider,
           apiFormat,
@@ -397,7 +406,7 @@ class ApiService {
       effectiveConfig = await this.ensureGitHubCopilotRuntimeConfig(effectiveConfig);
     }
 
-    if (this.providerRequiresApiKey(provider) && !effectiveConfig.apiKey) {
+    if (this.providerRequiresApiKey(provider) && !effectiveConfig.apiKey && !effectiveConfig.credentialRef) {
       throw new ApiError('API key is not configured. Please set your API key in the settings menu.');
     }
 
@@ -582,6 +591,7 @@ class ApiService {
           },
           body: JSON.stringify(requestBody),
           requestId,
+          credentialRef: config.credentialRef,
         }).then((response) => {
           if (!response.ok && !aborted) {
             this.cleanup();
@@ -746,6 +756,7 @@ class ApiService {
           },
           body: JSON.stringify(requestBody),
           requestId,
+          credentialRef: config.credentialRef,
         }).then((response) => {
           if (!response.ok && !aborted) {
             this.cleanup();
@@ -977,6 +988,7 @@ class ApiService {
           headers,
           body: JSON.stringify(requestBody),
           requestId,
+          credentialRef: config.credentialRef,
         }).then((response) => {
           if (!response.ok && !aborted) {
             this.cleanup();

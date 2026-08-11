@@ -7,6 +7,7 @@ import { buildGoalSettingMessageMetadata } from '../../../common/goalCommandDisp
 import { buildSessionTitleFromInput } from '../../../common/sessionTitle';
 import { buildCoworkImageAttachmentPreviews } from '../../../shared/cowork/imageAttachments';
 import type { CoworkSelectedTextSnippet } from '../../../shared/cowork/selectedText';
+import type { ModelThinkingLevel } from '../../../shared/providers';
 import { agentService } from '../../services/agent';
 import { coworkService } from '../../services/cowork';
 import { buildCoworkCapabilitySelection } from '../../services/coworkCapabilitySelection';
@@ -19,7 +20,7 @@ import {
   selectIsStreaming,
   selectSessionNavigationTargetId,
 } from '../../store/selectors/coworkSelectors';
-import { addMessage, setCurrentSession, setDraftCollaborationMode, setDraftKitIds, setDraftSkillIds, setStreaming, updateSessionGoal, updateSessionStatus } from '../../store/slices/coworkSlice';
+import { addMessage, setCurrentSession, setDraftCollaborationMode, setDraftKitIds, setDraftSkillIds, setDraftThinkingLevel, setStreaming, updateSessionGoal, updateSessionStatus } from '../../store/slices/coworkSlice';
 import { clearActiveKits } from '../../store/slices/kitSlice';
 import { clearSelection,selectAction, setActions } from '../../store/slices/quickActionSlice';
 import { clearActiveSkills, setActiveSkillIds } from '../../store/slices/skillSlice';
@@ -259,6 +260,8 @@ const CoworkView: React.FC<CoworkViewProps> = ({
     selectedTextSnippets?: CoworkSelectedTextSnippet[],
     browserAnnotations?: CoworkBrowserAnnotationMessageBatch[],
     collaborationMode: CoworkCollaborationModeType = CoworkCollaborationMode.Default,
+    thinkingLevel?: ModelThinkingLevel,
+    codingOptimized: boolean = config.codingOptimizationEnabled ?? true,
   ): Promise<boolean | void> => {
     console.log('[CoworkView] handleStartSession: imageAttachments diagnosis', {
       hasImageAttachments: !!imageAttachments,
@@ -341,6 +344,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({
         cwd: currentAgentWorkingDirectory,
         systemPrompt: '',
         modelOverride: currentAgentSelectedModel ? toOpenClawModelRef(currentAgentSelectedModel) : '',
+        codingOptimized,
         executionMode: config.executionMode || 'local',
         activeSkillIds: effectiveRuntimeSkillIds,
         activeKitIds: displayKitIds.length > 0 ? displayKitIds : undefined,
@@ -371,6 +375,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({
         messagesOffset: 0,
         totalMessages: 1,
       };
+
+      if (thinkingLevel) {
+        dispatch(setDraftThinkingLevel({ draftKey: tempSessionId, level: thinkingLevel }));
+      }
 
       // Immediately show the session detail page with user message
       dispatch(setCurrentSession(tempSession));
@@ -415,6 +423,8 @@ const CoworkView: React.FC<CoworkViewProps> = ({
         resolvedKitCapabilities: displayKitIds.length > 0 ? resolvedKitCapabilities : undefined,
         agentId: currentAgentId,
         modelOverride: sessionModelOverride,
+        thinkingLevel,
+        codingOptimized,
         imageAttachments,
         mediaSelection: mediaSelection && mediaSelection.mode !== 'none' ? mediaSelection : undefined,
         mediaReferences,
@@ -438,6 +448,9 @@ const CoworkView: React.FC<CoworkViewProps> = ({
       }
       if (!startedSession) {
         return false;
+      }
+      if (thinkingLevel) {
+        dispatch(setDraftThinkingLevel({ draftKey: startedSession.id, level: thinkingLevel }));
       }
       if (currentSessionIdRef.current === tempSessionId) {
         logCoworkViewModel(`replacing temp session ${tempSessionId} with started session ${startedSession.id}`);
@@ -492,6 +505,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({
     selectedTextSnippets?: CoworkSelectedTextSnippet[],
     browserAnnotations?: CoworkBrowserAnnotationMessageBatch[],
     collaborationMode: CoworkCollaborationModeType = CoworkCollaborationMode.Default,
+    _thinkingLevel?: ModelThinkingLevel,
+    codingOptimized: boolean = currentSession?.codingOptimized
+      ?? config.codingOptimizationEnabled
+      ?? true,
   ) => {
     if (!currentSession) return false;
     // Prevent duplicate submissions
@@ -546,6 +563,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({
         mediaReferences,
         selectedTextSnippets,
         browserAnnotations,
+        codingOptimized,
       });
       if (sent && (sessionSkillIds.length > 0 || sessionKitIds.length > 0)) {
         dispatch(clearActiveSkills());
@@ -879,6 +897,10 @@ const CoworkView: React.FC<CoworkViewProps> = ({
                   showFolderSelector={true}
                   showModelSelector={true}
                   showAgentSelector={true}
+                  codingOptimized={config.codingOptimizationEnabled ?? true}
+                  onCodingOptimizedChange={enabled => coworkService.updateConfig({
+                    codingOptimizationEnabled: enabled,
+                  })}
                   onManageSkills={() => onShowSkills?.()}
                   onManageKits={() => onShowKits?.()}
                   onGoalCommand={handleStartGoalSession}

@@ -4,7 +4,11 @@ import {
   buildGoogleGeminiReplayPolicy,
   buildOpenAICompatibleReplayPolicy,
 } from 'openclaw/plugin-sdk/provider-model-shared';
-import { createMoonshotKimiK3Wrapper } from 'openclaw/plugin-sdk/provider-stream-shared';
+import {
+  createDeepSeekV4OpenAICompatibleThinkingWrapper,
+  createMoonshotKimiK3Wrapper,
+  createPayloadPatchStreamWrapper,
+} from 'openclaw/plugin-sdk/provider-stream-shared';
 
 import {
   hasModelRuntimeProfile,
@@ -13,14 +17,25 @@ import {
   parseModelProfileMap,
   resolveModelProfileTransportDecision,
 } from './profileMapping';
+import {
+  ModelThinkingFamily,
+  ModelThinkingLevel,
+  resolveKnownModelThinkingFamily,
+  resolveKnownModelThinkingProfile,
+} from './thinkingProfiles';
 
 const PLUGIN_ID = 'lobsterai-model-compat';
+const ZHIMA_CODING_PROVIDER_ID = 'zhima-coding';
+const LOBSTERAI_SERVER_PROVIDER_ID = 'lobsterai-server';
 const OPENAI_COMPLETIONS_API = 'openai-completions';
 const OPENAI_COMPATIBLE_APIS = new Set([
   OPENAI_COMPLETIONS_API,
   'openai-responses',
   'openai-chatgpt-responses',
 ]);
+
+const isThinkingEnabled = (thinkingLevel: string | undefined): boolean =>
+  thinkingLevel !== ModelThinkingLevel.Off;
 
 const register = (api: OpenClawPluginApi): void => {
   const modelProfiles = parseModelProfileMap(api.pluginConfig?.modelProfiles);
@@ -58,8 +73,8 @@ const register = (api: OpenClawPluginApi): void => {
 
   api.registerProvider({
     id: PLUGIN_ID,
-    label: 'LobsterAI Model Compatibility',
-    hookAliases: ['lobsterai-server'],
+    label: '智码 GLM Code Model Compatibility',
+    hookAliases: [ZHIMA_CODING_PROVIDER_ID, LOBSTERAI_SERVER_PROVIDER_ID],
     auth: [],
     buildReplayPolicy: (ctx) => {
       const modelApi = ctx.modelApi ?? ctx.model?.api;
@@ -88,20 +103,59 @@ const register = (api: OpenClawPluginApi): void => {
     },
     wrapStreamFn: (ctx) => {
       const decision = assertSupportedTransport(ctx.provider, ctx.modelId, ctx.model?.api);
-      if (decision.kind === ModelProfileTransportDecision.Passthrough) {
-        return ctx.streamFn;
+      if (decision.kind === ModelProfileTransportDecision.MoonshotKimiK3) {
+        return createMoonshotKimiK3Wrapper(ctx.streamFn);
       }
-      return createMoonshotKimiK3Wrapper(ctx.streamFn);
-    },
-    resolveThinkingProfile: ({ provider, modelId }) => (
-      isKimiK3Profile(provider, modelId)
-        ? {
-            levels: [{ id: 'max', label: 'max' }],
-            defaultLevel: 'max',
-            preserveWhenCatalogReasoningFalse: true,
+      const family = resolveKnownModelThinkingFamily(ctx.modelId);
+      if (family === ModelThinkingFamily.KimiK3) {
+        return createMoonshotKimiK3Wrapper(ctx.streamFn);
+      }
+      if (family === ModelThinkingFamily.DeepSeekV4) {
+        const wrapped = createDeepSeekV4OpenAICompatibleThinkingWrapper({
+          baseStreamFn: ctx.streamFn,
+          thinkingLevel: ctx.thinkingLevel,
+          shouldPatchModel: model => (
+            resolveKnownModelThinkingFamily(model.id) === ModelThinkingFamily.DeepSeekV4
+          ),
+        });
+        return createPayloadPatchStreamWrapper(wrapped, ({ payload }) => {
+          const thinking = payload.thinking;
+          if (
+            thinking
+            && typeof thinking === 'object'
+            && (thinking as Record<string, unknown>).type === 'enabled'
+          ) {
+            payload.thinking = { ...thinking, type: 'adaptive' };
           }
-        : undefined
-    ),
+        });
+      }
+      if (family === ModelThinkingFamily.Glm52) {
+        return createPayloadPatchStreamWrapper(ctx.streamFn, ({ payload }) => {
+          payload.enable_thinking = isThinkingEnabled(ctx.thinkingLevel);
+          delete payload.reasoning_effort;
+        });
+      }
+      return ctx.streamFn;
+    },
+    resolveThinkingProfile: ({ provider, modelId }) => {
+      if (isKimiK3Profile(provider, modelId)) {
+        return {
+          levels: [{ id: 'high', label: 'max' }],
+          defaultLevel: 'high',
+          preserveWhenCatalogReasoningFalse: true,
+        };
+      }
+      const profile = resolveKnownModelThinkingProfile(modelId);
+      return profile
+        ? {
+            levels: profile.levels.map(level => ({
+              id: level.id,
+              ...(level.label ? { label: level.label } : {}),
+            })),
+            defaultLevel: profile.defaultLevel,
+          }
+        : undefined;
+    },
     isModernModelRef: ({ provider, modelId }) => (
       isKimiK3Profile(provider, modelId) || undefined
     ),
@@ -110,7 +164,7 @@ const register = (api: OpenClawPluginApi): void => {
 
 export default {
   id: PLUGIN_ID,
-  name: 'LobsterAI Model Compatibility',
-  description: 'Applies explicit LobsterAI-managed model runtime profiles.',
+  name: '智码 GLM Code Model Compatibility',
+  description: 'Applies explicit 智码 GLM Code-managed model runtime profiles.',
   register,
 };

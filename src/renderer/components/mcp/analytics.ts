@@ -1,4 +1,4 @@
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import type { McpRegistryEntry, McpServerConfig, McpServerFormData } from '../../types/mcp';
 
 type AnalyticsValue = string | number | boolean | null | undefined;
@@ -92,7 +92,7 @@ export function reportMcpAction(
   params: AnalyticsParams = {},
 ): void {
   console.debug('[MCP] reporting analytics action', actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.McpAction,
     actionType,
     ...params,

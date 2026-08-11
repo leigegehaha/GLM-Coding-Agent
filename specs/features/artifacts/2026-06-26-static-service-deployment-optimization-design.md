@@ -46,32 +46,32 @@
 
 ### 场景 1: Vite / React 静态项目分享
 
-**Given** 用户运行了 `http://localhost:5173`，项目目录包含 `package.json`、`vite` 依赖和 `build` 脚本。  
-**When** 用户在本地服务预览中点击分享并确认部署。  
+**Given** 用户运行了 `http://localhost:5173`，项目目录包含 `package.json`、`vite` 依赖和 `build` 脚本。
+**When** 用户在本地服务预览中点击分享并确认部署。
 **Then** 客户端在临时目录构建项目，定位 `dist/index.html`，上传静态产物，服务端返回独立 share host URL，访问该 URL 不启动 Node runtime。
 
 ### 场景 2: Next static export
 
-**Given** 项目使用 Next.js，构建后存在 `out/index.html`，没有 `.next/standalone/server.js`。  
-**When** 用户分享本地服务。  
+**Given** 项目使用 Next.js，构建后存在 `out/index.html`，没有 `.next/standalone/server.js`。
+**When** 用户分享本地服务。
 **Then** 客户端把项目判定为 `static_site`，上传 `out` 静态产物；如果构建后存在 `.next/standalone/server.js`，则判定为 `node_service` 并保持现有 Node 部署。
 
 ### 场景 3: Nuxt/Nitro SSR
 
-**Given** Nuxt 项目构建后存在 `.output/server/index.mjs`。  
-**When** 用户分享本地服务。  
+**Given** Nuxt 项目构建后存在 `.output/server/index.mjs`。
+**When** 用户分享本地服务。
 **Then** 客户端判定该项目需要运行时，继续使用 Node/Nitro 部署链路。
 
 ### 场景 4: SPA 子路由刷新
 
-**Given** 静态站点使用 history router，用户访问 `https://<share-host>/settings/profile`。  
-**When** 静态存储中不存在 `settings/profile` 文件。  
+**Given** 静态站点使用 history router，用户访问 `https://<share-host>/settings/profile`。
+**When** 静态存储中不存在 `settings/profile` 文件。
 **Then** 服务端在 `spaFallback = true` 时返回入口 `index.html`，让前端路由接管。
 
 ### 场景 5: 动态 API 项目
 
-**Given** 本地服务使用 Express 或 NestJS，构建产物没有静态 `index.html` 输出目录，或需要启动 `npm run start`。  
-**When** 用户分享本地服务。  
+**Given** 本地服务使用 Express 或 NestJS，构建产物没有静态 `index.html` 输出目录，或需要启动 `npm run start`。
+**When** 用户分享本地服务。
 **Then** 客户端不尝试静态部署，继续走 Node service deployment。
 
 ## 3. 功能需求
@@ -634,7 +634,7 @@ return file with MIME and cache headers
 | 用户配置了自定义输出目录 | UI 允许高级配置覆盖；必须包含入口 HTML |
 | 静态资源使用绝对 `/assets/...` | 独立 host 下可正常访问 |
 | SPA 子路径刷新 404 | `spaFallback = true` 返回入口 HTML |
-| 静态站点调用 `/api/*` | 静态 host 不提供后端 API；如果资源不存在则按 fallback/404 处理，不代理到 LobsterAI API |
+| 静态站点调用 `/api/*` | 静态 host 不提供后端 API；如果资源不存在则按 fallback/404 处理，不代理到 智码 GLM Code API |
 | 构建依赖需要环境变量 | 首版不采集 `.env`；用户可在本地已配置环境中构建，敏感文件不上传 |
 | 包体超过静态限制 | 上传前阻止并展示具体限制 |
 | 旧静态项目已有 Node 部署 | 允许查看旧部署；重新部署时切到静态链路 |

@@ -6,13 +6,13 @@
 
 流式对话中，工具调用的结果文本和媒体文件无法正确展示：
 
-1. **Tool result 文本丢失**：OpenClaw gateway 的 agent 流式事件不携带 tool result 的完整文本（`data.result` 为空或被截断），导致 LobsterAI 前端的 tool result 消息内容为空。
-2. **图片不展示**：`image_generate` 等工具在 tool result 中通过 `MEDIA:` token 返回生成的图片路径，但 LobsterAI 无法识别和展示这些图片。
+1. **Tool result 文本丢失**：OpenClaw gateway 的 agent 流式事件不携带 tool result 的完整文本（`data.result` 为空或被截断），导致 智码 GLM Code 前端的 tool result 消息内容为空。
+2. **图片不展示**：`image_generate` 等工具在 tool result 中通过 `MEDIA:` token 返回生成的图片路径，但 智码 GLM Code 无法识别和展示这些图片。
 
 ### 1.2 根因
 
 - Gateway 的 agent 事件协议在流式传输时会剥离 tool result 文本以减少带宽，完整文本仅保留在 `chat.history` 中。
-- `MEDIA:` token 是 OpenClaw 工具结果中的自定义格式（如 `MEDIA:C:\Users\...\image.png`），LobsterAI 前端的 artifacts 系统此前未覆盖该格式。
+- `MEDIA:` token 是 OpenClaw 工具结果中的自定义格式（如 `MEDIA:C:\Users\...\image.png`），智码 GLM Code 前端的 artifacts 系统此前未覆盖该格式。
 
 ## 2. 用户场景
 

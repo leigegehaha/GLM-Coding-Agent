@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { RootState } from '../../store';
 import { clearError,setDingTalkConfig, setDingTalkInstanceConfig, setDiscordConfig, setDiscordInstanceConfig, setEmailInstanceConfig, setFeishuConfig, setFeishuInstanceConfig, setNeteaseBeeChanConfig, setNimConfig, setNimInstanceConfig, setPopoInstanceConfig, setQQConfig, setQQInstanceConfig, setTelegramInstanceConfig, setTelegramOpenClawConfig, setWecomConfig, setWecomInstanceConfig, setWeixinConfig } from '../../store/slices/imSlice';
 import type { EmailInstanceConfig, IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig, WeixinOpenClawConfig } from '../../types/im';
@@ -263,7 +263,7 @@ const reportIMSettingsSaved = (
 ): void => {
   const instances = getIMInstancesFromConfig(nextConfig, platform);
   const isMultiInstance = MULTI_INSTANCE_PLATFORMS.has(platform);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ImSettingsSaved,
     source: IMAnalyticsSource.Settings,
     platform,
@@ -281,7 +281,7 @@ const reportIMConnectionTested = (
   result: IMConnectivityTestResult | null,
 ): void => {
   const checks = result?.checks ?? [];
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ImConnectionTested,
     source: IMAnalyticsSource.Settings,
     platform,
@@ -299,7 +299,7 @@ const reportIMInstanceChanged = (
   instanceCount: number,
   enabledInstanceCount: number,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ImInstanceChanged,
     source: IMAnalyticsSource.Settings,
     platform,
@@ -315,7 +315,7 @@ const reportIMGatewayToggledAction = (
   result: 'success' | 'failed',
   failureReason?: string,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ImGatewayToggled,
     source: IMAnalyticsSource.Settings,
     platform,
@@ -865,7 +865,7 @@ const IMSettings: React.FC = () => {
 
   const handleEmailGetApiKey = async () => {
     if (!activeEmailInstanceId) return;
-    const apiKeyUrl = 'https://claw.163.com/projects/dashboard/?channel=LobsterAI#/api-keys';
+    const apiKeyUrl = 'https://claw.163.com/projects/dashboard/?channel=GLMCode#/api-keys';
     try {
       await window.electron.shell.openExternal(apiKeyUrl);
     } catch {

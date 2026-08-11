@@ -1,10 +1,10 @@
-# LobsterAI Cowork 会话分叉设计文档
+# 智码 GLM Code Cowork 会话分叉设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI Cowork 当前已经具备完整的本地会话、消息持久化、OpenClaw 工具调用和工作目录执行能力。用户在一个会话中经常会遇到以下需求：
+智码 GLM Code Cowork 当前已经具备完整的本地会话、消息持久化、OpenClaw 工具调用和工作目录执行能力。用户在一个会话中经常会遇到以下需求：
 
 - 从当前上下文出发尝试另一种实现方案。
 - 在不破坏原会话的情况下继续探索。
@@ -13,7 +13,7 @@ LobsterAI Cowork 当前已经具备完整的本地会话、消息持久化、Ope
 
 这类能力在 Codex 中对应 `thread/fork` 的产品语义：复制已有 thread 的 stored history，创建新的 thread id。需要注意的是，Codex 的 fork 不是文件系统快照；文件隔离由 Git worktree 这套独立机制承担。
 
-LobsterAI 的架构与 Codex 类似：
+智码 GLM Code 的架构与 Codex 类似：
 
 - 本地持久化会话：`cowork_sessions` / `cowork_messages`
 - 会话级工作目录快照：`cowork_sessions.cwd`
@@ -48,7 +48,7 @@ LobsterAI 的架构与 Codex 类似：
 - 不承诺回滚数据库、缓存、外部 API 调用、后台进程、全局包安装等命令副作用。
 - 不自动创建用户不可见的 Git checkpoint commit。
 - 不把原 OpenClaw session key 复用给分叉 session。
-- 不把 OpenClaw 原始 transcript 文件复制为新 LobsterAI session 的运行态来源；第一版只读取 checkpoint 摘要并显式桥接。
+- 不把 OpenClaw 原始 transcript 文件复制为新 智码 GLM Code session 的运行态来源；第一版只读取 checkpoint 摘要并显式桥接。
 - 不在第一版实现复杂的分叉树可视化。
 - 不在第一版自动清理用户已经手动修改过的 worktree。
 - 不改变现有 Cowork session 的默认创建、继续和删除语义。
@@ -73,7 +73,7 @@ Codex 的文件隔离由 worktree 机制承担：
 - worktree 默认用于隔离后续代码文件修改。
 - 命令执行产生的外部副作用不属于 fork 的可回放状态。
 
-LobsterAI 采用同一边界：
+智码 GLM Code 采用同一边界：
 
 ```text
 会话分叉 = 复制历史，创建新 session
@@ -90,7 +90,7 @@ LobsterAI 采用同一边界：
 - 无法可靠复制数据库、系统缓存、外部服务状态和后台进程。
 - 大项目复制成本高，失败恢复和清理成本也高。
 
-因此，LobsterAI 第一版不实现非 Git 文件快照。对于文件类任务，推荐用户使用 Git repo + worktree。
+因此，智码 GLM Code 第一版不实现非 Git 文件快照。对于文件类任务，推荐用户使用 Git repo + worktree。
 
 ### 2.3 为什么不自动 checkpoint commit
 
@@ -110,7 +110,7 @@ Codex 在用户从早期消息创建分支时，会明确提示：
 - 如果后续轮次更改过文件系统，新分支内容可能与当前磁盘内容不一致。
 - 用户可以选择在本地继续，或在新工作树中继续。
 
-LobsterAI 应采用同一产品语义：
+智码 GLM Code 应采用同一产品语义：
 
 ```text
 从早期消息分叉 = 对话历史回到该消息点
@@ -122,24 +122,24 @@ LobsterAI 应采用同一产品语义：
 
 ### 2.5 OpenClaw 压缩模型与源码确认
 
-结合 OpenClaw 源码和 gateway schema，LobsterAI 不能把“UI 上的压缩分隔符”和“可用于分叉续写的压缩摘要”混为一谈：
+结合 OpenClaw 源码和 gateway schema，智码 GLM Code 不能把“UI 上的压缩分隔符”和“可用于分叉续写的压缩摘要”混为一谈：
 
 - OpenClaw 在 `src/types/pi-agent-core.d.ts` 中扩展了 `compactionSummary` 角色，字段包括 `summary`、`tokensBefore`、`tokensAfter`、`firstKeptEntryId` 等。该角色属于 assembled/model-visible context 层。
 - OpenClaw 在 `src/gateway/session-compaction-checkpoints.ts` 中持久化 `SessionCompactionCheckpoint`，并最多保留最近 25 个 checkpoint。
 - checkpoint 结构定义在 `src/config/sessions/types.ts` 和 `src/gateway/protocol/schema/sessions.ts`，核心字段包括 `checkpointId`、`reason`、`tokensBefore`、`tokensAfter`、`summary`、`preCompaction`、`postCompaction`。
 - gateway 暴露 `sessions.compaction.list` 和 `sessions.compaction.get`，可根据 session key 读取 checkpoint 列表和单个 checkpoint。
-- gateway 还提供 `sessions.compaction.branch` / `sessions.compaction.restore`，但它们操作 OpenClaw transcript/session store，不等同于 LobsterAI 本地 Cowork session 分叉，第一版不直接采用。
-- `chat.history` 面向普通聊天历史窗口，且 LobsterAI 当前的 `extractGatewayHistoryEntry()` 只接受 `user` / `assistant` / `system`，不会可靠保留 `compactionSummary`。
+- gateway 还提供 `sessions.compaction.branch` / `sessions.compaction.restore`，但它们操作 OpenClaw transcript/session store，不等同于 智码 GLM Code 本地 Cowork session 分叉，第一版不直接采用。
+- `chat.history` 面向普通聊天历史窗口，且 智码 GLM Code 当前的 `extractGatewayHistoryEntry()` 只接受 `user` / `assistant` / `system`，不会可靠保留 `compactionSummary`。
 
-因此，LobsterAI 分叉压缩会话时应优先从 OpenClaw checkpoint metadata 读取 `summary`，而不是从聊天气泡、`COMPACTION` 分隔符或普通 `chat.history` 文本中推断。
+因此，智码 GLM Code 分叉压缩会话时应优先从 OpenClaw checkpoint metadata 读取 `summary`，而不是从聊天气泡、`COMPACTION` 分隔符或普通 `chat.history` 文本中推断。
 
 ## 3. 用户场景
 
 ### 场景 1: 纯讨论会话分叉
 
-**Given** 用户在 Cowork 会话中讨论技术方案，尚未写文件或执行命令  
-**When** 用户点击“分叉会话”  
-**Then** LobsterAI 创建一个新的 Cowork session
+**Given** 用户在 Cowork 会话中讨论技术方案，尚未写文件或执行命令
+**When** 用户点击“分叉会话”
+**Then** 智码 GLM Code 创建一个新的 Cowork session
 
 **And** 新 session 复制源 session 的用户和助手消息
 
@@ -149,9 +149,9 @@ LobsterAI 应采用同一产品语义：
 
 ### 场景 2: Git 项目中分叉工作区
 
-**Given** 当前 session 的 `cwd` 位于 Git 仓库中  
-**When** 用户选择“在新工作区分叉”  
-**Then** LobsterAI 创建一个 Git worktree
+**Given** 当前 session 的 `cwd` 位于 Git 仓库中
+**When** 用户选择“在新工作区分叉”
+**Then** 智码 GLM Code 创建一个 Git worktree
 
 **And** 新 session 的 `cwd` 指向该 worktree
 
@@ -163,27 +163,27 @@ LobsterAI 应采用同一产品语义：
 
 ### 场景 3: 非 Git 目录中分叉会话
 
-**Given** 当前 session 的 `cwd` 不是 Git 仓库  
-**When** 用户打开分叉菜单  
-**Then** LobsterAI 允许“分叉会话”
+**Given** 当前 session 的 `cwd` 不是 Git 仓库
+**When** 用户打开分叉菜单
+**Then** 智码 GLM Code 允许“分叉会话”
 
-**And** LobsterAI 禁用“在新工作区分叉”
+**And** 智码 GLM Code 禁用“在新工作区分叉”
 
 **And** UI 提示“当前目录不是 Git 仓库，分叉不会复制文件状态”
 
 ### 场景 4: 执行过命令的会话分叉
 
-**Given** 当前 session 中执行过本地命令  
-**When** 用户分叉会话或工作区  
-**Then** LobsterAI 提示命令造成的环境变化不会随分叉回滚或复制
+**Given** 当前 session 中执行过本地命令
+**When** 用户分叉会话或工作区
+**Then** 智码 GLM Code 提示命令造成的环境变化不会随分叉回滚或复制
 
 **And** 若创建 worktree，只承诺隔离后续 Git 工作区文件修改
 
 ### 场景 5: 从某条消息处分叉
 
-**Given** 用户在历史消息上打开更多操作  
-**When** 用户选择“从这里分叉”  
-**Then** LobsterAI 创建新的 session
+**Given** 用户在历史消息上打开更多操作
+**When** 用户选择“从这里分叉”
+**Then** 智码 GLM Code 创建新的 session
 
 **And** 只复制该消息及之前的消息
 
@@ -191,7 +191,7 @@ LobsterAI 应采用同一产品语义：
 
 **And** 后续对话从该上下文继续
 
-**And** LobsterAI 提示当前文件和工作树状态不会回滚到该消息时刻
+**And** 智码 GLM Code 提示当前文件和工作树状态不会回滚到该消息时刻
 
 **And** 用户可选择“派生到本地”或在 Git 仓库中选择“派生到新工作树”
 
@@ -199,9 +199,9 @@ LobsterAI 应采用同一产品语义：
 
 ### 场景 6: 源会话正在运行时分叉
 
-**Given** 源 session 当前状态为 `running`  
-**When** 用户发起分叉  
-**Then** LobsterAI 禁止直接分叉或提示先停止当前任务
+**Given** 源 session 当前状态为 `running`
+**When** 用户发起分叉
+**Then** 智码 GLM Code 禁止直接分叉或提示先停止当前任务
 
 第一版建议禁止 running session 分叉，避免复制未稳定的流式消息和工具状态。后续可参考 Codex 的 interrupted snapshot 机制扩展。
 
@@ -246,7 +246,7 @@ export type CoworkForkWorkspaceState =
 
 ### FR-3: 工具副作用检测
 
-LobsterAI 需要为 session 计算工具副作用级别：
+智码 GLM Code 需要为 session 计算工具副作用级别：
 
 ```ts
 export const CoworkSessionEffectLevel = {
@@ -327,7 +327,7 @@ interface CoworkForkSessionOptions {
 
 ### FR-6: OpenClaw session key 隔离
 
-分叉 session 必须使用新的 LobsterAI session id。
+分叉 session 必须使用新的 智码 GLM Code session id。
 
 OpenClawRuntimeAdapter 当前基于 `sessionId + agentId` 生成 managed session key。只要分叉 session 使用新 id，就会自然获得独立 OpenClaw session key。
 
@@ -380,7 +380,7 @@ export const CoworkForkContextKind = {
 - 分叉后首轮继续时，`buildBridgePrefix()` 应优先读取 `fork_compaction_summary`，并在最近消息 bridge 之前注入：
 
 ```text
-[Compacted context from the source LobsterAI conversation]
+[Compacted context from the source 智码 GLM Code conversation]
 The source conversation was compacted by OpenClaw. Use this summary as prior context:
 <summary>
 ```
@@ -389,7 +389,7 @@ The source conversation was compacted by OpenClaw. Use this summary as prior con
 
 OpenClaw gateway 读取策略：
 
-1. 使用源 LobsterAI session id 和 agent id 解析 OpenClaw managed session key。
+1. 使用源 智码 GLM Code session id 和 agent id 解析 OpenClaw managed session key。
 2. 调用 `sessions.compaction.list({ key })`。
 3. 取按 `createdAt` 最新的 checkpoint，优先使用返回项中的 `summary`。
 4. 如果 list 返回项不含完整 summary，但有 `checkpointId`，再调用 `sessions.compaction.get({ key, checkpointId })`。
@@ -737,7 +737,7 @@ OpenClaw
 - 后台进程
 - 外部服务
 
-这些状态不属于 fork 的可复制范围。LobsterAI 只提示，不承诺回滚。
+这些状态不属于 fork 的可复制范围。智码 GLM Code 只提示，不承诺回滚。
 
 ### 7.3 Dirty Git 边界
 
@@ -782,9 +782,9 @@ worktree 可能包含用户后续修改。删除 session 时默认不删除 work
 
 ## 9. 实施计划
 
-**Goal:** Add Codex-style local Cowork session fork support to LobsterAI, while keeping Git worktree workspace isolation as a deferred Phase 2 design.
+**Goal:** Add Codex-style local Cowork session fork support to 智码 GLM Code, while keeping Git worktree workspace isolation as a deferred Phase 2 design.
 
-**Architecture:** Implement fork as a main-process CoworkStore operation that creates a new session and copies persisted messages. For compacted OpenClaw sessions, read checkpoint summary metadata through the gateway and persist it as hidden bridge context in the fork. Keep OpenClaw session isolation by using the new LobsterAI session id and existing session-key derivation. Git worktree isolation is deferred.
+**Architecture:** Implement fork as a main-process CoworkStore operation that creates a new session and copies persisted messages. For compacted OpenClaw sessions, read checkpoint summary metadata through the gateway and persist it as hidden bridge context in the fork. Keep OpenClaw session isolation by using the new 智码 GLM Code session id and existing session-key derivation. Git worktree isolation is deferred.
 
 **Tech Stack:** Electron IPC, TypeScript, SQLite, React, Redux Toolkit, Git CLI, Vitest
 
@@ -852,7 +852,7 @@ worktree 可能包含用户后续修改。删除 session 时默认不删除 work
 ## 11. Open Questions
 
 - 压缩摘要桥接消息是否完全隐藏，还是在 UI 中显示一条“已继承源会话压缩摘要”的轻量 divider？
-- 消息级早期分叉如何精确判断 checkpoint 是否早于分叉点？是否需要在 LobsterAI 本地记录 checkpoint 与 message sequence 的映射？
+- 消息级早期分叉如何精确判断 checkpoint 是否早于分叉点？是否需要在 智码 GLM Code 本地记录 checkpoint 与 message sequence 的映射？
 - OpenClaw checkpoint summary 为空但 `compactionSummary` 存在于 transcript/context 时，是否需要额外读取 transcript，还是继续回退到最近消息 bridge？
 - Worktree path 应放在 app userData 下，还是 repo 相邻 `.lobsterai/worktrees` 下？当前 Phase 2 暂缓。
 - Dirty repo 第一版是否只允许不带未提交改动，还是直接实现 patch apply？当前 Phase 2 暂缓。

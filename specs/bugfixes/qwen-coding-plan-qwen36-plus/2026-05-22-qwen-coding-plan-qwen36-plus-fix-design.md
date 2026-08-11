@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI 设置里启用 Qwen Coding Plan 后，同一套 API key 和 Coding Plan endpoint 下：
+用户在 智码 GLM Code 设置里启用 Qwen Coding Plan 后，同一套 API key 和 Coding Plan endpoint 下：
 
 - `qwen3.5-plus` 可以正常工作
 - `qwen3.6-plus` 在 OpenClaw gateway 启动 warmup 或正式会话中失败
@@ -36,11 +36,11 @@ provider-catalog.test.ts:
   only advertises qwen3.6-plus on Standard endpoints
 ```
 
-因此，当前失败不是因为 LobsterAI 没有把 `qwen3.6-plus` 写入配置；即使写入了，也会被 OpenClaw runtime 过滤或 suppress。
+因此，当前失败不是因为 智码 GLM Code 没有把 `qwen3.6-plus` 写入配置；即使写入了，也会被 OpenClaw runtime 过滤或 suppress。
 
 ### 1.3 核心判断
 
-既然 `qwen3.5-plus` 在同一个 Coding Plan endpoint 下可用，最小修复不应优先改 provider id，也不应在 LobsterAI UI 里隐藏 `qwen3.6-plus`。
+既然 `qwen3.5-plus` 在同一个 Coding Plan endpoint 下可用，最小修复不应优先改 provider id，也不应在 智码 GLM Code UI 里隐藏 `qwen3.6-plus`。
 
 更直接的修复是：
 
@@ -55,29 +55,29 @@ provider-catalog.test.ts:
 
 ### 场景 A：内置 Qwen Coding Plan 使用 qwen3.6-plus
 
-**Given** 用户启用内置 Qwen provider 的 Coding Plan  
-**And** baseURL 为 `https://coding.dashscope.aliyuncs.com/v1` 或 `https://coding-intl.dashscope.aliyuncs.com/v1`  
-**When** 用户选择 `qwen3.6-plus` 新建 Cowork session  
-**Then** OpenClaw 不应报 `Unknown model: qwen/qwen3.6-plus`  
+**Given** 用户启用内置 Qwen provider 的 Coding Plan
+**And** baseURL 为 `https://coding.dashscope.aliyuncs.com/v1` 或 `https://coding-intl.dashscope.aliyuncs.com/v1`
+**When** 用户选择 `qwen3.6-plus` 新建 Cowork session
+**Then** OpenClaw 不应报 `Unknown model: qwen/qwen3.6-plus`
 **And** 请求应进入真实上游 API 调用
 
 ### 场景 B：内置 Qwen Coding Plan 继续使用 qwen3.5-plus
 
-**Given** 用户启用 Qwen Coding Plan  
-**When** 用户选择 `qwen3.5-plus`  
+**Given** 用户启用 Qwen Coding Plan
+**When** 用户选择 `qwen3.5-plus`
 **Then** 现有成功路径保持不变
 
 ### 场景 C：Qwen Standard endpoint 使用 qwen3.6-plus
 
-**Given** 用户关闭 Coding Plan，使用 Standard pay-as-you-go endpoint  
-**When** 用户选择 `qwen3.6-plus`  
+**Given** 用户关闭 Coding Plan，使用 Standard pay-as-you-go endpoint
+**When** 用户选择 `qwen3.6-plus`
 **Then** 行为保持不变，仍可进入 OpenClaw catalog
 
 ### 场景 D：上游真实拒绝 qwen3.6-plus
 
-**Given** OpenClaw 已允许 `qwen3.6-plus` 通过本地 catalog 和 suppression  
-**When** 用户的阿里账号、套餐或 region 不支持该模型  
-**Then** 应展示上游返回的真实错误  
+**Given** OpenClaw 已允许 `qwen3.6-plus` 通过本地 catalog 和 suppression
+**When** 用户的阿里账号、套餐或 region 不支持该模型
+**Then** 应展示上游返回的真实错误
 **And** 不应再被本地伪装成 `Unknown model`
 
 ## 3. 功能需求
@@ -120,9 +120,9 @@ Unknown model: qwen/qwen3.6-plus. qwen3.6-plus is not supported on the Qwen Codi
 
 如果上游 API 实际不支持该模型，应由上游响应决定错误类型。
 
-### FR-4：不改 LobsterAI 的 provider id 映射
+### FR-4：不改 智码 GLM Code 的 provider id 映射
 
-本次修复不要求把 LobsterAI 的 `qwen-portal/qwen3.6-plus` 改成 `bailian-coding-plan/qwen3.6-plus`。
+本次修复不要求把 智码 GLM Code 的 `qwen-portal/qwen3.6-plus` 改成 `bailian-coding-plan/qwen3.6-plus`。
 
 理由：
 
@@ -132,7 +132,7 @@ Unknown model: qwen/qwen3.6-plus. qwen3.6-plus is not supported on the Qwen Codi
 
 `bailian-coding-plan` 对齐可以作为后续规范化设计，不作为本 bug 的 MVP。
 
-### FR-5：LobsterAI UI 不应主动隐藏 qwen3.6-plus
+### FR-5：智码 GLM Code UI 不应主动隐藏 qwen3.6-plus
 
 `src/shared/providers/constants.ts` 中 Qwen 默认模型已经包含：
 
@@ -147,7 +147,7 @@ qwen3.5-plus
 
 ### 4.1 增加 OpenClaw runtime patch
 
-在 LobsterAI 的 runtime patch 目录新增：
+在 智码 GLM Code 的 runtime patch 目录新增：
 
 ```text
 scripts/patches/v2026.4.14/openclaw-qwen-coding-plan-qwen36-plus.patch
@@ -256,7 +256,7 @@ Models: qwen3.6-plus, qwen3.5-plus, glm-5, kimi-k2.5, MiniMax-M2.5, etc.
 
 这不是功能必要条件，但能避免后续误判。
 
-### 4.5 LobsterAI 主工程不做 provider id 重写
+### 4.5 智码 GLM Code 主工程不做 provider id 重写
 
 本 spec 不修改以下逻辑：
 
@@ -296,7 +296,7 @@ Models: qwen3.6-plus, qwen3.5-plus, glm-5, kimi-k2.5, MiniMax-M2.5, etc.
 1. Coding Plan baseURL + `qwen3.6-plus` 不触发 `suppressBuiltInModel`
 2. `normalizeConfig()` 不删除显式配置中的 `qwen3.6-plus`
 
-### 6.2 LobsterAI runtime patch 验证
+### 6.2 智码 GLM Code runtime patch 验证
 
 执行：
 
@@ -318,7 +318,7 @@ npm test -- extensions/qwen/provider-catalog.test.ts
 
 ### 6.3 手动验证
 
-1. 在 LobsterAI 设置页启用 Qwen Coding Plan。
+1. 在 智码 GLM Code 设置页启用 Qwen Coding Plan。
 2. baseURL 使用 `https://coding.dashscope.aliyuncs.com/v1`。
 3. 选择 `qwen3.6-plus` 新建 Cowork session。
 4. 确认不再出现：
@@ -335,7 +335,7 @@ Unknown model: qwen/qwen3.6-plus
 本次不做以下改动：
 
 1. 不新增 `bailian-coding-plan` provider id。
-2. 不把 LobsterAI 的 Qwen provider 从 `qwen-portal` 改名。
+2. 不把 智码 GLM Code 的 Qwen provider 从 `qwen-portal` 改名。
 3. 不在 UI 中隐藏或禁用 `qwen3.6-plus`。
 4. 不实现多 Qwen provider 凭证冲突处理。
 5. 不通过调用上游 `/models` 动态决定是否显示 `qwen3.6-plus`。

@@ -1,7 +1,16 @@
 {
   "version": 1,
-  "description": "Default skill configuration for LobsterAI",
+  "description": "Default skill configuration for 智码 GLM Code",
   "defaults": {
+    "codebase-onboarding": { "order": 1, "enabled": true },
+    "implement-feature": { "order": 2, "enabled": true },
+    "systematic-debugging": { "order": 3, "enabled": true },
+    "test-and-verify": { "order": 4, "enabled": true },
+    "code-review": { "order": 5, "enabled": true },
+    "safe-refactoring": { "order": 6, "enabled": true },
+    "git-pr-workflow": { "order": 7, "enabled": true },
+    "coding-memory-curator": { "order": 8, "enabled": true },
+    "engineering-retrospective": { "order": 9, "enabled": true },
     "docx": { "order": 10, "enabled": true },
     "web-search": { "order": 15, "enabled": true },
     "xlsx": { "order": 20, "enabled": true },

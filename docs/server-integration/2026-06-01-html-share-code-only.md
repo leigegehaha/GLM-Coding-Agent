@@ -46,7 +46,7 @@ Success response example:
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai-server.youdao.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "accessMode": "code",
     "shareCode": "K7Q9P2",
     "shareCodeUnavailable": false,

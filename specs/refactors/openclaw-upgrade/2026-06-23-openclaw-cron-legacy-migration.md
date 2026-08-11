@@ -18,9 +18,9 @@ QA 导出的状态数据进一步确认：
 
 - 遵循 OpenClaw 官方迁移指引：升级时运行 `openclaw doctor --fix` 导入 legacy cron JSON、state 和 run logs。
 - 只在检测到 legacy cron 文件时触发迁移，避免普通启动增加额外成本。
-- 不在 LobsterAI 中复制 OpenClaw cron schema、normalize、SQLite projection 和 run-log import 规则。
+- 不在 智码 GLM Code 中复制 OpenClaw cron schema、normalize、SQLite projection 和 run-log import 规则。
 - 迁移失败不阻断应用启动，避免修复路径引入启动失败。
-- 确保后续启动依赖 OpenClaw `.migrated` 归档机制自然跳过，不额外引入 LobsterAI 迁移 marker。
+- 确保后续启动依赖 OpenClaw `.migrated` 归档机制自然跳过，不额外引入 智码 GLM Code 迁移 marker。
 
 ## 2. 现状分析
 
@@ -39,7 +39,7 @@ OpenClaw cron doctor 逻辑并非简单 JSON 导入，包含：
 - legacy run logs 去重导入；
 - 成功后归档 `.migrated`。
 
-因此 LobsterAI 不应自行实现这套迁移细节。
+因此 智码 GLM Code 不应自行实现这套迁移细节。
 
 ## 3. 方案设计
 
@@ -93,7 +93,7 @@ openclaw.mjs doctor --non-interactive --fix
 - `OPENCLAW_CONFIG_PATH` 指向临时最小 config，而不是真实 `openclaw.json`
 - `ELECTRON_RUN_AS_NODE=1`
 
-使用临时 config 的原因是完整 doctor 可能修复非 cron 配置，例如 skills、plugins、gateway auth 等。cron 迁移只依赖 `cron.store` 和 state dir，因此临时 config 可以复用 OpenClaw 官方 cron migration 逻辑，同时避免改写 LobsterAI 生成的真实配置。
+使用临时 config 的原因是完整 doctor 可能修复非 cron 配置，例如 skills、plugins、gateway auth 等。cron 迁移只依赖 `cron.store` 和 state dir，因此临时 config 可以复用 OpenClaw 官方 cron migration 逻辑，同时避免改写 智码 GLM Code 生成的真实配置。
 
 ### 3.3 失败策略
 

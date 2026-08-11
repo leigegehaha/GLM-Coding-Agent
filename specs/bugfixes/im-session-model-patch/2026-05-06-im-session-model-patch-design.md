@@ -2,7 +2,7 @@
 
 ## 问题描述
 
-用户在 LobsterAI 的 IM 对话历史中修改模型后，UI 与本地 SQLite 都显示模型已经切换，但实际从 IM 继续对话时，模型仍然是修改前的模型。普通非 IM Cowork 会话不存在这个问题。
+用户在 智码 GLM Code 的 IM 对话历史中修改模型后，UI 与本地 SQLite 都显示模型已经切换，但实际从 IM 继续对话时，模型仍然是修改前的模型。普通非 IM Cowork 会话不存在这个问题。
 
 实际观察到的状态：
 
@@ -15,7 +15,7 @@
 
 **根因是 IM channel 会话的真实 OpenClaw `sessionKey` 只存在于运行期内存，没有持久化到 `im_session_mappings`。**
 
-非 IM 会话的真实 key 本来就是 LobsterAI managed key：
+非 IM 会话的真实 key 本来就是 智码 GLM Code managed key：
 
 ```text
 agent:{agentId}:lobsterai:{coworkSessionId}
@@ -129,7 +129,7 @@ Cannot patch IM channel session because the OpenClaw session key is missing.
 
 ### 6. 普通 Cowork 发送前模型一致性校准
 
-体感优化引入 optimistic UI 后，renderer 和 LobsterAI SQLite 会先显示用户选择的新模型，但 OpenClaw `sessions.patch` 仍是异步提交。如果用户在 patch 未完成时继续发送，或者后端仅凭本地 `lastPatchedModelBySession` 缓存认为模型已经提交，就可能出现：
+体感优化引入 optimistic UI 后，renderer 和 智码 GLM Code SQLite 会先显示用户选择的新模型，但 OpenClaw `sessions.patch` 仍是异步提交。如果用户在 patch 未完成时继续发送，或者后端仅凭本地 `lastPatchedModelBySession` 缓存认为模型已经提交，就可能出现：
 
 1. `cowork_sessions.model_override` 已是新模型
 2. prompt 中注入的 `[Session info]` 也是新模型

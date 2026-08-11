@@ -122,7 +122,7 @@ export const repairHeartbeatFile = (workspaceDir: string): boolean => {
 
 // Heading of the bundled runtime AGENTS.md template section that tells the
 // model to invent periodic checks (inbox/calendar/weather rotations) and write
-// them into HEARTBEAT.md — the opposite of LobsterAI's heartbeat cost policy.
+// them into HEARTBEAT.md — the opposite of 智码 GLM Code's heartbeat cost policy.
 // Must match the heading in the pinned runtime's
 // docs/reference/templates/AGENTS.md.
 const PROACTIVE_HEARTBEAT_SECTION_HEADING = '## 💓 Heartbeats - Be Proactive!';

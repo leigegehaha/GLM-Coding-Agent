@@ -1,10 +1,10 @@
-# LobsterAI 登录凭证生命周期修复设计文档
+# 智码 GLM Code 登录凭证生命周期修复设计文档
 
 ## 1. 概述
 
 ### 1.1 问题
 
-LobsterAI 桌面端使用 Access Token 与 Refresh Token 访问套餐模型和账号接口。服务端已将新签发的 Access Token、Refresh Token 有效期分别调整为 30 天和 180 天，但端侧仍存在以下问题：
+智码 GLM Code 桌面端使用 Access Token 与 Refresh Token 访问套餐模型和账号接口。服务端已将新签发的 Access Token、Refresh Token 有效期分别调整为 30 天和 180 天，但端侧仍存在以下问题：
 
 1. 应用启动恢复账号时，断网、请求超时、服务端 5xx 与凭证真正过期都会返回笼统的失败，renderer 可能将临时故障当作退出登录。
 2. 主进程认证接口、OpenClaw Token 代理和 OpenAI 兼容代理存在多条刷新路径，其中兼容代理曾直接调用刷新接口，绕过统一的并发合并。
@@ -78,10 +78,10 @@ LobsterAI 桌面端使用 Access Token 与 Refresh Token 访问套餐模型和�
 
 ### FR-2：统一刷新协调器
 
-- 所有 LobsterAI Refresh Token 刷新必须进入同一个协调器。
+- 所有 智码 GLM Code Refresh Token 刷新必须进入同一个协调器。
 - 同时发生的刷新共享同一个 Promise。
 - 收到 401 后先比较请求使用的 Access Token 与当前保存的 Token；若已更新，优先使用新 Token 重试。
-- LobsterAI 套餐请求仅对 HTTP 401 刷新，403 按模型/账号权限错误处理。
+- 智码 GLM Code 套餐请求仅对 HTTP 401 刷新，403 按模型/账号权限错误处理。
 - 若 401 后的刷新因网络、超时或 5xx 临时失败，本地代理返回临时服务错误，不把原始 401 继续包装成“登录已过期”。
 
 ### FR-3：终态失效闭环
@@ -130,7 +130,7 @@ Grafana/Graphite 的运维指标继续以服务端 MetricLog 为准，包括：
 - 刷新 5xx、网络失败和超时保留登录态
 - 临时不可用保留 renderer 登录快照
 - 终态失效清理 renderer 状态
-- LobsterAI 套餐 401 与第三方 API Key/OAuth 错误显示不同文案
+- 智码 GLM Code 套餐 401 与第三方 API Key/OAuth 错误显示不同文案
 
 ## 4. 实现方案
 
@@ -157,7 +157,7 @@ Grafana/Graphite 的运维指标继续以服务端 MetricLog 为准，包括：
 - OpenClaw Token 代理在 401 后先检查 Token 是否已经更新，再决定是否刷新。
 - OpenAI 兼容代理把被拒绝的 Token 传给刷新回调；当前 Token 已更新时直接复用。
 - 两类代理都保留结构化刷新结果；临时刷新失败映射为 503，只有终态失败继续按登录失效处理。
-- LobsterAI Server provider 不再因 403 刷新，Copilot 等具有独立语义的 provider 保持原有行为。
+- 智码 GLM Code Server provider 不再因 403 刷新，Copilot 等具有独立语义的 provider 保持原有行为。
 
 ### 4.4 Renderer 状态
 
@@ -208,6 +208,6 @@ OpenClaw 错误分类结合 provider、HTTP 状态和 failover 元数据：
 2. Refresh Token 返回 401/`40100`/`40101` 后，renderer 自动进入过期状态、展示登录入口并通过 Toast 提示重新登录。
 3. 套餐模型认证失败显示登录过期文案，不再显示 API 密钥过期。
 4. 同一时刻多个 401 只触发一次刷新；迟到旧 401 不重复刷新。
-5. LobsterAI 套餐路径的 403 不触发 Token 刷新。
+5. 智码 GLM Code 套餐路径的 403 不触发 Token 刷新。
 6. 生命周期事件不包含 Token 或任意高基数字段。
 7. 相关 Vitest、Electron TypeScript 编译、renderer 类型检查和改动文件 ESLint 全部通过。

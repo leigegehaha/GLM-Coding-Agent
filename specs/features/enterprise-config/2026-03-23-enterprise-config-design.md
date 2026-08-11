@@ -1,8 +1,8 @@
-# LobsterAI ToB Enterprise Config Support
+# 智码 GLM Code ToB Enterprise Config Support
 
 ## Overview
 
-Enable LobsterAI to support enterprise (ToB) deployment by reading a pre-configured package on startup, syncing model/IM/skill/agent/MCP configurations into SQLite, and locking down the UI so users can work immediately without manual setup.
+Enable 智码 GLM Code to support enterprise (ToB) deployment by reading a pre-configured package on startup, syncing model/IM/skill/agent/MCP configurations into SQLite, and locking down the UI so users can work immediately without manual setup.
 
 **Core principle**: Inject enterprise data into SQLite tables before the normal initialization flow. The existing `kv → openclawConfigSync → openclaw.json` pipeline remains untouched.
 
@@ -29,8 +29,8 @@ enterprise-config/                     # Fixed path: {userData}/enterprise-confi
 **Detection**: `{userData}/enterprise-config/manifest.json` exists → enterprise mode active.
 
 **Platform paths**:
-- macOS: `~/Library/Application Support/LobsterAI/enterprise-config/`
-- Windows: `%APPDATA%/LobsterAI/enterprise-config/`
+- macOS: `~/Library/Application Support/智码 GLM Code/enterprise-config/`
+- Windows: `%APPDATA%/智码 GLM Code/enterprise-config/`
 
 **Update strategy**: Replace config package files, restart app. Every startup re-syncs from the package.
 
@@ -318,7 +318,7 @@ Renderer (`src/renderer/services/i18n.ts`):
 ## 实施计划
 
 
-**Goal:** Enable LobsterAI to read a pre-configured enterprise package on startup, sync model/IM/skill/agent/MCP configs into SQLite, and lock down the UI — so enterprise users can run the app with zero manual setup.
+**Goal:** Enable 智码 GLM Code to read a pre-configured enterprise package on startup, sync model/IM/skill/agent/MCP configs into SQLite, and lock down the UI — so enterprise users can run the app with zero manual setup.
 
 **Architecture:** A new `enterpriseConfigSync.ts` module runs before the existing `openclawConfigSync` on startup. It reads `enterprise-config/` from `{userData}`, writes data into SQLite tables (`kv`, `im_config`, `cowork_config`, `mcp_servers`), copies files (skills, agents), and stores a manifest flag. The renderer reads this flag to hide settings tabs and block updates. The existing data flow (`kv → openclawConfigSync → openclaw.json`) is untouched.
 
@@ -1247,9 +1247,9 @@ git commit -m "feat(enterprise): apply UI customization in Settings"
 - [ ] **Step 1: Create test enterprise config package**
 
 ```bash
-mkdir -p ~/Library/Application\ Support/LobsterAI/enterprise-config/skills/test-skill
-mkdir -p ~/Library/Application\ Support/LobsterAI/enterprise-config/agents
-mkdir -p ~/Library/Application\ Support/LobsterAI/enterprise-config/mcp
+mkdir -p ~/Library/Application\ Support/智码 GLM Code/enterprise-config/skills/test-skill
+mkdir -p ~/Library/Application\ Support/智码 GLM Code/enterprise-config/agents
+mkdir -p ~/Library/Application\ Support/智码 GLM Code/enterprise-config/mcp
 ```
 
 Create `manifest.json`:
@@ -1287,7 +1287,7 @@ Verify:
 - [ ] **Step 3: Clean up test config**
 
 ```bash
-rm -rf ~/Library/Application\ Support/LobsterAI/enterprise-config
+rm -rf ~/Library/Application\ Support/智码 GLM Code/enterprise-config
 ```
 
 - [ ] **Step 4: Verify normal mode still works**

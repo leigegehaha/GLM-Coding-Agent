@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { OpenClawEngineErrorCode, OpenClawGatewayRepairErrorCode } from '../../../shared/openclawEngine/constants';
 import { coworkService } from '../../services/cowork';
 import { i18nService } from '../../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import type { OpenClawEngineStatus, OpenClawGatewayRepairResult } from '../../types/cowork';
 import type { SettingsOpenOptions } from '../Settings';
 
@@ -77,7 +77,7 @@ const EngineFailureOverlay: React.FC<EngineFailureOverlayProps> = ({
     setGatewayRepairError(null);
     try {
       const result = await coworkService.repairOpenClawGatewayState();
-      void reportYdAnalyzer({
+      void reportAnalytics({
         action: LogReporterAction.AgentEngineMaintenanceAction,
         actionType: 'repair_gateway_state',
         result: result.success ? 'success' : 'failed',
@@ -91,7 +91,7 @@ const EngineFailureOverlay: React.FC<EngineFailureOverlayProps> = ({
       console.error('[EngineFailureOverlay] Failed to repair gateway state:', error);
       const message = error instanceof Error ? error.message.trim() : '';
       setGatewayRepairError(message || i18nService.t('openClawRepairFailed'));
-      void reportYdAnalyzer({
+      void reportAnalytics({
         action: LogReporterAction.AgentEngineMaintenanceAction,
         actionType: 'repair_gateway_state',
         result: 'failed',

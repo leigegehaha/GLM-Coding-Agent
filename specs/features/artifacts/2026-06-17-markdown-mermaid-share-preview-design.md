@@ -2,7 +2,7 @@
 
 ## 1. 背景
 
-LobsterAI 已经基于 `lobsterai-server` 的 HTML 分享系统支持 HTML、图片、SVG、Office/PDF 文件分享。现有链路为：
+智码 GLM Code 已经基于 `lobsterai-server` 的 HTML 分享系统支持 HTML、图片、SVG、Office/PDF 文件分享。现有链路为：
 
 - 客户端把待分享内容打成 zip，通过 `POST /api/html-shares` 或 `PUT /api/html-shares/{shareId}` 上传。
 - 服务端保存 `html_shares` / `html_share_files`，文件上传到 NOS。
@@ -41,7 +41,7 @@ LobsterAI 已经基于 `lobsterai-server` 的 HTML 分享系统支持 HTML、图
 
 ## 4. 现状快照
 
-### 4.1 LobsterAI 客户端
+### 4.1 智码 GLM Code 客户端
 
 | 文件 | 现状 |
 | --- | --- |
@@ -445,7 +445,7 @@ src/main/share-preview/text-preview.tsx
 - 如果不能跨仓库直接 import 客户端源码，需要在 server 仓库 vendored 一份同名渲染核心，并在文件头记录同步来源和客户端 commit；后续客户端渲染逻辑变更时必须同步公共页 renderer。
 - 公共页只允许做环境适配：去掉 Electron IPC、本地文件打开、Finder reveal、toast 等客户端专属能力；Markdown AST 解析、插件、URL 分类、代码块展示、图片展示、Mermaid 初始化、缩放和错误展示逻辑保持一致。
 
-构建方式参考 `src/main/share-preview/README.md` 中 Office bundle 的方式，使用 LobsterAI 客户端已有依赖打包：
+构建方式参考 `src/main/share-preview/README.md` 中 Office bundle 的方式，使用 智码 GLM Code 客户端已有依赖打包：
 
 ```bash
 ./node_modules/.bin/esbuild ../lobsterai-server/src/main/share-preview/text-preview.tsx \

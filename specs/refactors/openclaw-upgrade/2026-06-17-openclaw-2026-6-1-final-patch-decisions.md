@@ -4,14 +4,14 @@
 
 ### 1.1 问题/动机
 
-LobsterAI 当前分支已将 OpenClaw pinned version 升级到 `v2026.6.1`。历史上 `v2026.4.14` 目录中仍有四个待处理 patch：
+智码 GLM Code 当前分支已将 OpenClaw pinned version 升级到 `v2026.6.1`。历史上 `v2026.4.14` 目录中仍有四个待处理 patch：
 
 - `openclaw-aborted-tool-loop-breaker.patch`
 - `openclaw-skip-derive-prompt-segments-deadloop.patch`
 - `openclaw-subagent-cleanup-finalize-best-effort.patch`
 - `openclaw-widen-incomplete-turn-retry-guard.patch`
 
-这些 patch 都属于运行时可靠性兜底或诊断链路防护，不能只看是否能机械套用；需要逐个确认其引入背景、对应 LobsterAI PR/commit、OpenClaw 6.1 上游是否已覆盖，以及迁移/不迁移后的端侧验收方式。
+这些 patch 都属于运行时可靠性兜底或诊断链路防护，不能只看是否能机械套用；需要逐个确认其引入背景、对应 智码 GLM Code PR/commit、OpenClaw 6.1 上游是否已覆盖，以及迁移/不迁移后的端侧验收方式。
 
 ### 1.2 目标
 
@@ -26,9 +26,9 @@ LobsterAI 当前分支已将 OpenClaw pinned version 升级到 `v2026.6.1`。历
 
 引入位置：
 
-- LobsterAI PR：[#2049](https://github.com/netease-youdao/LobsterAI/pull/2049)
-- LobsterAI commit：`5fffc70d fix(openclaw): prevent aborted tool loops from burning tokens`
-- 后续补修：[#2051](https://github.com/netease-youdao/LobsterAI/pull/2051)，commit `b46bf747 fix: re fix tool loop breaker`
+- 上游 LobsterAI PR：[#2049](https://github.com/netease-youdao/LobsterAI/pull/2049)
+- 智码 GLM Code commit：`5fffc70d fix(openclaw): prevent aborted tool loops from burning tokens`
+- 上游后续补修：[#2051](https://github.com/netease-youdao/LobsterAI/pull/2051)，commit `b46bf747 fix: re fix tool loop breaker`
 - 设计文档：`specs/bugfixes/openclaw-aborted-tool-loop-token-burn/2026-05-25-openclaw-aborted-tool-loop-token-burn-design.md`
 
 引入背景：
@@ -39,7 +39,7 @@ OpenClaw 6.1 上游状态：
 
 - OpenClaw PR [#80668](https://github.com/openclaw/openclaw/pull/80668)，commit `678b2510b2 fix: abort generic no-progress tool loops`，已让 generic no-progress tool loop 在 critical threshold 后阻断。
 - 但 6.1 没有 `aborted_tool_loop` 专项 detector，没有跨不同参数累计 aborted total threshold，也没有清理旧 session history 中成批 aborted tool pair 的逻辑。
-- LobsterAI 侧已显式写出 `tools.loopDetection.enabled=true`，但仅依赖上游 generic breaker 不能覆盖旧污染会话和跨参数 aborted 循环。
+- 智码 GLM Code 侧已显式写出 `tools.loopDetection.enabled=true`，但仅依赖上游 generic breaker 不能覆盖旧污染会话和跨参数 aborted 循环。
 
 结论：迁移。
 
@@ -61,8 +61,8 @@ OpenClaw 6.1 上游状态：
 
 引入位置：
 
-- LobsterAI PR：[#1834](https://github.com/netease-youdao/LobsterAI/pull/1834)
-- LobsterAI commit：`1ec7c2c1 fix: upgrade openclaw-weixin to 2.1.10 and add openclaw patches`
+- 上游 LobsterAI PR：[#1834](https://github.com/netease-youdao/LobsterAI/pull/1834)
+- 智码 GLM Code commit：`1ec7c2c1 fix: upgrade openclaw-weixin to 2.1.10 and add openclaw patches`
 
 引入背景：
 
@@ -93,8 +93,8 @@ OpenClaw 6.1 上游状态：
 
 引入位置：
 
-- LobsterAI PR：[#2044](https://github.com/netease-youdao/LobsterAI/pull/2044)
-- LobsterAI commit：`79988fe9 fix(openclaw): prevent subagent cleanup finalize from blocking on hook failure`
+- 上游 LobsterAI PR：[#2044](https://github.com/netease-youdao/LobsterAI/pull/2044)
+- 智码 GLM Code commit：`79988fe9 fix(openclaw): prevent subagent cleanup finalize from blocking on hook failure`
 - 设计文档：`specs/bugfixes/openclaw-subagent-cleanup-finalize/2026-05-25-openclaw-subagent-cleanup-finalize-design.md`
 
 引入背景：
@@ -106,7 +106,7 @@ OpenClaw 6.1 上游状态：
 - commit `e01a885d18 fix: complete ended subagent cleanup after helper failures` 已处理 browser/MCP helper failure 后 cleanup 继续收敛，commit message 标注 `Fixes #82306`、`Supersedes #75462`。
 - OpenClaw PR [#72731](https://github.com/openclaw/openclaw/pull/72731)，commit `cf499101a2 fix(agents): normalize Windows runtime imports`，已规范 Windows 动态 import specifier。
 - 但 6.1 的 `finalizeSubagentCleanup(... didAnnounce=true ...)` 仍会在 cleanup bookkeeping 前 `await emitCompletionEndedHookIfNeeded(...)`；hook/import 抛错仍可能阻断 `cleanupCompletedAt`。
-- LobsterAI Windows runtime 当前优先通过 `gateway-bundle.mjs` fast path 启动，根目录没有 `subagent-registry.runtime.js`，真实文件位于 `dist/`。上游 #72731 解决 Windows 路径规范化，不解决 `gateway-bundle.mjs` 作为 base URL 时相对导入应映射到 `dist/` 的问题。
+- 智码 GLM Code Windows runtime 当前优先通过 `gateway-bundle.mjs` fast path 启动，根目录没有 `subagent-registry.runtime.js`，真实文件位于 `dist/`。上游 #72731 解决 Windows 路径规范化，不解决 `gateway-bundle.mjs` 作为 base URL 时相对导入应映射到 `dist/` 的问题。
 
 结论：迁移。
 
@@ -127,8 +127,8 @@ OpenClaw 6.1 上游状态：
 
 引入位置：
 
-- LobsterAI PR：[#1834](https://github.com/netease-youdao/LobsterAI/pull/1834)
-- LobsterAI commit：`1ec7c2c1 fix: upgrade openclaw-weixin to 2.1.10 and add openclaw patches`
+- 上游 LobsterAI PR：[#1834](https://github.com/netease-youdao/LobsterAI/pull/1834)
+- 智码 GLM Code commit：`1ec7c2c1 fix: upgrade openclaw-weixin to 2.1.10 and add openclaw patches`
 
 引入背景：
 
@@ -166,7 +166,7 @@ OpenClaw 6.1 上游状态：
 3. 新增 `scripts/patches/v2026.6.1/openclaw-skip-derive-prompt-segments-deadloop.patch`。
 4. 新增 `scripts/patches/v2026.6.1/openclaw-subagent-cleanup-finalize-best-effort.patch`。
 5. 不新增 `openclaw-widen-incomplete-turn-retry-guard.patch`。
-6. 补充 LobsterAI 侧 patch 存在性/决策测试。
+6. 补充 智码 GLM Code 侧 patch 存在性/决策测试。
 
 ## 5. 涉及文件
 
@@ -195,4 +195,4 @@ node_modules/.bin/vitest.cmd run src/agents/embedded-agent-runner/sanitize-sessi
 node_modules/.bin/vitest.cmd run src/shared/runtime-import.test.ts --reporter verbose --pool forks
 ```
 
-端侧手工验收按第 2 节每个 patch 的验收说明执行。重点观察 `C:\Users\yangwn\AppData\Roaming\LobsterAI\openclaw\logs` 中是否仍存在 runaway tool loop、重复 subagent cleanup finalize 或 bundle runtime import 失败。
+端侧手工验收按第 2 节每个 patch 的验收说明执行。重点观察 `C:\Users\yangwn\AppData\Roaming\智码 GLM Code\openclaw\logs` 中是否仍存在 runaway tool loop、重复 subagent cleanup finalize 或 bundle runtime import 失败。

@@ -43,7 +43,7 @@ Success response is only returned for currently open shares:
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai-server.youdao.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "status": "live",
     "moderationStatus": "pending",
     "updatedAt": "2026-06-02T12:00:00",
@@ -80,7 +80,7 @@ When `includeDisabled=true`, the server returns the latest matching share regard
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai-server.youdao.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "status": "disabled",
     "moderationStatus": "not_required",
     "updatedAt": "2026-06-02T12:00:00",

@@ -21,7 +21,7 @@ NO_REPLY"
 
 OpenClaw agent 在某些场景下（如子代理完成通知、已通过工具回复后的收尾），会在正常回复内容之后追加 `NO_REPLY` 作为静默标记。IM 平台插件（如飞书）的 `reply-dispatcher` 在 `onIdle` 阶段的 `isNoReplyLeak` 检测仅针对 `completedText` 为空的纯 `NO_REPLY` 场景，当前有内容 + 尾部 `NO_REPLY` 的情况被放过。
 
-LobsterAI 侧：
+智码 GLM Code 侧：
 - **历史同步**：`extractGatewayHistoryEntry()` 和 `shouldSuppressHeartbeatText()` 均使用精确匹配，无法识别含有正常前缀内容的尾部 `NO_REPLY`
 - **流式路径**：`processAgentAssistantText()` 和 `handleChatDelta()` 将累积文本直接推送给 UI，未裁剪尾部的 `NO_REPLY` token 或其正在形成的前缀
 
@@ -31,7 +31,7 @@ LobsterAI 侧：
 
 **Given** AI 在 IM 频道会话中通过子代理完成了 PPT 生成任务
 **When** agent 输出总结性文本后追加 `NO_REPLY` 表示无需向 IM 平台回复
-**Then** LobsterAI 会话窗口应显示总结文本，但不应显示尾部的 `NO_REPLY`
+**Then** 智码 GLM Code 会话窗口应显示总结文本，但不应显示尾部的 `NO_REPLY`
 
 ### 场景 B: 流式过程中尾部前缀逐步出现
 

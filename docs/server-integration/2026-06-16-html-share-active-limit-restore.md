@@ -25,7 +25,7 @@ Response may include disabled metadata:
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai.youdaosmart.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "accessMode": "code",
     "status": "disabled",
     "disabledAt": "2026-06-16T10:00:00",
@@ -63,7 +63,7 @@ For `status=disabled` and `disabledSource=active_limit`, the server updates cont
   "message": "success",
   "data": {
     "shareId": "shr_xxxxxxxxxxxxxxxx",
-    "url": "https://lobsterai.youdaosmart.com/s/shr_xxxxxxxxxxxxxxxx/",
+    "url": "https://glmcoding.cn/s/shr_xxxxxxxxxxxxxxxx/",
     "accessMode": "code",
     "status": "live",
     "disabledAt": null,

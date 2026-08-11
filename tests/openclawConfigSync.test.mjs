@@ -320,7 +320,7 @@ test('sync preserves existing AGENTS.md content above the Lobster managed marker
 
   const agentsMd = fs.readFileSync(path.join(workspaceDir, 'AGENTS.md'), 'utf8');
   assert.match(agentsMd, /^# Custom Workspace Notes\n\nKeep this line\./);
-  assert.match(agentsMd, /<!-- LobsterAI managed: do not edit below this line -->/);
+  assert.match(agentsMd, /<!-- 智码 GLM Code managed: do not edit below this line -->/);
   assert.doesNotMatch(agentsMd, /^# AGENTS\.md - Your Workspace/m);
 });
 
@@ -334,7 +334,7 @@ test('sync backfills the default OpenClaw AGENTS template when an old workspace 
   fs.writeFileSync(
     path.join(workspaceDir, 'AGENTS.md'),
     [
-      '<!-- LobsterAI managed: do not edit below this line -->',
+      '<!-- 智码 GLM Code managed: do not edit below this line -->',
       '',
       '## System Prompt',
       '',
@@ -354,7 +354,7 @@ test('sync backfills the default OpenClaw AGENTS template when an old workspace 
   const agentsMd = fs.readFileSync(path.join(workspaceDir, 'AGENTS.md'), 'utf8');
   assert.match(agentsMd, /^# AGENTS\.md - Your Workspace/m);
   assert.match(agentsMd, /## Every Session/);
-  assert.match(agentsMd, /<!-- LobsterAI managed: do not edit below this line -->/);
+  assert.match(agentsMd, /<!-- 智码 GLM Code managed: do not edit below this line -->/);
   assert.match(agentsMd, /## Scheduled Tasks/);
   assert.doesNotMatch(agentsMd, /Old managed-only content\./);
 });

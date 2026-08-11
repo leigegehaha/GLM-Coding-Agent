@@ -66,7 +66,7 @@ import type {
   WecomInstanceConfig,
   WecomOpenClawConfig,
 } from '../types/im';
-import { LogReporterAction, reportYdAnalyzer } from './logReporter';
+import { LogReporterAction, reportAnalytics } from './logReporter';
 
 type IMConfigUpdateOptions = {
   syncGateway?: boolean;
@@ -104,7 +104,7 @@ const reportIMGatewayToggled = (
 ): void => {
   const instances = getIMGatewayAnalyticsInstances(platform);
   const isMultiInstance = IM_MULTI_INSTANCE_PLATFORMS.has(platform);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ImGatewayToggled,
     source: IMAnalyticsSource.Settings,
     platform,

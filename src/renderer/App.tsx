@@ -1,4 +1,4 @@
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { ArrowTopRightOnSquareIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useEffect, useMemo,useRef, useState } from 'react';
 import { useDispatch,useSelector } from 'react-redux';
 
@@ -10,6 +10,7 @@ import {
   AppUpdateStatus,
   isManualDownloadUrl,
 } from '../shared/appUpdate/constants';
+import type { CodingPlanAccountUser } from '../shared/codingPlanAccount/constants';
 import { ProviderAuthType, ProviderName, ProviderRegistry } from '../shared/providers';
 import { CoworkView } from './components/cowork';
 import { CoworkShortcutDirection, CoworkUiEvent } from './components/cowork/constants';
@@ -47,9 +48,9 @@ import { apiService } from './services/api';
 import { authService } from './services/auth';
 import { configService } from './services/config';
 import { coworkService } from './services/cowork';
-import { isTestModeEnabled } from './services/endpoints';
+import { getPortalRegisterUrl, isTestModeEnabled } from './services/endpoints';
 import { i18nService } from './services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from './services/logReporter';
+import { LogReporterAction, reportAnalytics } from './services/logReporter';
 import { scheduledTaskService } from './services/scheduledTask';
 import { matchesShortcut } from './services/shortcuts';
 import { themeService } from './services/theme';
@@ -130,7 +131,10 @@ const App: React.FC = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [, forceLanguageRefresh] = useState(0);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => (
+    window.electron?.platform === 'web'
+    && window.matchMedia('(max-width: 767px)').matches
+  ));
   const [sidebarWidth, setSidebarWidth] = useState(244);
   const [appUpdateState, setAppUpdateState] = useState<AppUpdateRuntimeState>({
     status: AppUpdateStatus.Idle,
@@ -150,6 +154,8 @@ const App: React.FC = () => {
     ui?: Record<string, 'hide' | 'disable' | 'readonly'>;
     disableUpdate?: boolean;
   } | null>(null);
+  const [codingPlanAccount, setCodingPlanAccount] = useState<CodingPlanAccountUser | null>(null);
+  const [codingPlanAccountLoaded, setCodingPlanAccountLoaded] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
   const askAiFocusTimerRef = useRef<number | null>(null);
   const hasInitialized = useRef(false);
@@ -163,7 +169,9 @@ const App: React.FC = () => {
   const pendingPermission = useSelector(selectFirstCurrentSessionPendingPermission);
   const pendingPermissions = useSelector(selectPendingPermissions);
   const authUser = useSelector((state: RootState) => state.auth.user);
+  const authIsLoading = useSelector((state: RootState) => state.auth.isLoading);
   const isWindows = window.electron.platform === 'win32';
+  const isWebRuntime = window.electron.platform === 'web';
   const [minimizedPermissionIds, setMinimizedPermissionIds] = useState<string[]>([]);
   const isPendingPermissionMinimized = pendingPermission
     ? minimizedPermissionIds.includes(pendingPermission.requestId)
@@ -287,16 +295,18 @@ const App: React.FC = () => {
         mark('shell ready');
         if (!hasReportedAppStartedRef.current) {
           hasReportedAppStartedRef.current = true;
-          void reportYdAnalyzer({
+          void reportAnalytics({
             action: LogReporterAction.AppStarted,
             providerModelCount: providerModels.length,
             hasLoggedInUser: !!store.getState().auth.user?.yid,
           });
         }
 
-        void waitWithTimeout(scheduledTaskService.init(), 5000, 'scheduledTaskService.init').catch((error) => {
-          console.error('[App] initializeApp: scheduledTaskService.init failed:', error);
-        });
+        if (!isWebRuntime) {
+          void waitWithTimeout(scheduledTaskService.init(), 5000, 'scheduledTaskService.init').catch((error) => {
+            console.error('[App] initializeApp: scheduledTaskService.init failed:', error);
+          });
+        }
 
       } catch (error) {
         const elapsed = Math.round(performance.now() - t0);
@@ -310,7 +320,7 @@ const App: React.FC = () => {
     };
 
     void initializeApp();
-  }, [dispatch, waitWithTimeout]);
+  }, [dispatch, isWebRuntime, waitWithTimeout]);
 
   useEffect(() => {
     const unsubscribe = i18nService.subscribe(() => {
@@ -326,6 +336,29 @@ const App: React.FC = () => {
       void authService.fetchProfileSummary();
     }
   }, [authUser]);
+
+  useEffect(() => {
+    if (isWebRuntime) {
+      setCodingPlanAccountLoaded(true);
+      return;
+    }
+    let active = true;
+    void window.electron.codingPlan.getAccount()
+      .then(result => {
+        if (active) {
+          setCodingPlanAccount(result.success ? result.data : null);
+        }
+      })
+      .catch(() => {
+        if (active) setCodingPlanAccount(null);
+      })
+      .finally(() => {
+        if (active) setCodingPlanAccountLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isWebRuntime]);
 
   // Listen for Copilot token auto-refresh events from the main process
   useEffect(() => {
@@ -379,6 +412,7 @@ const App: React.FC = () => {
   }, [isInitialized, defaultSelectedModel?.id, defaultSelectedModel?.providerKey]);
 
   const handleShowSettings = useCallback((options?: SettingsOpenOptions) => {
+    if (isWebRuntime) return;
     setSettingsOptions((current) => ({
       initialTab: options?.initialTab,
       notice: options?.notice,
@@ -387,31 +421,36 @@ const App: React.FC = () => {
       requestId: current.requestId + 1,
     }));
     setShowSettings(true);
-  }, []);
+  }, [isWebRuntime]);
 
   const handleShowSkills = useCallback(() => {
+    if (isWebRuntime) return;
     setMainView('skills');
-  }, []);
+  }, [isWebRuntime]);
 
   const handleShowCowork = useCallback(() => {
     setMainView('cowork');
   }, []);
 
   const handleShowScheduledTasks = useCallback(() => {
+    if (isWebRuntime) return;
     setMainView('scheduledTasks');
-  }, []);
+  }, [isWebRuntime]);
 
   const handleShowMcp = useCallback(() => {
+    if (isWebRuntime) return;
     setMainView('mcp');
-  }, []);
+  }, [isWebRuntime]);
 
   const handleShowSites = useCallback(() => {
+    if (isWebRuntime) return;
     setMainView('sites');
-  }, []);
+  }, [isWebRuntime]);
 
   const handleShowKits = useCallback(() => {
+    if (isWebRuntime) return;
     setMainView('kits');
-  }, []);
+  }, [isWebRuntime]);
 
   const openHomeWithKit = useCallback((kitId: string, text?: string) => {
     dispatch(setActiveKitIds([kitId]));
@@ -453,7 +492,7 @@ const App: React.FC = () => {
     } catch {
       // Logging should never block sidebar interactions.
     }
-    void reportYdAnalyzer({
+    void reportAnalytics({
       action: LogReporterAction.SidebarAction,
       source: 'home_sidebar',
       actionType: isSidebarCollapsed ? 'expand_sidebar' : 'collapse_sidebar',
@@ -539,6 +578,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isWebRuntime) return undefined;
     let mounted = true;
 
     const loadInitialUpdateState = async () => {
@@ -617,11 +657,11 @@ const App: React.FC = () => {
       mounted = false;
       unsubscribe();
     };
-  }, [showToast, stopUserInitiatedUpdateFlow]);
+  }, [isWebRuntime, showToast, stopUserInitiatedUpdateFlow]);
 
   const handleShowLogin = useCallback(() => {
-    showToast(i18nService.t('featureInDevelopment'));
-  }, [showToast]);
+    handleShowSettings({ initialTab: 'codingPlan' });
+  }, [handleShowSettings]);
 
   const runUpdateCheck = useCallback(async () => {
     try {
@@ -1136,7 +1176,7 @@ const App: React.FC = () => {
   }, [mainView, showSettings, currentSessionId]);
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || isWebRuntime) return;
 
     // Enterprise mode: completely skip update detection
     if (enterpriseConfig?.disableUpdate) return;
@@ -1174,7 +1214,7 @@ const App: React.FC = () => {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isInitialized, runUpdateCheck, enterpriseConfig]);
+  }, [isInitialized, isWebRuntime, runUpdateCheck, enterpriseConfig]);
 
   // 根据场景选择使用哪个权限组件。最小化时保持组件挂载（仅视觉隐藏），
   // 避免重新展开后丢失用户已选择/已输入的内容；key 按 requestId 隔离不同请求的状态。
@@ -1294,6 +1334,7 @@ const App: React.FC = () => {
             <SkinProvider>
               <Settings
                 onClose={handleCloseSettings}
+                onCodingPlanAccountChange={setCodingPlanAccount}
                 initialTab={settingsOptions.initialTab}
                 initialTabRequestId={settingsOptions.requestId}
                 notice={settingsOptions.notice}
@@ -1326,6 +1367,7 @@ const App: React.FC = () => {
         aria-busy={isUpdateInteractionBlocked}
       >
         <Sidebar
+          codingPlanAccount={codingPlanAccount}
           onShowLogin={handleShowLogin}
           onShowSettings={handleShowSettings}
           activeView={mainView}
@@ -1339,10 +1381,10 @@ const App: React.FC = () => {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={handleToggleSidebar}
           onWidthChange={setSidebarWidth}
-          updateNotice={!isSidebarCollapsed && !isUpdateInteractionBlocked ? updateCard : null}
+          updateNotice={!isWebRuntime && !isSidebarCollapsed && !isUpdateInteractionBlocked ? updateCard : null}
           hideAdBanner={isUpdateCardExpanded}
           hideLogin={enterpriseConfig?.ui?.login === 'hide'}
-          hideSites={!isTestModeEnabled() || enterpriseConfig?.ui?.sites === 'hide'}
+          hideSites={isWebRuntime || !isTestModeEnabled() || enterpriseConfig?.ui?.sites === 'hide'}
         />
         <div className={`flex-1 min-w-0 transition-[padding] duration-200 ease-out ${isSidebarCollapsed ? 'pl-1.5' : ''}`}>
           <div
@@ -1409,6 +1451,24 @@ const App: React.FC = () => {
                 onRespondToPermission={handlePermissionResponse}
               />
             )}
+            {codingPlanAccountLoaded
+              && !authIsLoading
+              && !authUser
+              && !codingPlanAccount
+              && mainView === 'cowork'
+              && !currentSessionId
+              && !isWebRuntime && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void window.electron.shell.openExternal(getPortalRegisterUrl());
+                  }}
+                  className="absolute bottom-4 right-4 z-20 inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background/95 px-3 text-sm font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-surface-raised"
+                >
+                  {i18nService.t('codingPlanRegisterShort')}
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                </button>
+              )}
           </div>
         </div>
         {isUpdateInteractionBlocked && (
@@ -1430,6 +1490,7 @@ const App: React.FC = () => {
       {showSettings && (
         <Settings
           onClose={handleCloseSettings}
+          onCodingPlanAccountChange={setCodingPlanAccount}
           onStartAiSkin={handleStartAiSkinFromSettings}
           initialTab={settingsOptions.initialTab}
           initialTabRequestId={settingsOptions.requestId}
@@ -1469,4 +1530,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;

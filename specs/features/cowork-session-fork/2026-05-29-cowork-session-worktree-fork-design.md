@@ -1,4 +1,4 @@
-# LobsterAI Cowork 派生到新工作树设计文档
+# 智码 GLM Code Cowork 派生到新工作树设计文档
 
 ## 1. 概述
 
@@ -75,9 +75,9 @@
 
 ### 场景 1: clean Git repo 中派生到新工作树
 
-**Given** 当前 session 的 `cwd` 位于 clean Git repo  
-**When** 用户选择“派生到新工作树”  
-**Then** LobsterAI 创建新的 Git worktree
+**Given** 当前 session 的 `cwd` 位于 clean Git repo
+**When** 用户选择“派生到新工作树”
+**Then** 智码 GLM Code 创建新的 Git worktree
 
 **And** 创建新的 Cowork session
 
@@ -87,26 +87,26 @@
 
 ### 场景 2: 非 Git 目录禁用新工作树
 
-**Given** 当前 session 的 `cwd` 不在 Git repo 中  
-**When** 用户打开分叉弹窗  
+**Given** 当前 session 的 `cwd` 不在 Git repo 中
+**When** 用户打开分叉弹窗
 **Then** “派生到新工作树”不可选
 
 **And** UI 提示需要 Git 仓库才能创建新工作树
 
 ### 场景 3: dirty Git repo 提示风险
 
-**Given** 当前 Git repo 有未提交改动  
-**When** 用户选择“派生到新工作树”  
-**Then** LobsterAI 提示未提交改动不会自动带入新工作树
+**Given** 当前 Git repo 有未提交改动
+**When** 用户选择“派生到新工作树”
+**Then** 智码 GLM Code 提示未提交改动不会自动带入新工作树
 
-**When** 用户确认继续  
-**Then** LobsterAI 基于 `HEAD` 创建 worktree
+**When** 用户确认继续
+**Then** 智码 GLM Code 基于 `HEAD` 创建 worktree
 
 ### 场景 4: worktree 创建失败
 
-**Given** branch 名称冲突、路径已存在或 Git 命令失败  
-**When** 用户选择“派生到新工作树”  
-**Then** LobsterAI 不创建新 Cowork session
+**Given** branch 名称冲突、路径已存在或 Git 命令失败
+**When** 用户选择“派生到新工作树”
+**Then** 智码 GLM Code 不创建新 Cowork session
 
 **And** UI 展示失败原因
 
@@ -114,8 +114,8 @@
 
 ### 场景 5: 删除 worktree fork session
 
-**Given** 用户删除一个 worktree fork session  
-**When** session 关联 `fork_workspace_path`  
+**Given** 用户删除一个 worktree fork session
+**When** session 关联 `fork_workspace_path`
 **Then** 第一版只删除 Cowork session
 
 **And** 不自动删除 worktree 目录或 Git branch
@@ -156,7 +156,7 @@ export const CoworkForkWorkspaceState = {
 理由：
 
 - 避免污染用户 repo。
-- 便于 LobsterAI 后续做统一管理。
+- 便于 智码 GLM Code 后续做统一管理。
 - 与 Codex `$CODEX_HOME/worktrees` 的思路一致。
 
 路径要求：

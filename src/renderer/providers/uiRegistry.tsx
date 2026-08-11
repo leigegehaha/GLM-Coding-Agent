@@ -36,6 +36,14 @@ export const ProviderIconId = {
 export type ProviderIconId = typeof ProviderIconId[keyof typeof ProviderIconId];
 
 const PROVIDER_ICON_MAP: Record<string, React.ReactNode> = {
+  [ProviderName.ZhimaCoding]: (
+    <img
+      src="logo.webp"
+      alt=""
+      aria-hidden="true"
+      className="h-6 w-6 rounded-md object-cover"
+    />
+  ),
   [ProviderName.OpenAI]:       <OpenAIIcon />,
   [ProviderName.DeepSeek]:     <DeepSeekIcon />,
   [ProviderIconId.Banana]:     <BananaIcon />,

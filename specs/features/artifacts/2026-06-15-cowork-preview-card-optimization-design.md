@@ -22,7 +22,7 @@
 3. HTML 网站卡片使用“网站名称”作为主标题，打开行为沿用当前内置浏览器链路。
 4. 文件多于 3 个时默认折叠，只展示 3 个卡片和“显示另外 N 个”的展开入口。
 5. 非 HTML 文件的“打开方式”下拉菜单内容保持与当前实现一致：展示系统默认应用、系统可打开应用和打开所在文件夹。
-6. HTML 文件的打开方式菜单中，第一项固定展示内置浏览器入口；中文文案为“有道龙虾浏览器”，英文文案为“LobsterAI Browser”，后续系统应用只展示浏览器类应用；系统应用最多展示 5 个。
+6. HTML 文件的打开方式菜单中，第一项固定展示内置浏览器入口；中文文案为“智码 GLM Code 浏览器”，英文文案为“智码 GLM Code Browser”，后续系统应用只展示浏览器类应用；系统应用最多展示 5 个。
 7. 对右边栏浏览器预览做信息展示优化：浏览器 tab 标题展示网站名称，地址栏展示文件地址并去掉左侧文件/网站 icon，地址栏聚焦时默认全选当前地址。
 8. 不修改右侧 ArtifactPanel 的预览渲染、文件列表、分享、注释、设备工具栏等功能能力。
 9. 卡片点击、打开方式和本地文件打开行为保持现有语义。
@@ -47,7 +47,7 @@
 | 图标 | icon 优先使用文件格式默认图标，也可使用“文件格式 + 颜色” | 使用现有 `FileTypeIcon` 作为默认文件图标来源，HTML 网站使用网站/地球图标。 |
 | 标题 | HTML 为网站名称，普通文件为文件名 | HTML 特殊处理，其他类型用文件名。 |
 | 副标题 | HTML 为“网站”，普通文件为“文件类型 · 扩展名” | 扩展名使用大写，文件名保留原大小写。 |
-| 操作区 | 右侧展示“打开”或“打开方式” | 沿用当前交互语义；非 HTML 打开方式菜单只展示系统应用和打开所在文件夹；HTML 额外把内置浏览器入口放在第一项，中文显示“有道龙虾浏览器”、英文显示“LobsterAI Browser”，后续系统应用只展示浏览器类应用；系统应用最多展示 5 个。 |
+| 操作区 | 右侧展示“打开”或“打开方式” | 沿用当前交互语义；非 HTML 打开方式菜单只展示系统应用和打开所在文件夹；HTML 额外把内置浏览器入口放在第一项，中文显示“智码 GLM Code 浏览器”、英文显示“智码 GLM Code Browser”，后续系统应用只展示浏览器类应用；系统应用最多展示 5 个。 |
 
 ### 2.2 多卡片展示
 
@@ -67,7 +67,7 @@ HTML 是 PRD 中的特殊类型：
 2. 副标题固定为“网站”。
 3. 文件可能仍叫 `index.html`，但对话窗卡片不应展示 `index.html` 作为主标题。
 4. 点击卡片时继续沿用当前内置浏览器打开链路。
-5. 对话窗 HTML 卡片的“打开方式”菜单中，第一项展示内置浏览器入口（中文“有道龙虾浏览器”，英文“LobsterAI Browser”），然后才是系统浏览器应用和打开所在文件夹。
+5. 对话窗 HTML 卡片的“打开方式”菜单中，第一项展示内置浏览器入口（中文“智码 GLM Code 浏览器”，英文“智码 GLM Code Browser”），然后才是系统浏览器应用和打开所在文件夹。
 6. 右边栏浏览器预览同步做展示优化：tab 标题显示网站名称，地址栏显示文件地址且不展示左侧 icon；不改变浏览器预览加载逻辑。
 
 ### 2.4 优化覆盖范围
@@ -78,7 +78,7 @@ PRD 标题注明“文件卡片样式支持范围 共 11 个”，这些类型�
 
 | 序号 | 文件类型 | 格式 | Artifact 类型 | 是否显示打开方式菜单 | 默认打开 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 网站 | HTML | `html` | 是 | 有道龙虾浏览器 |
+| 1 | 网站 | HTML | `html` | 是 | 智码 GLM Code 浏览器 |
 | 2 | 文档 | MD | `markdown` | 沿用当前行为 | 右侧预览 |
 | 3 | 文档 | PDF | `document` | 沿用当前行为 | 右侧预览 |
 | 4 | 文档 | DOCX | `document` | 沿用当前行为 | 右侧预览 |
@@ -123,7 +123,7 @@ PRD 图片中标注的其他类型可作为后续展示范围参考，但本次�
 
 **Given** AI 生成了 `/project/happy-wishes/index.html`，Artifact 类型为 `html`。
 **When** 对话窗展示该 turn 的文件卡片。
-**Then** 卡片主标题显示“愿大家天天都开心”这类网站名称，副标题显示“网站”，点击卡片在有道龙虾浏览器中打开。
+**Then** 卡片主标题显示“愿大家天天都开心”这类网站名称，副标题显示“网站”，点击卡片在智码 GLM Code 浏览器中打开。
 
 ### 场景 2: 同一轮生成多个文件
 
@@ -147,7 +147,7 @@ PRD 图片中标注的其他类型可作为后续展示范围参考，但本次�
 
 **Given** 用户把鼠标悬停在任意支持卡片上。
 **When** hover 状态生效。
-**Then** 卡片背景变为 `#FBFBFB`，布局不抖动；普通文件副标题切换为“打开预览”，HTML/网站卡片副标题切换为“在有道龙虾浏览器中打开”。
+**Then** 卡片背景变为 `#FBFBFB`，布局不抖动；普通文件副标题切换为“打开预览”，HTML/网站卡片副标题切换为“在智码 GLM Code 浏览器中打开”。
 
 ### 场景 6: 右边栏浏览器预览 HTML 文件
 
@@ -171,7 +171,7 @@ PRD 图片中标注的其他类型可作为后续展示范围参考，但本次�
 
 **Given** 用户看到 `pond-frog.html` 这类 HTML 网站卡片。
 **When** 用户点击“打开方式”。
-**Then** 第一项展示“有道龙虾浏览器”或英文环境的 “LobsterAI Browser”；后续系统应用只展示浏览器类应用，最多 5 个，不展示 Code、Cursor、Sublime Text、TextEdit 等文本编辑器。
+**Then** 第一项展示“智码 GLM Code 浏览器”或英文环境的 “智码 GLM Code Browser”；后续系统应用只展示浏览器类应用，最多 5 个，不展示 Code、Cursor、Sublime Text、TextEdit 等文本编辑器。
 
 ### 场景 10: Office/PDF 预览顶部按钮保持不变
 
@@ -217,7 +217,7 @@ interface PreviewCardDescriptor {
 
 | 类型 | 主标题 | 副标题 | Hover 副标题 |
 | --- | --- | --- | --- |
-| HTML | 网站名称 | 网站 | 在有道龙虾浏览器中打开 / Open in LobsterAI Browser |
+| HTML | 网站名称 | 网站 | 在智码 GLM Code 浏览器中打开 / Open in 智码 GLM Code Browser |
 | MD | 文件名 | 文档 · MD | 打开预览 |
 | PDF | 文件名 | 文档 · PDF | 打开预览 |
 | DOCX | 文件名 | 文档 · DOCX | 打开预览 |
@@ -234,7 +234,7 @@ interface PreviewCardDescriptor {
 | Mermaid | 文件名或标题 | 图表 | 打开预览 |
 | Code | 文件名 | 代码 · 扩展名 | 打开预览 |
 | Text/Log | 文件名 | 文本 · 扩展名 | 打开预览 |
-| Local service | 服务名或 URL | 网站 | 在有道龙虾浏览器中打开 / Open in LobsterAI Browser |
+| Local service | 服务名或 URL | 网站 | 在智码 GLM Code 浏览器中打开 / Open in 智码 GLM Code Browser |
 
 HTML 网站名称来源优先级：
 
@@ -298,7 +298,7 @@ HTML 网站名称来源优先级：
 
 “打开方式”下拉菜单不因为本次优化新增右侧预览、分享或其他功能项。非 HTML 文件保持当前系统应用内容；HTML 文件只展示浏览器类系统应用。参考 Codex 预览卡片逻辑，系统应用最多展示 5 个；“在文件夹中打开”等固定功能项不计入 5 个系统应用名额。菜单排序：
 
-1. HTML 文件：第一项固定展示内置浏览器入口，中文为“有道龙虾浏览器”，英文为“LobsterAI Browser”。
+1. HTML 文件：第一项固定展示内置浏览器入口，中文为“智码 GLM Code 浏览器”，英文为“智码 GLM Code Browser”。
 2. HTML 文件：系统默认浏览器。
 3. HTML 文件：系统返回的其他浏览器应用。
 4. 非 HTML 文件：系统默认应用、系统返回的已安装推荐应用和其他系统可打开应用，沿用当前菜单。
@@ -308,7 +308,7 @@ HTML 网站名称来源优先级：
 
 | 菜单项 | 行为 |
 | --- | --- |
-| 有道龙虾浏览器 / LobsterAI Browser | 打开 HTML 文件对应的内置浏览器标签 |
+| 智码 GLM Code 浏览器 / 智码 GLM Code Browser | 打开 HTML 文件对应的内置浏览器标签 |
 | 系统默认应用 | 调用 `shell.openPath` |
 | 指定应用 | 调用 `shell.openPathWithApp` |
 | 在文件夹中打开 | 调用 reveal local path |
@@ -319,7 +319,7 @@ HTML 网站名称来源优先级：
 
 | 类型 | 点击卡片主体 |
 | --- | --- |
-| HTML | 在有道龙虾浏览器中打开 |
+| HTML | 在智码 GLM Code 浏览器中打开 |
 | MD | 打开右侧 Markdown 预览 |
 | PDF | 打开右侧 PDF 预览 |
 | DOCX | 打开右侧文档预览 |
@@ -366,8 +366,8 @@ HTML 网站名称来源优先级：
 | `artifactPreviewCardShowLess` | 收起 | Show less |
 | `artifactPreviewCardOpenPreview` | 打开预览 | Open preview |
 | `artifactPreviewCardOpenWith` | 打开方式 | Open with |
-| `artifactPreviewCardLobsterBrowser` | 有道龙虾浏览器 | LobsterAI Browser |
-| `artifactPreviewCardOpenInLobsterBrowser` | 在有道龙虾浏览器中打开 | Open in LobsterAI Browser |
+| `artifactPreviewCardLobsterBrowser` | 智码 GLM Code 浏览器 | 智码 GLM Code Browser |
+| `artifactPreviewCardOpenInLobsterBrowser` | 在智码 GLM Code 浏览器中打开 | Open in 智码 GLM Code Browser |
 | `artifactFileKindWebsite` | 网站 | Website |
 | `artifactFileKindDocument` | 文档 | Document |
 | `artifactFileKindSpreadsheet` | 电子表格 | Spreadsheet |
@@ -416,10 +416,10 @@ export const PreviewCardDisplayKind = {
 
 1. 删除或减少组件内部手写类型 SVG，使用 `FileTypeIcon`。
 2. 接收 `PreviewCardDescriptor` 或在组件内部通过策略模块生成 descriptor。
-3. 使用 descriptor 的 `subtitle` 和 `hoverSubtitle` 切换悬停文案；普通文件 hover 显示“打开预览”，HTML/网站 hover 显示“在有道龙虾浏览器中打开”。
+3. 使用 descriptor 的 `subtitle` 和 `hoverSubtitle` 切换悬停文案；普通文件 hover 显示“打开预览”，HTML/网站 hover 显示“在智码 GLM Code 浏览器中打开”。
 4. 将卡片主体和操作按钮拆开，避免按钮嵌套和点击冒泡问题。
 5. 非 HTML “打开方式”菜单沿用当前系统应用和打开所在文件夹内容。
-6. HTML 文件在系统应用列表第一项插入内置浏览器入口，中文显示“有道龙虾浏览器”、英文显示“LobsterAI Browser”，后续只展示浏览器类应用，系统浏览器最多展示 5 个。
+6. HTML 文件在系统应用列表第一项插入内置浏览器入口，中文显示“智码 GLM Code 浏览器”、英文显示“智码 GLM Code Browser”，后续只展示浏览器类应用，系统浏览器最多展示 5 个。
 7. `supportsOpenMenu` 依赖本地 `filePath`；没有本地路径的内容型 artifact 仍可点击默认预览，但不展示系统应用打开项。
 8. 菜单定位沿用 portal，但需要支持卡片在页面底部时向上展开。
 9. 加入键盘可访问性：Enter 打开默认预览，Escape 关闭菜单。
@@ -455,7 +455,7 @@ export const PreviewCardDisplayKind = {
 1. 读取系统应用列表。
 2. 去重相同 app path。
 3. 非 HTML 文件标记默认应用，保持当前系统应用展示内容。
-4. HTML 文件在列表第一项插入内置浏览器入口，中文显示“有道龙虾浏览器”、英文显示“LobsterAI Browser”。
+4. HTML 文件在列表第一项插入内置浏览器入口，中文显示“智码 GLM Code 浏览器”、英文显示“智码 GLM Code Browser”。
 5. HTML 文件对系统应用结果做浏览器过滤，只保留 Chrome、Safari、Firefox、Edge、Arc、Brave、Chromium 等浏览器类应用，不展示 Code、Cursor、Sublime Text、TextEdit 等文本编辑器。
 6. 非 HTML 文件不插入内置浏览器预览或其他新增功能项，系统应用最多展示 5 个，仍保留原有文档、Office、图片等文件的系统应用排序和过滤策略。
 7. 固定追加“在文件夹中打开”。
@@ -502,12 +502,12 @@ export const PreviewCardDisplayKind = {
 | 文件扩展名大写 | 归一化为小写判断，展示副标题时转大写 |
 | CSV 被识别为 `text` | 只要扩展名是 `.csv`，仍使用电子表格卡片规则 |
 | 图片只有 data URL 没有 filePath | 沿用当前卡片点击打开预览；没有本地文件路径时不展示系统应用打开项 |
-| `getAppsForFile` 返回空 | 显示“在文件夹中打开”；HTML 文件仍显示“有道龙虾浏览器”/“LobsterAI Browser” |
+| `getAppsForFile` 返回空 | 显示“在文件夹中打开”；HTML 文件仍显示“智码 GLM Code 浏览器”/“智码 GLM Code Browser” |
 | 文件已经删除 | 卡片主体打开预览时展示现有错误态，菜单中系统打开项禁用或失败 toast |
 | 文件很多 | 默认折叠，展开后允许换行，不影响消息正文阅读 |
 | 连续回复更新同一文件 | 每个回复后都展示该文件卡片；同一回复内重复路径只保留一张；点击任一卡片都打开右侧面板保留的 canonical 预览 |
 | HTML 系统应用返回文本编辑器 | `shellApps.ts` 对 `.html`/`.htm` 只保留浏览器类应用，过滤 Code、Cursor、Sublime Text、TextEdit 等编辑器 |
-| Local service 卡片 hover | 视为网站类卡片，hover 副标题显示“在有道龙虾浏览器中打开”/“Open in LobsterAI Browser” |
+| Local service 卡片 hover | 视为网站类卡片，hover 副标题显示“在智码 GLM Code 浏览器中打开”/“Open in 智码 GLM Code Browser” |
 | 地址栏按钮显示后焦点离开 | 点击地址栏外、焦点移出地址栏或窗口失焦时隐藏外部浏览器打开按钮 |
 | Office/PDF 顶部系统应用打开按钮 | 保持原有通用外部打开 icon 和系统应用打开行为，不复用浏览器地址栏专用 icon |
 | 窄屏或小窗口 | 卡片宽度跟随容器，标题截断，操作区不挤压标题到不可读 |
@@ -532,15 +532,15 @@ export const PreviewCardDisplayKind = {
 ## 8. 验收标准
 
 1. 当前所有已有对话窗预览卡片均套用统一样式；HTML、MD、PDF、DOCX、XLSX、CSV、PPTX、PNG、GIF、JPG、JPEG 作为重点验收样例。
-2. HTML 卡片主标题展示网站名称，副标题展示“网站”，点击默认进入有道龙虾浏览器。
+2. HTML 卡片主标题展示网站名称，副标题展示“网站”，点击默认进入智码 GLM Code 浏览器。
 3. 普通文件卡片主标题展示文件名，副标题展示“类型 · 扩展名”，扩展名为大写。
 4. 浅色模式默认态卡片背景为白色，hover 背景为 `#FBFBFB`；深色模式 hover 只轻微提亮，无布局抖动。
 5. 文件图标能按扩展名区分颜色和样式，不再全部使用通用 icon。
 6. 同一 turn 超过 3 个卡片时默认折叠，展开入口文案显示正确数量，点击后展示全部。
 7. 非 HTML 文件的“打开方式”菜单内容与当前菜单一致，只展示系统应用和打开所在文件夹。
-8. HTML 文件的“打开方式”菜单第一项中文展示“有道龙虾浏览器”、英文展示“LobsterAI Browser”，后续只展示浏览器类系统应用并可正常打开，浏览器类系统应用最多 5 个。
+8. HTML 文件的“打开方式”菜单第一项中文展示“智码 GLM Code 浏览器”、英文展示“智码 GLM Code Browser”，后续只展示浏览器类系统应用并可正常打开，浏览器类系统应用最多 5 个。
 9. HTML 文件的系统应用列表不展示 Code、Cursor、Sublime Text、TextEdit 等文本编辑器。
-10. 普通文件卡片 hover 时副标题显示“打开预览”；HTML/网站卡片 hover 时副标题显示“在有道龙虾浏览器中打开”。
+10. 普通文件卡片 hover 时副标题显示“打开预览”；HTML/网站卡片 hover 时副标题显示“在智码 GLM Code 浏览器中打开”。
 11. 没有 filePath 的内容型 artifact 仍可按当前卡片主体行为打开预览，系统应用项不出现或不可用。
 12. 右侧 ArtifactPanel 的预览渲染、文件列表、分享、注释和工具栏功能不发生变化。
 13. 连续两个模型回复都引用或更新同一个预览文件时，两个回复后都展示该文件卡片。

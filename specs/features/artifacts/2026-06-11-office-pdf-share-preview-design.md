@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-当前 LobsterAI 已支持 HTML Artifact 分享，并在近期扩展了图片和 SVG 分享。分享链路由 `lobsterai-server` 提供：
+当前 智码 GLM Code 已支持 HTML Artifact 分享，并在近期扩展了图片和 SVG 分享。分享链路由 `lobsterai-server` 提供：
 
 - 客户端把待分享内容打成 zip，通过 `/api/html-shares` 上传。
 - 服务端保存 `html_shares` / `html_share_files`，把文件上传到 NOS。
@@ -46,38 +46,38 @@
 
 ### 场景 1: 分享可预览的 DOCX
 
-**Given** 用户在 Artifact 面板选中一个 8 MB 的 `.docx` 文件，用户已登录且订阅有效。  
-**When** 用户点击分享并创建分享。  
+**Given** 用户在 Artifact 面板选中一个 8 MB 的 `.docx` 文件，用户已登录且订阅有效。
+**When** 用户点击分享并创建分享。
 **Then** 客户端上传 `document_file` 分享，服务端返回分享链接和分享码，访问者输入分享码后在 `/s/{shareId}/` 看到分页文档预览和下载按钮。
 
 ### 场景 2: 分享超过 Web 预览阈值的 PPTX
 
-**Given** 服务端配置 `html-share.document.preview.max-render-bytes=26214400`，用户分享一个 80 MB 的 `.pptx` 文件。  
-**When** 访问者打开分享页并通过分享码。  
+**Given** 服务端配置 `html-share.document.preview.max-render-bytes=26214400`，用户分享一个 80 MB 的 `.pptx` 文件。
+**When** 访问者打开分享页并通过分享码。
 **Then** 分享页不加载 PPTX 预览脚本，不请求 `/content/?preview=1`，只展示文件名、大小、不可预览原因和下载按钮。
 
 ### 场景 3: 管理员审核预览文档分享
 
-**Given** 管理员在分享管理后台打开一个 `document_file` 分享。  
-**When** 管理员点击预览。  
+**Given** 管理员在分享管理后台打开一个 `document_file` 分享。
+**When** 管理员点击预览。
 **Then** 后台调用现有 preview token 接口并打开服务端返回的 `previewUrl`，公共页使用管理员 preview cookie 放行，不泄露分享码。
 
 ### 场景 4: 文档内容更新后复用原分享链接
 
-**Given** 同一个本地 `.xlsx` 文件已经分享过。  
-**When** 用户修改本地文件后再次点击分享更新。  
+**Given** 同一个本地 `.xlsx` 文件已经分享过。
+**When** 用户修改本地文件后再次点击分享更新。
 **Then** 客户端通过 `clientSourceKey` 找到已有分享，调用更新接口，服务端保留原 `shareId` 和 URL，同时更新 `sourceSha256`、文件内容和审核状态。
 
 ### 场景 5: 不支持的文档格式
 
-**Given** 用户尝试分享 `.docm` 文件。  
-**When** 客户端或服务端校验文件类型。  
+**Given** 用户尝试分享 `.docm` 文件。
+**When** 客户端或服务端校验文件类型。
 **Then** 分享被拒绝，客户端展示“不支持该文件类型”的用户可见提示。
 
 ### 场景 6: 扫描版 PDF 触发复核
 
-**Given** 用户分享一个扫描版 PDF，文本提取结果为空。  
-**When** 服务端异步内容审查执行。  
+**Given** 用户分享一个扫描版 PDF，文本提取结果为空。
+**When** 服务端异步内容审查执行。
 **Then** 服务端至少对抽样页面生成图片并提交视觉审核；如果无法完成视觉审核，则将分享标记为 `review` 或 `error`，等待管理员处理，不直接标记为 `passed`。
 
 ## 3. 功能需求
@@ -566,7 +566,7 @@ html-share.moderation.document.empty-text-policy=review
 
 ## 6. 涉及文件
 
-### LobsterAI 客户端
+### 智码 GLM Code 客户端
 
 | 文件 | 改动 |
 | --- | --- |

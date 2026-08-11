@@ -12,7 +12,7 @@ vi.mock('electron', () => ({
 
 import { migrateMainAgentWorkspace } from './openclawWorkspaceMigration';
 
-const AGENTS_MARKER = '<!-- LobsterAI managed: do not edit below this line -->';
+const AGENTS_MARKER = '<!-- 智码 GLM Code managed: do not edit below this line -->';
 
 function createStore() {
   const values = new Map<string, string>();

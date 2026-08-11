@@ -1,10 +1,10 @@
-# LobsterAI Cowork 计划模式设计文档
+# 智码 GLM Code Cowork 计划模式设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI Cowork 默认以执行任务为目标：模型可以读取项目、调用工具、修改文件并验证结果。但在需求尚未明确、改动范围较大或用户希望先审阅方案时，直接执行会增加返工和误修改风险。
+智码 GLM Code Cowork 默认以执行任务为目标：模型可以读取项目、调用工具、修改文件并验证结果。但在需求尚未明确、改动范围较大或用户希望先审阅方案时，直接执行会增加返工和误修改风险。
 
 计划模式用于把一次 Cowork 提交切换为“先调研、再形成决策完整计划”的协作模式。它不是普通提示词模板，也不是模型自由发挥的展示样式，而是一组跨 Renderer、IPC、OpenClaw runtime、消息持久化和会话分叉的行为约束。
 
@@ -36,7 +36,7 @@ LobsterAI Cowork 默认以执行任务为目标：模型可以读取项目、调
 
 ### 1.3 非目标
 
-- 不实现 Codex 完整的服务端 collaboration mode 协议；当前由 LobsterAI 在每轮 system prompt 和 runtime 约束中实现。
+- 不实现 Codex 完整的服务端 collaboration mode 协议；当前由 智码 GLM Code 在每轮 system prompt 和 runtime 约束中实现。
 - 不要求所有模型原生支持 `<proposed_plan>`；客户端必须能够对缺少标签但内容完整的结果进行规范化。
 - 不把计划内容拆成新的数据库 message type；第一阶段继续保存为 assistant 原始文本。
 - 不自动执行计划。只有用户明确发送实现指令后，才进入普通执行轮次。
@@ -72,16 +72,16 @@ LobsterAI Cowork 默认以执行任务为目标：模型可以读取项目、调
 
 ### 2.2 与 Codex 的对齐边界
 
-LobsterAI 参考 Codex 的以下产品语义：
+智码 GLM Code 参考 Codex 的以下产品语义：
 
 - 先调研和追问，再输出完整计划。
 - 计划阶段不直接修改文件。
 - 最终计划使用结构化边界，客户端渲染为独立内容块。
 - 用户批准后进入执行阶段，不再次生成同一计划。
 
-LobsterAI 与 Codex 的实现不同：
+智码 GLM Code 与 Codex 的实现不同：
 
-- LobsterAI 当前 Agent 引擎是 OpenClaw，不依赖 Codex app-server 的 collaboration mode 类型。
+- 智码 GLM Code 当前 Agent 引擎是 OpenClaw，不依赖 Codex app-server 的 collaboration mode 类型。
 - 计划模式提示由 Renderer 构造并作为当前轮 system prompt 传入 Main。
 - Main runtime 负责工具安全、输出规范化、恢复和历史同步。
 - Renderer 通过解析 assistant 原始文本中的 `<proposed_plan>` 渲染计划卡片。
@@ -167,36 +167,36 @@ LobsterAI 与 Codex 的实现不同：
 
 ### 场景 1: 空项目生成计划
 
-**Given** 用户选择一个空工作目录并打开计划模式  
-**When** 用户要求创建一个网页  
-**Then** Agent 可以使用只读工具检查目录  
-**And** 不创建或修改任何文件  
+**Given** 用户选择一个空工作目录并打开计划模式
+**When** 用户要求创建一个网页
+**Then** Agent 可以使用只读工具检查目录
+**And** 不创建或修改任何文件
 **And** 最终展示完整计划卡片
 
 ### 场景 2: 已有项目调研
 
-**Given** 工作目录包含代码和配置  
-**When** 用户开启计划模式并请求新增功能  
-**Then** Agent 可以组合使用 `ls`、`rg`、`cat`、`head`、只读 `git` 等命令  
-**And** 可以读取技能指南  
+**Given** 工作目录包含代码和配置
+**When** 用户开启计划模式并请求新增功能
+**Then** Agent 可以组合使用 `ls`、`rg`、`cat`、`head`、只读 `git` 等命令
+**And** 可以读取技能指南
 **And** 不因只读复合命令而终止计划模式
 
 ### 场景 3: 阻止写操作
 
-**Given** 当前轮是计划模式  
-**When** 模型尝试 `write`、`edit`、`apply_patch`、`git branch`、`sed -i`、文件重定向或其他写操作  
-**Then** Main runtime 在收到 tool start 事件后立即 abort 当前 run  
+**Given** 当前轮是计划模式
+**When** 模型尝试 `write`、`edit`、`apply_patch`、`git branch`、`sed -i`、文件重定向或其他写操作
+**Then** Main runtime 在收到 tool start 事件后立即 abort 当前 run
 **And** UI 不展示可能干扰用户的内部阻止消息
-**And** 首次阻止后自动发起一次禁止使用工具的隐藏恢复请求，继续输出完整计划  
-**And** 同一 turn 再次尝试写操作时终止，不循环恢复  
+**And** 首次阻止后自动发起一次禁止使用工具的隐藏恢复请求，继续输出完整计划
+**And** 同一 turn 再次尝试写操作时终止，不循环恢复
 **And** 日志记录 tool、session 和判定原因
 
 ### 场景 4: 用户批准计划
 
-**Given** 历史中已有完整计划  
+**Given** 历史中已有完整计划
 **When** 用户点击“确认执行”或发送“按照计划实现吧”
-**Then** 当前轮退出计划模式  
-**And** Agent 可以正常修改文件和执行验证  
+**Then** 当前轮退出计划模式
+**And** Agent 可以正常修改文件和执行验证
 **And** 不重复输出计划
 
 ### 场景 4.1: 用户调整计划
@@ -210,33 +210,33 @@ LobsterAI 与 Codex 的实现不同：
 
 ### 场景 5: 模型先输出短前言
 
-**Given** 模型在调研后只输出一句前言  
-**When** turn 到达稳定 final  
-**Then** 客户端发送一次隐藏 recovery  
-**And** 用户最终只看到完整计划  
+**Given** 模型在调研后只输出一句前言
+**When** turn 到达稳定 final
+**Then** 客户端发送一次隐藏 recovery
+**And** 用户最终只看到完整计划
 **And** 不展示 recovery 指令或重复计划卡片
 
 ### 场景 6: Recovery 自动续写
 
-**Given** recovery 第一次响应只有 thinking  
-**When** OpenClaw 在同一 run 中自动发起可见续写  
-**Then** LobsterAI 保持 turn 运行  
-**And** 不因 token 间隔超过 800ms 提前完成  
+**Given** recovery 第一次响应只有 thinking
+**When** OpenClaw 在同一 run 中自动发起可见续写
+**Then** 智码 GLM Code 保持 turn 运行
+**And** 不因 token 间隔超过 800ms 提前完成
 **And** lifecycle end 后使用 `chat.history` 覆盖本地流式快照
 
 ### 场景 7: 从计划消息处分叉
 
-**Given** 用户在计划消息的原消息操作区点击分叉  
-**When** 该计划消息 metadata 意外残留 streaming 标记  
-**Then** 新 session 仍包含完整计划卡片  
-**And** 新消息 metadata 为稳定 final  
+**Given** 用户在计划消息的原消息操作区点击分叉
+**When** 该计划消息 metadata 意外残留 streaming 标记
+**Then** 新 session 仍包含完整计划卡片
+**And** 新消息 metadata 为稳定 final
 **And** 原 session 不发生变化
 
 ### 场景 8: 普通对话
 
-**Given** 用户未打开计划模式  
-**When** 用户提问、选择技能、添加附件或执行任务  
-**Then** 所有流程与计划模式上线前一致  
+**Given** 用户未打开计划模式
+**When** 用户提问、选择技能、添加附件或执行任务
+**Then** 所有流程与计划模式上线前一致
 **And** 出站提示中不存在任何计划模式标记
 
 ## 5. 功能需求
@@ -368,7 +368,7 @@ Renderer 的 UI 状态、service 参数和日志均使用该常量。
 - tool-use stop reason 不能被包装为最终计划，也不能触发 recovery。
 - 每 turn 仅允许一次 recovery，并记录 `planModeRecoveryAttempted`。
 - recovery 发送前保存 turn 状态；发送失败时原子恢复。
-- recovery 请求使用新的 idempotency key，并绑定到同一 LobsterAI session。
+- recovery 请求使用新的 idempotency key，并绑定到同一 智码 GLM Code session。
 - recovery 自动续写等待窗口独立于普通 `CHAT_FINAL_COMPLETION_GRACE_MS`。
 - 当前设计使用 15 秒 recovery follow-up grace；修改该值必须有时序测试依据。
 - 完成前必须调用 `syncFinalAssistantWithHistory()`；历史全文优先于本地节流快照。
@@ -594,11 +594,11 @@ Renderer 高频 hover、展开/收起和复制成功不需要 info 日志。
 
 1. `cowork_messages` 中原始 content、metadata、sequence。
 2. `cowork_sessions.system_prompt` 是否错误包含 `# Plan Mode`。
-3. LobsterAI `cowork.log` 中的 runtime mode、recovery 和 tool block 事件。
+3. 智码 GLM Code `cowork.log` 中的 runtime mode、recovery 和 tool block 事件。
 4. OpenClaw gateway 日志中的 run id、tool 参数、lifecycle。
 5. OpenClaw session JSONL 中模型原始 assistant content。
 
-如果 JSONL 完整而 SQLite 残缺，属于 LobsterAI 流式/完成时序问题；如果 JSONL 本身残缺，才属于模型或上游 provider 输出问题。
+如果 JSONL 完整而 SQLite 残缺，属于 智码 GLM Code 流式/完成时序问题；如果 JSONL 本身残缺，才属于模型或上游 provider 输出问题。
 
 ## 8. 跨平台与响应式
 
@@ -795,7 +795,7 @@ git diff --check
 为避免同一问题反复出现，后续修改遵循以下规则：
 
 1. 修改 Plan Mode 前先确认影响的是 Renderer draft、Main session、OpenClaw turn、message persistence 还是 UI parser，不跨层猜测。
-2. 修复线上/手测问题时，先从 SQLite、LobsterAI 日志和 OpenClaw JSONL 还原真实事件顺序。
+2. 修复线上/手测问题时，先从 SQLite、智码 GLM Code 日志和 OpenClaw JSONL 还原真实事件顺序。
 3. 每个真实回归必须把原始输入形态加入测试，例如完整 shell command、具体 approval 文案或 streaming metadata。
 4. 任何放宽安全规则的改动必须同时增加一个允许用例和至少一个阻止用例。
 5. 任何流式完成逻辑改动必须验证普通 final、tool-use final、thinking-only、recovery、lifecycle fallback 五条路径。

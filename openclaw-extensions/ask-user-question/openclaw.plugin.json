@@ -1,7 +1,7 @@
 {
   "id": "ask-user-question",
   "name": "AskUserQuestion",
-  "description": "Structured user confirmation tool for LobsterAI desktop.",
+  "description": "Structured user confirmation tool for 智码 GLM Code desktop.",
   "contracts": {
     "tools": [
       "AskUserQuestion"
@@ -13,7 +13,7 @@
     "properties": {
       "callbackUrl": {
         "type": "string",
-        "description": "LobsterAI HTTP callback URL for approval requests"
+        "description": "智码 GLM Code HTTP callback URL for approval requests"
       },
       "secret": {
         "type": "string",

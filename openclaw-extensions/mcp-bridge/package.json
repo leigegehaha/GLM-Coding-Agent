@@ -1,7 +1,7 @@
 {
-  "name": "@lobsterai/openclaw-mcp-bridge",
+  "name": "@glmcode/openclaw-mcp-bridge",
   "version": "0.0.0",
-  "description": "Expose LobsterAI-managed MCP servers as native OpenClaw tools.",
+  "description": "Expose 智码 GLM Code-managed MCP servers as native OpenClaw tools.",
   "type": "module",
   "dependencies": {
     "@sinclair/typebox": "0.34.49"

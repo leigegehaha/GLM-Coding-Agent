@@ -526,7 +526,7 @@ share-deployment.max-active-deployments-per-user = 3
 | 直接暴露本机服务 | 不做端口穿透，只上传部署包 |
 | 分享码绕过 | service host 请求先走 HtmlShare 鉴权 |
 | Cookie 串域 | 独立 share host；代理重写 `Set-Cookie`，去掉 Domain |
-| API 路径冲突 | 动态服务使用独立 host，不占用 `/s/{shareId}` 或 LobsterAI `/api/*` |
+| API 路径冲突 | 动态服务使用独立 host，不占用 `/s/{shareId}` 或 智码 GLM Code `/api/*` |
 | 云资源泄露 | 替换、超额、失败时调用 provider stop/cleanup |
 | Header 注入 | 代理校验 header name，过滤控制字符和 hop-by-hop header |
 
@@ -609,7 +609,7 @@ html-share.moderation.node-service.max-redirects=3
 
 抓取策略：
 
-- HTTP `GET`，请求头包含 `User-Agent: LobsterAI-Share-Moderation/1.0` 和文本优先的 `Accept`。
+- HTTP `GET`，请求头包含 `User-Agent: 智码 GLM Code-Share-Moderation/1.0` 和文本优先的 `Accept`。
 - 超时默认 8 秒。
 - 响应体最多读取 1 MB，超过后记为审核错误。
 - 最多跟随 3 次重定向。

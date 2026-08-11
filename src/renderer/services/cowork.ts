@@ -55,6 +55,7 @@ import {
   setSessions,
   setStreaming,
   settleBtwEntry,
+  updateCurrentSessionCodingOptimization,
   updateCurrentSessionModelOverride,
   updateMessageContent,
   updateSessionGoal,
@@ -838,6 +839,7 @@ class CoworkService {
       const cfg = coworkResult.config as unknown as Record<string, unknown>;
       store.dispatch(setConfig({
         ...coworkResult.config,
+        codingOptimizationEnabled: (cfg.codingOptimizationEnabled as boolean) ?? true,
         dreamingEnabled: (cfg.dreamingEnabled as boolean) ?? false,
         dreamingFrequency: (cfg.dreamingFrequency as string) ?? '0 3 * * *',
         dreamingModel: (cfg.dreamingModel as string) ?? '',
@@ -931,6 +933,7 @@ class CoworkService {
       mediaReferences: options.mediaReferences,
       selectedTextSnippets: options.selectedTextSnippets,
       browserAnnotations: options.browserAnnotations,
+      codingOptimized: options.codingOptimized,
     });
     if (!result.success) {
       this.setCurrentSessionStreaming(options.sessionId, false, 'continue_session_failed');
@@ -1750,9 +1753,11 @@ class CoworkService {
     const result = await sessionApi.patch({ sessionId, patch });
     if (result.success && result.session) {
       const currentSessionId = store.getState().cowork.currentSessionId;
-      if (currentSessionId === sessionId) {
-        store.dispatch(setCurrentSession(result.session));
-        this.setCurrentSessionStreaming(sessionId, result.session.status === 'running', 'patch_session_completed');
+      if (currentSessionId === sessionId && patch.model !== undefined) {
+        store.dispatch(updateCurrentSessionModelOverride({
+          sessionId,
+          modelOverride: result.session.modelOverride ?? patch.model ?? '',
+        }));
         void this.refreshContextUsage(sessionId, { notifyCompaction: false });
       }
       return result.session;
@@ -1760,6 +1765,25 @@ class CoworkService {
 
     console.error('Failed to patch session:', result.error);
     return null;
+  }
+
+  async updateSessionCodingOptimization(
+    sessionId: string,
+    codingOptimized: boolean,
+  ): Promise<boolean> {
+    const cowork = window.electron?.cowork;
+    if (!cowork?.setSessionCodingOptimization) return false;
+
+    const result = await cowork.setSessionCodingOptimization({
+      sessionId,
+      enabled: codingOptimized,
+    });
+    if (!result.success) {
+      console.error('Failed to update coding optimization:', result.error);
+      return false;
+    }
+    store.dispatch(updateCurrentSessionCodingOptimization({ sessionId, codingOptimized }));
+    return true;
   }
 
   async respondToPermission(requestId: string, result: CoworkPermissionResult): Promise<boolean> {

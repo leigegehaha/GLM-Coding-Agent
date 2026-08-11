@@ -142,10 +142,10 @@ describe('serializeForLog', () => {
 describe('sanitizeUrlForLog', () => {
   test('removes query values and fragments from valid URLs', () => {
     const result = sanitizeUrlForLog(
-      'https://rlogs.youdao.com/rlog.php?action=lobsterai_app_started&log_Usid=user-1#result',
+      'https://glmcoding.cn/api/analytics/events?action=lobsterai_app_started&log_Usid=user-1#result',
     );
 
-    expect(result).toBe('https://rlogs.youdao.com/rlog.php?[redacted]#[redacted]');
+    expect(result).toBe('https://glmcoding.cn/api/analytics/events?[redacted]#[redacted]');
     expect(result).not.toContain('user-1');
     expect(result).not.toContain('lobsterai_app_started');
   });

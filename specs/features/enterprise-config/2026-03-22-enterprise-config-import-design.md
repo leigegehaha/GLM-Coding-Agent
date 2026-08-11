@@ -2,7 +2,7 @@
 
 ## Overview
 
-LobsterAI needs enterprise batch deployment support: IT/ops teams push a unified config file to multiple machines, and LobsterAI loads it on startup. The config file reuses OpenClaw's `openclaw.json` format so that ops teams maintain a single config for both OpenClaw and LobsterAI deployments.
+智码 GLM Code needs enterprise batch deployment support: IT/ops teams push a unified config file to multiple machines, and 智码 GLM Code loads it on startup. The config file reuses OpenClaw's `openclaw.json` format so that ops teams maintain a single config for both OpenClaw and 智码 GLM Code deployments.
 
 ## Usage
 
@@ -134,9 +134,9 @@ Note: the existing forward sync (`openclawConfigSync.ts`) currently hardcodes sa
 
 #### Channel Key Mapping
 
-OpenClaw uses plugin-style channel keys that differ from LobsterAI's internal platform names. The importer accepts **both** forms for flexibility:
+OpenClaw uses plugin-style channel keys that differ from 智码 GLM Code's internal platform names. The importer accepts **both** forms for flexibility:
 
-| openclaw.json channel key | LobsterAI im_config key |
+| openclaw.json channel key | 智码 GLM Code im_config key |
 |---------------------------|------------------------|
 | `feishu` or `feishu-openclaw-plugin` | `feishu` |
 | `telegram` | `telegram` |

@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const { signFile, readPeCertTable, loadDotEnv, _resetForTests } = require('../scripts/win-sign.cjs');
 
 const PE_BODY_MARKER = 'FAKE-PE-BODY-FOR-WIN-SIGN-TEST';
-const SIGN_ENV_KEYS = ['YD_SIGN_SERVICE_URL', 'YD_SIGN_APP_KEY', 'YD_SIGN_APP_SECRET', 'YD_SIGN_USERNAME'] as const;
+const SIGN_ENV_KEYS = ['GLMCODE_SIGN_SERVICE_URL', 'GLMCODE_SIGN_APP_KEY', 'GLMCODE_SIGN_APP_SECRET', 'GLMCODE_SIGN_USERNAME'] as const;
 
 /** Build a minimal but structurally valid PE32+ image. */
 function buildMinimalPe(options: { signed: boolean }): Buffer {
@@ -143,10 +143,10 @@ describe('win-sign hook', () => {
     for (const key of SIGN_ENV_KEYS) {
       savedEnv[key] = process.env[key];
     }
-    process.env.YD_SIGN_SERVICE_URL = server.baseUrl;
-    process.env.YD_SIGN_APP_KEY = 'test-app-key';
-    process.env.YD_SIGN_APP_SECRET = 'test-app-secret';
-    process.env.YD_SIGN_USERNAME = 'ci-bot';
+    process.env.GLMCODE_SIGN_SERVICE_URL = server.baseUrl;
+    process.env.GLMCODE_SIGN_APP_KEY = 'test-app-key';
+    process.env.GLMCODE_SIGN_APP_SECRET = 'test-app-secret';
+    process.env.GLMCODE_SIGN_USERNAME = 'ci-bot';
     server.mode = 'ok';
     server.requests.length = 0;
     _resetForTests();
@@ -182,7 +182,7 @@ describe('win-sign hook', () => {
     ]);
     // The multipart upload must contain the actual binary content.
     expect(server.lastUploadBody?.includes(Buffer.from(PE_BODY_MARKER))).toBe(true);
-    expect(fs.existsSync(`${targetPath}.ydsign.tmp`)).toBe(false);
+    expect(fs.existsSync(`${targetPath}.glmcodesign.tmp`)).toBe(false);
   });
 
   test.each([
@@ -190,8 +190,8 @@ describe('win-sign hook', () => {
     ['full /api/sign endpoint', '/api/sign'],
     ['manual upload page', '/sign.html'],
     ['trailing slash', '/'],
-  ])('accepts the %s form of YD_SIGN_SERVICE_URL', async (_label, suffix) => {
-    process.env.YD_SIGN_SERVICE_URL = `${server.baseUrl}${suffix}`;
+  ])('accepts the %s form of GLMCODE_SIGN_SERVICE_URL', async (_label, suffix) => {
+    process.env.GLMCODE_SIGN_SERVICE_URL = `${server.baseUrl}${suffix}`;
 
     const result = await signFile(targetPath);
 
@@ -201,7 +201,7 @@ describe('win-sign hook', () => {
   });
 
   test('rejects with the service error when credentials are wrong', async () => {
-    process.env.YD_SIGN_APP_SECRET = 'wrong-secret';
+    process.env.GLMCODE_SIGN_APP_SECRET = 'wrong-secret';
     const before = fs.readFileSync(targetPath);
 
     await expect(signFile(targetPath)).rejects.toThrow(/HTTP 401/);
@@ -240,27 +240,27 @@ describe('win-sign hook', () => {
 
     await expect(signFile(targetPath)).rejects.toThrow(/HTTP 500/);
     expect(fs.readFileSync(targetPath).equals(before)).toBe(true);
-    expect(fs.existsSync(`${targetPath}.ydsign.tmp`)).toBe(false);
+    expect(fs.existsSync(`${targetPath}.glmcodesign.tmp`)).toBe(false);
   });
 
   test('loadDotEnv fills missing vars from a .env file without overriding process.env', () => {
     const envPath = path.join(workDir, '.env');
     fs.writeFileSync(envPath, [
       '# signing credentials',
-      'YD_SIGN_APP_KEY="from-dotenv-key"',
-      "YD_SIGN_APP_SECRET='from-dotenv-secret'",
-      'export YD_SIGN_USERNAME=dotenv-bot',
+      'GLMCODE_SIGN_APP_KEY="from-dotenv-key"',
+      "GLMCODE_SIGN_APP_SECRET='from-dotenv-secret'",
+      'export GLMCODE_SIGN_USERNAME=dotenv-bot',
       'MALFORMED LINE IGNORED',
     ].join('\n'));
 
-    delete process.env.YD_SIGN_APP_KEY;
-    delete process.env.YD_SIGN_APP_SECRET;
-    process.env.YD_SIGN_USERNAME = 'env-wins';
+    delete process.env.GLMCODE_SIGN_APP_KEY;
+    delete process.env.GLMCODE_SIGN_APP_SECRET;
+    process.env.GLMCODE_SIGN_USERNAME = 'env-wins';
 
     loadDotEnv(envPath);
 
-    expect(process.env.YD_SIGN_APP_KEY).toBe('from-dotenv-key');
-    expect(process.env.YD_SIGN_APP_SECRET).toBe('from-dotenv-secret');
-    expect(process.env.YD_SIGN_USERNAME).toBe('env-wins');
+    expect(process.env.GLMCODE_SIGN_APP_KEY).toBe('from-dotenv-key');
+    expect(process.env.GLMCODE_SIGN_APP_SECRET).toBe('from-dotenv-secret');
+    expect(process.env.GLMCODE_SIGN_USERNAME).toBe('env-wins');
   });
 });

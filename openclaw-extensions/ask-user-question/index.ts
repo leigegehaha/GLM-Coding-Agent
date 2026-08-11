@@ -8,9 +8,9 @@ import { isAskUserQuestionCandidateSessionKey } from './sessionKey';
  *
  * Registers a structured tool that lets the model ask the user a question
  * with predefined options (single/multi select). The tool pauses execution
- * and waits for the user's response via an HTTP callback to LobsterAI.
+ * and waits for the user's response via an HTTP callback to 智码 GLM Code.
  *
- * This enables delete-confirmation modals on the LobsterAI desktop app
+ * This enables delete-confirmation modals on the 智码 GLM Code desktop app
  * without relying on OpenClaw's exec.approval mechanism.
  */
 
@@ -128,7 +128,7 @@ async function askUser(
 const plugin = {
   id: 'ask-user-question',
   name: 'AskUserQuestion',
-  description: 'Structured user confirmation tool for LobsterAI desktop.',
+  description: 'Structured user confirmation tool for 智码 GLM Code desktop.',
   configSchema: {
     parse(value: unknown): PluginConfig {
       return parsePluginConfig(value);
@@ -141,10 +141,10 @@ const plugin = {
       return;
     }
 
-    // Use a factory so the tool is only available for LobsterAI local-session candidates.
+    // Use a factory so the tool is only available for 智码 GLM Code local-session candidates.
     // IM channel sessions (qqbot, dingtalk, weixin, feishu, etc.) get null → tool hidden.
     api.registerTool((ctx) => {
-      // Enable for LobsterAI desktop sessions across agents and delegated child sessions.
+      // Enable for 智码 GLM Code desktop sessions across agents and delegated child sessions.
       // IM channel sessions (dingtalk, qqbot, weixin, feishu, wecom, etc.) should not have this tool
       // so the model executes delete commands directly without confirmation on IM.
       const sessionKey = ctx.sessionKey ?? '';

@@ -1,7 +1,8 @@
 {
-  "appId": "com.lobsterai.app",
-  "productName": "LobsterAI",
-  "executableName": "LobsterAI",
+  "appId": "cn.glmcoding.glmcode",
+  "productName": "智码 GLM Code",
+  "executableName": "GLMCode",
+  "copyright": "Copyright © 2026 智码 GLM 科技",
   "directories": {
     "output": "release"
   },
@@ -13,6 +14,11 @@
     {
       "from": "dist",
       "to": "dist",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "dist-web",
+      "to": "dist-web",
       "filter": ["**/*"]
     },
     {
@@ -45,6 +51,14 @@
   ],
   "extraResources": [
     {
+      "from": "LICENSE",
+      "to": "LICENSE"
+    },
+    {
+      "from": "NOTICE.md",
+      "to": "NOTICE.md"
+    },
+    {
       "from": ".keyfrom-build",
       "to": "keyfrom",
       "filter": [
@@ -65,8 +79,8 @@
   ],
   "protocols": [
     {
-      "name": "LobsterAI",
-      "schemes": ["lobsterai"]
+      "name": "智码 GLM Code",
+      "schemes": ["glmcode", "lobsterai"]
     }
   ],
   "mac": {
@@ -81,10 +95,10 @@
     "entitlementsInherit": "build/entitlements.mac.plist",
     "extendInfo": {
       "CFBundleIconName": "icon",
-      "NSMicrophoneUsageDescription": "LobsterAI 需要访问您的麦克风来录制语音输入并进行语音识别。",
-      "NSCalendarsUsageDescription": "LobsterAI 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
-      "NSRemindersUsageDescription": "LobsterAI 需要访问您的提醒事项来帮助您管理待办事项。",
-      "NSAppleEventsUsageDescription": "LobsterAI 需要使用 Apple Events 来控制 Calendar 应用执行自动化操作。"
+      "NSMicrophoneUsageDescription": "智码 GLM Code 需要访问您的麦克风来录制语音输入并进行语音识别。",
+      "NSCalendarsUsageDescription": "智码 GLM Code 需要访问您的日历来帮助您查看和管理日程安排，例如查找事件、创建会议等。",
+      "NSRemindersUsageDescription": "智码 GLM Code 需要访问您的提醒事项来帮助您管理待办事项。",
+      "NSAppleEventsUsageDescription": "智码 GLM Code 需要使用 Apple Events 来控制 Calendar 应用执行自动化操作。"
     },
     "extraResources": [
       {
@@ -244,8 +258,8 @@
       }
     ],
     "desktop": {
-      "Name": "LobsterAI",
-      "Comment": "AI-assisted coding and productivity tool",
+      "Name": "智码 GLM Code",
+      "Comment": "智能编码与全场景 Agent 工具",
       "Terminal": "false"
     }
   },

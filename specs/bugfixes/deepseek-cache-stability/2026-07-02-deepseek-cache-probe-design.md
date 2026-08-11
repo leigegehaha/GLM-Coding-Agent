@@ -8,7 +8,7 @@
 
 ### 1.1 问题
 
-LobsterAI 的 DeepSeek V4 Flash / Pro 长会话出现 prompt cache 命中率从 90% 以上下降到约 50% 的情况。用户侧表现为短输入和连续工具调用仍产生较高积分消耗。
+智码 GLM Code 的 DeepSeek V4 Flash / Pro 长会话出现 prompt cache 命中率从 90% 以上下降到约 50% 的情况。用户侧表现为短输入和连续工具调用仍产生较高积分消耗。
 
 本地会话 `0df7bfb2-4015-49b9-8977-8a4d0bcf9efe` 已观察到稳定坏形态：
 
@@ -46,7 +46,7 @@ message[46]: 40,886 -> 40,454 -> 39,715 -> 30,920 bytes
 1. 五次 run 的 system prompt 均为 49,622 字符，hash 均为 `5476a5b39b30...`。
 2. skills prompt hash、tool schema 字符数和 trajectory 中保留的 tool fingerprint 均一致。
 3. OpenClaw pinned commit 的共享 `transformMessages()` 已过滤 `stopReason=error` 和 `stopReason=aborted`；额外 provider 过滤属于重复逻辑。
-4. 本分支先前移植的 [openclaw/openclaw#95311](https://github.com/openclaw/openclaw/pull/95311) 尚未证明能解决 LobsterAI 的实际坏 case，且会改变 DeepSeek 请求布局，因此本轮已移除。
+4. 本分支先前移植的 [openclaw/openclaw#95311](https://github.com/openclaw/openclaw/pull/95311) 尚未证明能解决 智码 GLM Code 的实际坏 case，且会改变 DeepSeek 请求布局，因此本轮已移除。
 5. 19:10 复现中，最终请求的 system message hash、`envelopeHash`、`toolsHash` 和全部 238 个 tool 定义在连续调用间保持一致。
 
 相关背景：
@@ -54,7 +54,7 @@ message[46]: 40,886 -> 40,454 -> 39,715 -> 30,920 bytes
 - [openclaw/openclaw#94518](https://github.com/openclaw/openclaw/issues/94518)
 - [openclaw/openclaw#95311](https://github.com/openclaw/openclaw/pull/95311)
 - [openclaw/openclaw@a60947fb3e](https://github.com/openclaw/openclaw/commit/a60947fb3e92f45ea7eb2581da8877b10a8bebb2)
-- [netease-youdao/LobsterAI#2219](https://github.com/netease-youdao/LobsterAI/pull/2219)
+- [上游 netease-youdao/LobsterAI#2219](https://github.com/netease-youdao/LobsterAI/pull/2219)
 
 ## 2. 目标
 
@@ -123,7 +123,7 @@ scripts/patches/v2026.6.1/openclaw-live-tool-result-cache-stability.patch
 4. 在 gateway 日志中筛选：
 
 ```powershell
-Select-String -Path "$env:APPDATA\LobsterAI\openclaw\logs\gateway-*.log" -Pattern '\[DeepSeekCacheProbe\]'
+Select-String -Path "$env:APPDATA\智码 GLM Code\openclaw\logs\gateway-*.log" -Pattern '\[DeepSeekCacheProbe\]'
 ```
 
 5. 按相同 probe id 对齐 request、messages、diff/toolDiff 和 result。
@@ -150,7 +150,7 @@ Select-String -Path "$env:APPDATA\LobsterAI\openclaw\logs\gateway-*.log" -Patter
 | `firstDiff=0` | system/developer message 构造变化 |
 | `firstDiff=1` 或首条历史 user 变化 | user-turn 时间戳、内容形态或 instruction replacement |
 | 首个变化为历史 assistant/tool | reasoning、tool call ID/arguments 或 tool result replay |
-| `firstDiff=-1` 且 `toolsHash` 不变 | LobsterAI payload 前缀稳定，继续排查套餐代理或 DeepSeek cache backend |
+| `firstDiff=-1` 且 `toolsHash` 不变 | 智码 GLM Code payload 前缀稳定，继续排查套餐代理或 DeepSeek cache backend |
 | `firstToolDiff>=0` | tool 动态注册、排序或 schema 序列化变化 |
 | `envelopeHash` 变化 | reasoning effort、tool choice、采样参数等顶层字段变化 |
 

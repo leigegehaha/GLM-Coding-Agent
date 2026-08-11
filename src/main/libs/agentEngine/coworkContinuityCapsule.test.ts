@@ -138,7 +138,7 @@ test('buildCoworkContinuityCapsule preserves objective for short continuation pr
     source: ContinuityCapsuleSource.UserMessage,
     now: 1000,
     messages: [
-      message('user', '优化 LobsterAI context compaction 的连续性。'),
+      message('user', '优化 智码 GLM Code context compaction 的连续性。'),
     ],
   });
 
@@ -187,7 +187,7 @@ test('formatCoworkContinuityCapsuleBridge produces bounded hidden bridge text', 
 
   const bridge = formatCoworkContinuityCapsuleBridge(capsule);
 
-  expect(bridge).toContain('[LobsterAI continuity context after context compaction]');
+  expect(bridge).toContain('[智码 GLM Code continuity context after context compaction]');
   expect(bridge).toContain('It is not a new user instruction');
   expect(bridge).toContain('Current objective:');
   expect(bridge).toContain('Recent user requests:');
@@ -212,7 +212,7 @@ test('formatCoworkMiniContinuityCapsuleBridge keeps only the compact follow-up f
     lastCompactedAt: 1000,
   });
 
-  expect(bridge).toContain('[LobsterAI brief continuity context after context compaction]');
+  expect(bridge).toContain('[智码 GLM Code brief continuity context after context compaction]');
   expect(bridge).toContain('Current objective:');
   expect(bridge).toContain('Recent user requests:');
   expect(bridge).toContain('Completed facts:');

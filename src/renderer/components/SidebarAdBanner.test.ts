@@ -27,14 +27,14 @@ describe('sidebar ad banner state', () => {
       {
         id: 42,
         activityDescription: '邀请好友赚积分',
-        linkUrl: 'https://lobsterai.youdao.com/invitation',
+        linkUrl: 'https://glmcoding.cn/invitation',
         imageUrl: 'https://nos.example.com/banner.png',
         updatedAt: '2026-07-02T10:00:00',
       },
       {
         id: 43,
         activityDescription: '新活动',
-        linkUrl: 'https://lobsterai.youdao.com/activity',
+        linkUrl: 'https://glmcoding.cn/activity',
         imageUrl: 'https://nos.example.com/banner-2.png',
         updatedAt: '2026-07-03T10:00:00',
       },
@@ -46,7 +46,7 @@ describe('sidebar ad banner state', () => {
       {
         id: 42,
         activityDescription: '邀请好友赚积分',
-        linkUrl: 'https://lobsterai.youdao.com/invitation',
+        linkUrl: 'https://glmcoding.cn/invitation',
         imageUrl: 'https://nos.example.com/banner.png',
         updatedAt: '2026-07-02T10:00:00',
       },
@@ -55,7 +55,7 @@ describe('sidebar ad banner state', () => {
       {
         id: 42,
         activityDescription: '邀请好友赚积分',
-        linkUrl: 'https://lobsterai.youdao.com/invitation',
+        linkUrl: 'https://glmcoding.cn/invitation',
         imageUrl: 'https://nos.example.com/banner.png',
         updatedAt: '2026-07-03T10:00:00',
       },
@@ -64,14 +64,14 @@ describe('sidebar ad banner state', () => {
       {
         id: 42,
         activityDescription: '邀请好友赚积分',
-        linkUrl: 'https://lobsterai.youdao.com/invitation',
+        linkUrl: 'https://glmcoding.cn/invitation',
         imageUrl: 'https://nos.example.com/banner.png',
         updatedAt: '2026-07-02T10:00:00',
       },
       {
         id: 43,
         activityDescription: '新活动',
-        linkUrl: 'https://lobsterai.youdao.com/activity',
+        linkUrl: 'https://glmcoding.cn/activity',
         imageUrl: 'https://nos.example.com/banner-2.png',
         updatedAt: '2026-07-03T10:00:00',
       },

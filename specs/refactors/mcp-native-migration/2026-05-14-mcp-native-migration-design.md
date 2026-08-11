@@ -4,7 +4,7 @@
 
 ### 1.1 问题/动机
 
-LobsterAI 在较早版本中自行实现了 MCP (Model Context Protocol) 集成方案（mcp-bridge），通过 HTTP callback 在 OpenClaw gateway 与 MCP 服务器之间中转工具调用。该方案随迭代暴露出多项问题：
+智码 GLM Code 在较早版本中自行实现了 MCP (Model Context Protocol) 集成方案（mcp-bridge），通过 HTTP callback 在 OpenClaw gateway 与 MCP 服务器之间中转工具调用。该方案随迭代暴露出多项问题：
 
 - **Windows Electron stdin 兼容性差**：打包环境下 stdio transport 不稳定
 - **abort 信号误触**：`req.close` vs `res.close` 导致工具调用被意外取消

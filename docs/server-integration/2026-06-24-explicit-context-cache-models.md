@@ -4,11 +4,11 @@
 
 `lobsterai-server` adds explicit context cache support metadata for package models:
 
-- `qwen3.5-plus` and `qwen3.6-plus` are available through OpenAI-compatible Chat Completions for both `LobsterAI` and `YoudaoInner` providers.
+- `qwen3.5-plus` and `qwen3.6-plus` are available through OpenAI-compatible Chat Completions for both `智码 GLM Code` and `YoudaoInner` providers.
 - Claude employee models can be exposed through either Anthropic Messages or OpenAI-compatible Chat Completions, depending on server route metadata.
 - `/api/models/available` now returns `explicitContextCache` so the client can generate cache-aware OpenClaw model config.
 - `/v1/messages` now resolves models through DB pricing/routes and only accepts `apiFormat="anthropic"` models.
-- `/api/proxy/chat/completions` does not inject cache markers; LobsterAI/OpenClaw must send `cache_control` in the upstream payload when explicit cache is enabled.
+- `/api/proxy/chat/completions` does not inject cache markers; 智码 GLM Code/OpenClaw must send `cache_control` in the upstream payload when explicit cache is enabled.
 
 ## Endpoint Details
 
@@ -57,7 +57,7 @@ Only Anthropic-format DB models are accepted. `claude-sonnet-4-6-YoudaoInner` is
   - Qwen OpenAI-compatible: `"api": "openai-completions"` plus `cacheRetention="short"`, `contextCacheProvider="dashscope"`, `contextCacheMode="explicit"`.
   - Claude: `"api": "anthropic-messages"` plus `cacheRetention="short"`.
   - Claude OpenAI-compatible: `"api": "openai-completions"` plus `cacheRetention="short"`, `contextCacheProvider="anthropic-compatible"`, `contextCacheMode="explicit"`.
-- If server model metadata is not loaded yet, still infer these defaults for `qwen3.5*`, `qwen3.6*`, and `claude-*` LobsterAI server model IDs.
+- If server model metadata is not loaded yet, still infer these defaults for `qwen3.5*`, `qwen3.6*`, and `claude-*` 智码 GLM Code server model IDs.
 - Ensure OpenClaw runtime patch `openclaw-dashscope-context-cache.patch` is included for v2026.6.1.
 
 ## Auth Requirements

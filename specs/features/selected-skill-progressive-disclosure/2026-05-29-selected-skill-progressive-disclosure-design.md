@@ -135,13 +135,13 @@
 4. 多个 Skill prompt 用 `\n\n` 拼接成 `skillPrompt`。
 5. `CoworkView` 调用 `buildCoworkSystemPrompt(skillPrompt, config.systemPrompt)`。
 6. Main process 通过 `mergeCoworkSystemPrompt()` 追加 scheduled-task prompt。
-7. `OpenClawRuntimeAdapter.buildOutboundPrompt()` 把最终 system prompt 包装成 `[LobsterAI system instructions]` 后放入 `chat.send.message`。
+7. `OpenClawRuntimeAdapter.buildOutboundPrompt()` 把最终 system prompt 包装成 `[智码 GLM Code system instructions]` 后放入 `chat.send.message`。
 
 关键问题在第 3 步：`skill.prompt` 来自 `SKILL.md` 正文，用户选择越多，注入内容越大。
 
 ### 4.2 当前 OpenClaw 原生 Skill 配置
 
-`OpenClawConfigSync` 已经把 LobsterAI Skill 目录同步给 OpenClaw：
+`OpenClawConfigSync` 已经把 智码 GLM Code Skill 目录同步给 OpenClaw：
 
 ```typescript
 skills: {
@@ -228,7 +228,7 @@ selected skill routing metadata for A and B
 base system prompt
 ```
 
-Main process 继续追加 scheduled-task prompt，OpenClaw adapter 继续通过 `[LobsterAI system instructions]` 前缀发送，不需要修改 IPC 契约。
+Main process 继续追加 scheduled-task prompt，OpenClaw adapter 继续通过 `[智码 GLM Code system instructions]` 前缀发送，不需要修改 IPC 契约。
 
 ### 5.3 继续会话 Prompt 组装
 

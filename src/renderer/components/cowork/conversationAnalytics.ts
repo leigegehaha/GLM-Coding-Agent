@@ -1,4 +1,4 @@
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import type { CoworkMessage } from '../../types/cowork';
 
 type ConversationAnalyticsValue = string | number | boolean | null | undefined;
@@ -84,7 +84,7 @@ export interface ConversationMessageActionOptions {
 export const reportConversationMessageAction = (options: ConversationMessageActionOptions): void => {
   const contentLength = getMessageContentLength(options.message);
   logConversationAnalytics('message action', options.actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ConversationMessageAction,
     surface: 'conversation',
     actionType: options.actionType,
@@ -103,7 +103,7 @@ export interface ConversationNavigationActionOptions {
 
 export const reportConversationNavigationAction = (options: ConversationNavigationActionOptions): void => {
   logConversationAnalytics('navigation action', options.actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ConversationNavigationAction,
     surface: 'conversation',
     actionType: options.actionType,
@@ -119,7 +119,7 @@ export interface ConversationBlockActionOptions {
 
 export const reportConversationBlockAction = (options: ConversationBlockActionOptions): void => {
   logConversationAnalytics('block action', options.actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ConversationBlockAction,
     surface: 'conversation',
     actionType: options.actionType,

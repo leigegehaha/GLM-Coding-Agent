@@ -48,6 +48,7 @@ function setupDb(): void {
       cwd TEXT NOT NULL,
       system_prompt TEXT NOT NULL DEFAULT '',
       model_override TEXT NOT NULL DEFAULT '',
+      coding_optimized INTEGER NOT NULL DEFAULT 1,
       execution_mode TEXT NOT NULL DEFAULT 'local',
       active_skill_ids TEXT,
       agent_id TEXT DEFAULT 'main',
@@ -80,7 +81,8 @@ function setupDb(): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS cowork_config (
       key TEXT PRIMARY KEY,
-      value TEXT
+      value TEXT,
+      updated_at INTEGER NOT NULL
     );
   `);
 
@@ -1005,6 +1007,49 @@ test('getConfig defaults OpenClaw heartbeat to enabled when config is missing', 
   const config = store.getConfig();
 
   expect(config.openClawHeartbeatEnabled).toBe(true);
+});
+
+test('getConfig defaults coding optimization to enabled and persists overrides', () => {
+  expect(store.getConfig().codingOptimizationEnabled).toBe(true);
+
+  store.setConfig({ codingOptimizationEnabled: false });
+
+  expect(store.getConfig().codingOptimizationEnabled).toBe(false);
+});
+
+test('sessions persist coding optimization and forks and child sessions inherit it', () => {
+  const source = store.createSession(
+    'Coding session',
+    '/tmp/project',
+    '',
+    'local',
+    [],
+    'main',
+    '',
+    false,
+  );
+
+  expect(source.codingOptimized).toBe(false);
+  expect(store.getSession(source.id, 0)?.codingOptimized).toBe(false);
+
+  store.updateSession(source.id, { codingOptimized: true }, { touchUpdatedAt: false });
+  expect(store.getSession(source.id, 0)?.codingOptimized).toBe(true);
+  store.updateSession(source.id, { codingOptimized: false }, { touchUpdatedAt: false });
+
+  const fork = store.forkSession({
+    sourceSessionId: source.id,
+    forkMode: CoworkForkMode.Conversation,
+  });
+  expect(fork.codingOptimized).toBe(false);
+
+  const child = store.upsertSubagentChildSession({
+    id: 'coding-child',
+    parentSessionId: source.id,
+    childSessionKey: 'agent:main:subagent:coding-child',
+    agentId: 'main',
+    title: 'Coding child',
+  });
+  expect(child.codingOptimized).toBe(false);
 });
 
 test('backfillEmptyAgentModels assigns the current default model to empty agents only', () => {

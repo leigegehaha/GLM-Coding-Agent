@@ -1,4 +1,4 @@
-import { ArchiveBoxIcon, ArrowPathIcon, ArrowPathRoundedSquareIcon, ChatBubbleLeftIcon, CheckCircleIcon, CpuChipIcon, CubeIcon, EnvelopeIcon, ExclamationTriangleIcon, GlobeAltIcon, InformationCircleIcon, MagnifyingGlassIcon, SignalIcon, SunIcon, TrashIcon, WrenchScrewdriverIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, ArrowPathIcon, ArrowPathRoundedSquareIcon, ChatBubbleLeftIcon, CheckCircleIcon, CodeBracketIcon, CpuChipIcon, CreditCardIcon, CubeIcon, EnvelopeIcon, ExclamationTriangleIcon, GlobeAltIcon, InformationCircleIcon, MagnifyingGlassIcon, SignalIcon, SunIcon, TrashIcon, WrenchScrewdriverIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import React, { useCallback,useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -9,6 +9,8 @@ import {
   defaultBrowserWebAccessConfig,
   normalizeBrowserWebAccessConfig,
 } from '../../shared/browserWebAccess/constants';
+import type { CodingPlanAccountUser } from '../../shared/codingPlanAccount/constants';
+import { CodingPlanAccountErrorCode } from '../../shared/codingPlanAccount/constants';
 import { DataMigrationRestoreStatus } from '../../shared/dataMigration/constants';
 import {
   normalizeNotificationSettings,
@@ -20,6 +22,7 @@ import {
   findKimiK3ReservedCustomParamKeys,
   ModelRuntimeProfileSource,
   OpenClawApi,
+  OpenClawProviderId,
   ProviderAuthType,
   ProviderName,
   ProviderRegistry,
@@ -35,7 +38,7 @@ import { coworkService } from '../services/cowork';
 import { decryptSecret, decryptWithPassword, EncryptedPayload, encryptWithPassword, PasswordEncryptedPayload } from '../services/encryption';
 import { i18nService, LanguageType } from '../services/i18n';
 import { imService } from '../services/im';
-import { LogReporterAction, reportYdAnalyzer } from '../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../services/logReporter';
 import { formatShortcutForDisplay, getShortcutConflictSignature, matchesShortcut } from '../services/shortcuts';
 import {
   type ThemeDefaultChangedDetail,
@@ -45,7 +48,7 @@ import {
 import { applyTypographyPreferences } from '../services/typography';
 import type { RootState } from '../store';
 import { selectCoworkConfig } from '../store/selectors/coworkSelectors';
-import { setAvailableModels } from '../store/slices/modelSlice';
+import { setAvailableModels, setDefaultSelectedModel } from '../store/slices/modelSlice';
 import type {
   CoworkAgentEngine,
   CoworkMemoryStats,
@@ -68,6 +71,7 @@ import PlusCircleIcon from './icons/PlusCircleIcon';
 import IMSettings from './im/IMSettings';
 import PluginsSettings, { type PluginPendingChanges, type PluginsSettingsHandle } from './plugins/PluginsSettings';
 import BrowserWebAccessSettings from './settings/BrowserWebAccessSettings';
+import CodingPlanSettingsSection from './settings/CodingPlanSettingsSection';
 import {
   buildOpenAICompatibleChatCompletionsUrl,
   buildOpenAIConnectionTestRequestBody,
@@ -88,6 +92,7 @@ import {
   type ProvidersConfig,
   type ProviderType,
   resolveBaseUrl,
+  resolveCodingPlanDefaultModel,
   resolveModelSupportsImageForProvider,
   shouldAutoSwitchProviderBaseUrl,
   shouldUseOpenAIResponsesForProvider,
@@ -98,7 +103,7 @@ import SkinPresentationScope from './skin/SkinPresentationScope';
 import SkinSettingsSection from './skin/SkinSettingsSection';
 import ThemedSelect from './ui/ThemedSelect';
 
-type TabType = 'general' | 'appearance' | 'coworkAgentEngine' | 'model' | 'browserWebAccess' | 'coworkMemory' | 'coworkDreaming' | 'shortcuts' | 'im' | 'email' | 'plugins' | 'about';
+type TabType = 'general' | 'appearance' | 'coworkAgentEngine' | 'model' | 'codingPlan' | 'browserWebAccess' | 'coworkMemory' | 'coworkDreaming' | 'shortcuts' | 'im' | 'email' | 'plugins' | 'about';
 
 const waitForNextPaint = (): Promise<void> => new Promise(resolve => {
   window.requestAnimationFrame(() => {
@@ -580,7 +585,7 @@ const reportGeneralSettingChanged = (
   settingValue: SettingsAnalyticsValue,
   previousValue?: SettingsAnalyticsValue,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.GeneralSettingChanged,
     settingKey,
     settingValue,
@@ -594,7 +599,7 @@ const reportAppearanceSettingChanged = (
   settingValue: SettingsAnalyticsValue,
   previousValue?: SettingsAnalyticsValue,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AppearanceSettingChanged,
     settingKey,
     settingValue,
@@ -611,7 +616,7 @@ const reportBrowserSettingChanged = (
     previousBlockedHostnameCount?: number;
   },
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.BrowserSettingChanged,
     source: SettingsAnalyticsSource.Browser,
     ...params,
@@ -622,7 +627,7 @@ const reportMemorySettingChanged = (
   summary: MemorySettingAnalyticsSummary,
 ): void => {
   console.debug('[Settings] reporting memory setting analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.MemorySettingChanged,
     source: SettingsAnalyticsSource.Memory,
     ...summary,
@@ -634,7 +639,7 @@ const reportMemoryEntryChanged = (
   entryCount?: number,
 ): void => {
   console.debug('[Settings] reporting memory entry analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.MemoryEntryChanged,
     source: SettingsAnalyticsSource.Memory,
     operation,
@@ -646,7 +651,7 @@ const reportDreamingSettingChanged = (
   summary: DreamingSettingAnalyticsSummary,
 ): void => {
   console.debug('[Settings] reporting dreaming setting analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.DreamingSettingChanged,
     source: SettingsAnalyticsSource.Dreaming,
     ...summary,
@@ -657,7 +662,7 @@ const reportPluginSettingsSaved = (
   summary: PluginSettingsAnalyticsSummary,
 ): void => {
   console.debug('[Settings] reporting plugin settings analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.PluginSettingsSaved,
     source: SettingsAnalyticsSource.Plugins,
     ...summary,
@@ -668,7 +673,7 @@ const reportShortcutSettingChanged = (
   summary: ShortcutSettingAnalyticsSummary,
 ): void => {
   console.debug('[Settings] reporting shortcut setting analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ShortcutSettingChanged,
     source: SettingsAnalyticsSource.Shortcuts,
     ...summary,
@@ -681,7 +686,7 @@ const reportAboutAction = (
   options: { missingEntryCount?: number } = {},
 ): void => {
   console.debug('[Settings] reporting about action analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AboutAction,
     source: SettingsAnalyticsSource.About,
     actionType,
@@ -695,7 +700,7 @@ const reportAgentEngineSettingChanged = (
   settingValue: SettingsAnalyticsValue,
   previousValue?: SettingsAnalyticsValue,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AgentEngineSettingChanged,
     settingKey,
     settingValue,
@@ -709,7 +714,7 @@ const reportAgentEngineMaintenanceAction = (
   result: string,
   options: { errorCode?: string; sizeBytes?: number } = {},
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AgentEngineMaintenanceAction,
     actionType,
     result,
@@ -722,7 +727,7 @@ const reportAgentEngineMaintenanceAction = (
 const reportCustomModelSettingsSaved = (
   summary: CustomModelSettingsAnalyticsSummary,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.CustomModelSettingsSaved,
     source: SettingsAnalyticsSource.Model,
     ...summary,
@@ -735,7 +740,7 @@ const reportCustomModelConnectionTested = (
   result: 'success' | 'failed',
   options: { failureReason?: string; statusCode?: number } = {},
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.CustomModelConnectionTested,
     source: SettingsAnalyticsSource.Model,
     providerKey,
@@ -896,6 +901,7 @@ export type SettingsOpenOptions = {
 
 interface SettingsProps extends SettingsOpenOptions {
   onClose: () => void;
+  onCodingPlanAccountChange?: (account: CodingPlanAccountUser | null) => void;
   onStartAiSkin?: (text: string, kitId: string) => void;
   initialTabRequestId?: number;
   onUpdateFound?: (info: AppUpdateInfo) => void;
@@ -955,10 +961,10 @@ interface ProvidersImportPayload {
   providers?: Record<string, ProvidersImportEntry>;
 }
 
-const ABOUT_CONTACT_EMAIL = 'lobsterai.project@rd.netease.com';
-const ABOUT_USER_MANUAL_URL = 'https://lobsterai.youdao.com/#/docs/lobsterai_user_manual';
-const ABOUT_USER_COMMUNITY_URL = 'https://lobsterai.youdao.com/#/about';
-const ABOUT_SERVICE_TERMS_URL = 'https://c.youdao.com/dict/hardware/lobsterai/lobsterai_service.html';
+const ABOUT_WEBSITE_URL = 'https://glmcoding.cn/';
+const ABOUT_USER_MANUAL_URL = 'https://glmcoding.cn/';
+const ABOUT_USER_COMMUNITY_URL = 'https://glmcoding.cn/';
+const ABOUT_SERVICE_TERMS_URL = 'https://glmcoding.cn/';
 
 // MiniMax Portal OAuth constants
 const MINIMAX_OAUTH_CLIENT_ID = '78257093-7e40-4613-99e0-527b14b39113';
@@ -1368,6 +1374,7 @@ const SettingsNumberInputRow: React.FC<{
 
 const Settings: React.FC<SettingsProps> = ({
   onClose,
+  onCodingPlanAccountChange,
   onStartAiSkin,
   initialTab,
   initialTabRequestId,
@@ -1584,9 +1591,9 @@ const Settings: React.FC<SettingsProps> = ({
     };
   }, []);
 
-  const handleCopyContactEmail = useCallback(async () => {
-    const copied = await copyTextToClipboard(ABOUT_CONTACT_EMAIL);
-    reportAboutAction('copy_contact_email', copied ? 'success' : 'failed');
+  const handleCopyWebsiteUrl = useCallback(async () => {
+    const copied = await copyTextToClipboard(ABOUT_WEBSITE_URL);
+    reportAboutAction('copy_website_url', copied ? 'success' : 'failed');
     if (copied) {
       setEmailCopied(true);
       if (emailCopiedTimerRef.current != null) {
@@ -1725,6 +1732,9 @@ const Settings: React.FC<SettingsProps> = ({
   const coworkConfig = useSelector(selectCoworkConfig);
 
   const [coworkAgentEngine, setCoworkAgentEngine] = useState<CoworkAgentEngine>(coworkConfig.agentEngine || 'openclaw');
+  const [codingOptimizationEnabled, setCodingOptimizationEnabled] = useState<boolean>(
+    coworkConfig.codingOptimizationEnabled ?? true,
+  );
   const [coworkMemoryEnabled, setCoworkMemoryEnabled] = useState<boolean>(coworkConfig.memoryEnabled ?? true);
   const [coworkMemoryLlmJudgeEnabled, setCoworkMemoryLlmJudgeEnabled] = useState<boolean>(coworkConfig.memoryLlmJudgeEnabled ?? false);
   const [skipMissedJobs, setSkipMissedJobs] = useState<boolean>(coworkConfig.skipMissedJobs ?? true);
@@ -1775,6 +1785,7 @@ const Settings: React.FC<SettingsProps> = ({
 
   useEffect(() => {
     setCoworkAgentEngine(coworkConfig.agentEngine || 'openclaw');
+    setCodingOptimizationEnabled(coworkConfig.codingOptimizationEnabled ?? true);
     setCoworkMemoryEnabled(coworkConfig.memoryEnabled ?? true);
     setCoworkMemoryLlmJudgeEnabled(coworkConfig.memoryLlmJudgeEnabled ?? false);
     setSkipMissedJobs(coworkConfig.skipMissedJobs ?? true);
@@ -1793,6 +1804,7 @@ const Settings: React.FC<SettingsProps> = ({
     setOpenClawSessionKeepAlive(coworkConfig.openClawSessionPolicy?.keepAlive || OpenClawSessionKeepAliveValues.ThirtyDays);
   }, [
     coworkConfig.agentEngine,
+    coworkConfig.codingOptimizationEnabled,
     coworkConfig.memoryEnabled,
     coworkConfig.memoryLlmJudgeEnabled,
     coworkConfig.openClawSessionPolicy?.keepAlive,
@@ -2814,6 +2826,7 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const hasCoworkConfigChanges = coworkAgentEngine !== coworkConfig.agentEngine
+    || codingOptimizationEnabled !== (coworkConfig.codingOptimizationEnabled ?? true)
     || coworkMemoryEnabled !== coworkConfig.memoryEnabled
     || coworkMemoryLlmJudgeEnabled !== coworkConfig.memoryLlmJudgeEnabled
     || skipMissedJobs !== (coworkConfig.skipMissedJobs ?? true)
@@ -3466,6 +3479,7 @@ const Settings: React.FC<SettingsProps> = ({
 
       apiService.setConfig({
         apiKey: apiKeyToUse,
+        credentialRef: primaryProvider.credentialRef,
         baseUrl: baseUrlToUse,
       });
 
@@ -3491,6 +3505,7 @@ const Settings: React.FC<SettingsProps> = ({
       if (hasCoworkConfigChanges) {
         const updated = await coworkService.updateConfig({
           agentEngine: coworkAgentEngine,
+          codingOptimizationEnabled,
           memoryEnabled: coworkMemoryEnabled,
           memoryLlmJudgeEnabled: coworkMemoryLlmJudgeEnabled,
           skipMissedJobs,
@@ -3643,7 +3658,7 @@ const Settings: React.FC<SettingsProps> = ({
           reportCustomModelSettingsSaved(customModelSettingsSummary);
         }
         if (previousConfig.usageAnalyticsEnabled === false) {
-          void reportYdAnalyzer({
+          void reportAnalytics({
             action: LogReporterAction.UsageAnalyticsEnabled,
             source: SettingsAnalyticsSource.General,
           });
@@ -3996,7 +4011,7 @@ const Settings: React.FC<SettingsProps> = ({
     setIsTestResultModalOpen(false);
     setTestResult(null);
 
-    const hasValidAuth = providerConfig.apiKey;
+    const hasValidAuth = hasProviderAuthConfigured(testingProvider, providerConfig);
 
 
     if (providerRequiresApiKey(testingProvider) && !hasValidAuth) {
@@ -4098,6 +4113,7 @@ const Settings: React.FC<SettingsProps> = ({
             max_tokens: CONNECTIVITY_TEST_TOKEN_BUDGET,
             messages: [{ role: 'user', content: 'Hi' }],
           }),
+          credentialRef: providerConfig.credentialRef,
         });
       } else {
         const useResponsesApi = shouldUseOpenAIResponsesForProvider(testingProvider);
@@ -4127,6 +4143,7 @@ const Settings: React.FC<SettingsProps> = ({
           method: 'POST',
           headers,
           body: JSON.stringify(openAIRequestBody),
+          credentialRef: providerConfig.credentialRef,
         });
       }
 
@@ -4459,6 +4476,120 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
+  const handleConfigureCodingPlanKey = async (
+    tokenId: number,
+    planName: string,
+  ): Promise<boolean> => {
+    setError(null);
+    setNoticeMessage(null);
+    try {
+      const result = await window.electron.codingPlan.configure(tokenId);
+      if (!result.success) {
+        setError(i18nService.t(
+          result.errorCode === CodingPlanAccountErrorCode.PlanKeyRejected
+            ? 'codingPlanKeyRejected'
+            : result.errorCode === CodingPlanAccountErrorCode.SecureStorageUnavailable
+              ? 'codingPlanSecureStorageUnavailable'
+              : 'codingPlanConfigureFailed',
+        ));
+        return false;
+      }
+
+      const persistedConfig = configService.getConfig();
+      const persistedProviders = {
+        ...getDefaultProviders(),
+        ...(persistedConfig.providers ?? {}),
+      } as ProvidersConfig;
+      const providerModels = result.data.models.map(model => ({
+        id: model.id,
+        name: model.name,
+        supportsImage: false,
+        ...(model.contextWindow ? { contextWindow: model.contextWindow } : {}),
+      }));
+      const zhimaProvider = {
+        ...persistedProviders[ProviderName.ZhimaCoding],
+        enabled: true,
+        apiKey: '',
+        credentialRef: result.data.credentialRef,
+        codingPlanTokenId: result.data.tokenId,
+        baseUrl: 'https://glmcoding.cn/v1',
+        apiFormat: 'openai' as const,
+        models: providerModels,
+      };
+      const nextPersistedProviders: ProvidersConfig = {
+        ...persistedProviders,
+        [ProviderName.ZhimaCoding]: zhimaProvider,
+      };
+      const defaultModel = resolveCodingPlanDefaultModel(providerModels);
+      if (!defaultModel) {
+        setError(i18nService.t('codingPlanKeyRejected'));
+        return false;
+      }
+
+      await configService.updateConfig({
+        providers: nextPersistedProviders,
+        api: {
+          key: '',
+          baseUrl: zhimaProvider.baseUrl,
+        },
+        model: {
+          ...persistedConfig.model,
+          availableModels: providerModels,
+          defaultModel: defaultModel.id,
+          defaultModelProvider: ProviderName.ZhimaCoding,
+        },
+      });
+
+      setProviders(previous => ({
+        ...previous,
+        [ProviderName.ZhimaCoding]: zhimaProvider,
+      }));
+      setActiveProvider(ProviderName.ZhimaCoding);
+      apiService.setConfig({
+        apiKey: '',
+        credentialRef: result.data.credentialRef,
+        baseUrl: zhimaProvider.baseUrl,
+        provider: ProviderName.ZhimaCoding,
+        apiFormat: 'openai',
+      });
+
+      const availableProviderModels = Object.entries(nextPersistedProviders).flatMap(
+        ([providerName, providerConfig]) => {
+          if (!providerConfig.enabled || !providerConfig.models) return [];
+          const openClawProviderId = getOpenClawProviderIdForConfig(
+            providerName,
+            providerConfig,
+          );
+          return providerConfig.models.map(model => ({
+            id: model.id,
+            name: model.name,
+            provider: getProviderDisplayName(providerName, providerConfig),
+            providerKey: providerName,
+            openClawProviderId,
+            supportsImage: resolveModelSupportsImageForProvider(providerName, model),
+            supportsVideo: model.supportsVideo,
+            supportsThinking: model.supportsThinking,
+            contextWindow: model.contextWindow,
+            maxTokens: model.maxTokens,
+          }));
+        },
+      );
+      dispatch(setAvailableModels(availableProviderModels));
+      dispatch(setDefaultSelectedModel({
+        ...defaultModel,
+        provider: getProviderDisplayName(ProviderName.ZhimaCoding, zhimaProvider),
+        providerKey: ProviderName.ZhimaCoding,
+        openClawProviderId: OpenClawProviderId.ZhimaCoding,
+      }));
+      setNoticeMessage(`${i18nService.t('codingPlanConfigureSuccess')} (${planName})`);
+      return true;
+    } catch (configureError) {
+      console.error('[Settings] Failed to configure Coding Plan:', configureError);
+      setError(i18nService.t('codingPlanConfigureFailed'));
+      return false;
+    }
+  };
+
   // 渲染标签页
   const sidebarTabs: { key: TabType; label: string; icon: React.ReactNode }[] = (() => {
     const allTabs = [
@@ -4466,6 +4597,7 @@ const Settings: React.FC<SettingsProps> = ({
       { key: 'appearance' as TabType,     label: i18nService.t('appearance'),     icon: <SunIcon className="h-5 w-5" /> },
       { key: 'coworkAgentEngine' as TabType, label: i18nService.t('coworkAgentEngine'), icon: <CpuChipIcon className="h-5 w-5" /> },
       { key: 'model' as TabType,          label: i18nService.t('settingsCustomModel'), icon: <CubeIcon className="h-5 w-5" /> },
+      { key: 'codingPlan' as TabType,     label: i18nService.t('codingPlanTab'),  icon: <CreditCardIcon className="h-5 w-5" /> },
       { key: 'im' as TabType,             label: i18nService.t('imBot'),          icon: <ChatBubbleLeftIcon className="h-5 w-5" /> },
       { key: 'browserWebAccess' as TabType, label: i18nService.t('browserWebAccessTab'), icon: <GlobeAltIcon className="h-5 w-5" /> },
       { key: 'email' as TabType,          label: i18nService.t('emailTab'),       icon: <EnvelopeIcon className="h-5 w-5" /> },
@@ -5079,6 +5211,41 @@ const Settings: React.FC<SettingsProps> = ({
 
                 <section className="space-y-3">
                   <h4 className="text-sm font-medium text-foreground">
+                    {i18nService.t('coworkCodingOptimization')}
+                  </h4>
+
+                  <div className="rounded-xl border border-border bg-surface p-4">
+                    <div className="flex items-start gap-3.5">
+                      <span
+                        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                          codingOptimizationEnabled
+                            ? 'bg-primary-muted text-primary'
+                            : 'bg-surface-raised text-secondary'
+                        }`}
+                      >
+                        <CodeBracketIcon className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="min-w-0 text-sm font-medium leading-5 text-foreground">
+                            {i18nService.t('coworkCodingOptimizationDefault')}
+                          </h4>
+                          <SettingsSwitch
+                            checked={codingOptimizationEnabled}
+                            label={i18nService.t('coworkCodingOptimizationDefault')}
+                            onClick={() => setCodingOptimizationEnabled(previous => !previous)}
+                          />
+                        </div>
+                        <p className="mt-1.5 text-[13px] leading-5 text-secondary">
+                          {i18nService.t('coworkCodingOptimizationDescription')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <h4 className="text-sm font-medium text-foreground">
                     {i18nService.t('openClawBackgroundRuntimeTitle')}
                   </h4>
 
@@ -5595,6 +5762,15 @@ const Settings: React.FC<SettingsProps> = ({
           />
         );
 
+      case 'codingPlan':
+        return (
+          <CodingPlanSettingsSection
+            configuredTokenId={providers[ProviderName.ZhimaCoding]?.codingPlanTokenId}
+            onAccountChange={onCodingPlanAccountChange}
+            onConfigure={handleConfigureCodingPlanKey}
+          />
+        );
+
       case 'shortcuts':
         return (
           <div className="space-y-4">
@@ -5701,7 +5877,7 @@ const Settings: React.FC<SettingsProps> = ({
             {/* Logo & App Name */}
             <img
               src="logo.png"
-              alt="LobsterAI"
+              alt="智码 GLM Code"
               className="w-16 h-16 mb-3 cursor-pointer select-none"
               onClick={(e) => {
                 if (!e.altKey || !e.shiftKey) return;
@@ -5713,7 +5889,7 @@ const Settings: React.FC<SettingsProps> = ({
                 }
               }}
             />
-            <h3 className="text-lg font-semibold text-foreground">LobsterAI</h3>
+            <h3 className="text-lg font-semibold text-foreground">智码 GLM Code</h3>
             <span className="text-xs text-secondary mt-1">v{appVersion}</span>
 
             {/* Info Card */}
@@ -5749,12 +5925,12 @@ const Settings: React.FC<SettingsProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void handleCopyContactEmail();
+                      void handleCopyWebsiteUrl();
                     }}
                     title={i18nService.t('copyToClipboard')}
                     className="min-w-0 break-all text-right text-sm text-secondary bg-transparent border-none appearance-none p-0 m-0 cursor-pointer focus:outline-none"
                   >
-                    {ABOUT_CONTACT_EMAIL}
+                    {ABOUT_WEBSITE_URL}
                   </button>
                   {emailCopied && (
                     <span className="text-[11px] leading-4 text-emerald-600 dark:text-emerald-400">
@@ -5842,7 +6018,7 @@ const Settings: React.FC<SettingsProps> = ({
                 {i18nService.t('copyrightHolder')}
               </p>
               <p className="mt-1 text-center text-xs text-secondary">
-                Copyright &copy; {new Date().getFullYear()} NetEase Youdao. All Rights Reserved.
+                Copyright &copy; {new Date().getFullYear()} 智码 GLM 科技. All Rights Reserved.
               </p>
             </div>
           </div>

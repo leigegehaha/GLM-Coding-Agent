@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-当 AI Agent 执行产出大量输出的工具调用（如 `node -e` 生成 2MB+ JSON）时，OpenClaw gateway 的 `tick` 心跳事件被 event loop I/O 饿死，LobsterAI 客户端的 `TickWatchdog` 误判连接已死并主动断连，UI 显示"AI 引擎连接中断"。
+当 AI Agent 执行产出大量输出的工具调用（如 `node -e` 生成 2MB+ JSON）时，OpenClaw gateway 的 `tick` 心跳事件被 event loop I/O 饿死，智码 GLM Code 客户端的 `TickWatchdog` 误判连接已死并主动断连，UI 显示"AI 引擎连接中断"。
 
 **表现**：
 - 工具执行正常进行中，UI 突然报错
@@ -19,7 +19,7 @@
 |------|------|----------|
 | OpenClaw exec 层 | stdout 每 8KB chunk 立即触发 `emitUpdate()`，无节流 | `bash-tools.exec-runtime.ts:605-608` |
 | OpenClaw gateway 层 | tick 使用 `setInterval(30s)`，与 exec 事件共享 event loop，timer phase 被 poll phase I/O 饿死 | `server-maintenance.ts:62-66` |
-| LobsterAI 客户端 | `handleGatewayEvent` 仅在 `event === 'tick'` 时更新活跃时间戳，忽略其他事件 | `openclawRuntimeAdapter.ts:3806` |
+| 智码 GLM Code 客户端 | `handleGatewayEvent` 仅在 `event === 'tick'` 时更新活跃时间戳，忽略其他事件 | `openclawRuntimeAdapter.ts:3806` |
 
 **事件链**：
 ```
@@ -110,7 +110,7 @@ exec 风暴期间 gateway event loop 被 I/O 饱和，无法在 5s（`CONTEXT_US
 | 用户影响为零 | sessions.list 用于 context token 查询和 channel session 发现，超时仅导致数据延迟刷新，不影响 agent/tool 执行流 |
 | 现有防护已充分 | `isGatewayRpcDegraded()` 在首次超时后 30s 内跳过后续调用，避免无意义重试 |
 | ChannelSync backoff | 超时后 polling 自动退避，exec 结束后下一周期恢复正常 |
-| 根因在上游 | gateway event-loop starvation 需 openclaw 侧修复（#83366 OPEN），LobsterAI 侧无法从根本解决 |
+| 根因在上游 | gateway event-loop starvation 需 openclaw 侧修复（#83366 OPEN），智码 GLM Code 侧无法从根本解决 |
 | 改动风险 > 收益 | 增加"exec 期间跳过 poll"等逻辑会引入状态耦合，收益仅为减少 warn 日志 |
 
 **结论**：当前行为符合预期设计，warn 日志作为可观测性信号保留，不做代码修改。

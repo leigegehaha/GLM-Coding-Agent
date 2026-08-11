@@ -13,7 +13,7 @@
  *      (<stateDir>/agents/main/agent/auth-profiles.json)
  *
  * From there the OpenClaw runtime resolves the Bearer token per request and
- * auto-refreshes it via the xai plugin's refreshOAuth hook — LobsterAI never
+ * auto-refreshes it via the xai plugin's refreshOAuth hook — 智码 GLM Code never
  * manages token refresh itself. The store is read with mtime-based cache
  * invalidation, so external writes take effect without a gateway restart.
  *
@@ -391,7 +391,7 @@ async function persistXaiCredential(params: {
   await withAuthStoreLock(() => {
     const existing = readAuthStore() ?? { version: AUTH_STORE_VERSION, profiles: {} };
     const profiles: Record<string, Record<string, unknown>> = { ...(existing.profiles ?? {}) };
-    // LobsterAI models a single xAI account: drop any previous xai profiles so
+    // 智码 GLM Code models a single xAI account: drop any previous xai profiles so
     // a re-login with another account never leaves a stale credential behind.
     for (const staleId of listXaiProfiles(existing).map((p) => p.id)) {
       delete profiles[staleId];
@@ -452,7 +452,7 @@ function renderCallbackHtml(success: boolean, message: string): string {
   );
   const color = success ? '#16a34a' : '#dc2626';
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>LobsterAI · xAI Login</title>
+<html lang="en"><head><meta charset="utf-8"><title>智码 GLM Code · xAI Login</title>
 <style>
   body { font-family: -apple-system, system-ui, sans-serif; background: #0b0d10; color: #e5e7eb; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
   .card { background: #14171c; padding: 32px 40px; border-radius: 16px; border: 1px solid #262b33; max-width: 420px; }
@@ -567,7 +567,7 @@ function waitForCallback(expectedState: string): Promise<{ code: string }> {
       }
 
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(renderCallbackHtml(true, 'You can now close this tab and return to LobsterAI.'));
+      res.end(renderCallbackHtml(true, 'You can now close this tab and return to 智码 GLM Code.'));
       finish(undefined, { code });
     });
 

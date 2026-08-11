@@ -84,6 +84,7 @@ export class SqliteStore {
         cwd TEXT NOT NULL,
         system_prompt TEXT NOT NULL DEFAULT '',
         model_override TEXT NOT NULL DEFAULT '',
+        coding_optimized INTEGER NOT NULL DEFAULT 1,
         execution_mode TEXT,
         parent_session_id TEXT,
         forked_from_message_id TEXT,
@@ -356,6 +357,11 @@ export class SqliteStore {
 
       if (!colNames.includes('model_override')) {
         this.db.exec("ALTER TABLE cowork_sessions ADD COLUMN model_override TEXT NOT NULL DEFAULT '';");
+        this.didRunMigration = true;
+      }
+
+      if (!colNames.includes('coding_optimized')) {
+        this.db.exec('ALTER TABLE cowork_sessions ADD COLUMN coding_optimized INTEGER NOT NULL DEFAULT 1;');
         this.didRunMigration = true;
       }
 

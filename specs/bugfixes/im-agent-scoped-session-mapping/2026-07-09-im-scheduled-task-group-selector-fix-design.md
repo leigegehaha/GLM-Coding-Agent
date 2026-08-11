@@ -6,9 +6,9 @@
 
 在同一个飞书群聊中接入多个 Bot，并且这些 Bot 绑定到不同 Agent 后，定时任务表单选择某个 Bot 时，群聊目标下拉会出现多条相同 `群聊 · oc_...` 选项。用户无法判断每条选项对应哪个 Agent，创建任务时也可能因为同一群聊存在多条 agent-scoped mapping 而绑定到错误 Agent。
 
-后续验证还发现，已经保存在 OpenClaw cron state 中的旧任务不会重新经过创建/编辑归一化。用户点击“立即运行”，或旧任务自然到点执行，仍会使用旧 job 配置。结果可能是 IM 侧收到消息，但 LobsterAI 侧没有展示在期望的群聊会话中。
+后续验证还发现，已经保存在 OpenClaw cron state 中的旧任务不会重新经过创建/编辑归一化。用户点击“立即运行”，或旧任务自然到点执行，仍会使用旧 job 配置。结果可能是 IM 侧收到消息，但 智码 GLM Code 侧没有展示在期望的群聊会话中。
 
-进一步排查 OpenClaw 当前行为后确认：飞书 cron delivery 的发送目标如果是裸 `oc_...` 群聊 id，IM 发送可以成功，但 OpenClaw 侧 delivery mirror 会把这次出站消息记录到一个 `direct:<oc_...>` 形态的会话，而不是既有的 canonical `group:<oc_...>` 会话。OpenClaw Web UI 也会展示这个独立会话。因此 LobsterAI 不应在普通会话列表层强行隐藏或合并该会话；更自然的短期策略是在定时任务候选通知渠道中隐藏这类 fake direct，避免用户配置任务时选错。
+进一步排查 OpenClaw 当前行为后确认：飞书 cron delivery 的发送目标如果是裸 `oc_...` 群聊 id，IM 发送可以成功，但 OpenClaw 侧 delivery mirror 会把这次出站消息记录到一个 `direct:<oc_...>` 形态的会话，而不是既有的 canonical `group:<oc_...>` 会话。OpenClaw Web UI 也会展示这个独立会话。因此 智码 GLM Code 不应在普通会话列表层强行隐藏或合并该会话；更自然的短期策略是在定时任务候选通知渠道中隐藏这类 fake direct，避免用户配置任务时选错。
 
 ### 1.2 根因
 
@@ -26,9 +26,9 @@ PR #2298 后，`im_session_mappings` 支持同一个 `(platform, im_conversation
 group:oc_xxx
 ```
 
-不带账号前缀。定时任务选择 Bot 实例时，不能通过给群聊 session key 增加 accountId 解决归属问题，只能结合 LobsterAI 本地 mapping 和当前 Bot 绑定关系判断。
+不带账号前缀。定时任务选择 Bot 实例时，不能通过给群聊 session key 增加 accountId 解决归属问题，只能结合 智码 GLM Code 本地 mapping 和当前 Bot 绑定关系判断。
 
-OpenClaw cron job 是持久化配置。创建/编辑任务会经过 LobsterAI IPC handler，但手动运行只调用 `cron.run(id)`，自然到点执行则完全由 OpenClaw cron 调度。两条路径都不会重新执行创建/编辑时的 IM announce 归一化。
+OpenClaw cron job 是持久化配置。创建/编辑任务会经过 智码 GLM Code IPC handler，但手动运行只调用 `cron.run(id)`，自然到点执行则完全由 OpenClaw cron 调度。两条路径都不会重新执行创建/编辑时的 IM announce 归一化。
 
 ## 2. OpenClaw Session Key 规范与现状
 
@@ -53,11 +53,11 @@ agent:<agentId>:<channel>:group:<peerId>
 agent:<agentId>:<channel>:channel:<peerId>
 ```
 
-因此 LobsterAI 不应在 `im_conversation_id` 或 OpenClaw canonical session key 层面发明群聊 account 前缀。群聊的 Bot 归属只能在 LobsterAI 侧通过 mapping 元数据或当前实例绑定关系辅助判断。
+因此 智码 GLM Code 不应在 `im_conversation_id` 或 OpenClaw canonical session key 层面发明群聊 account 前缀。群聊的 Bot 归属只能在 智码 GLM Code 侧通过 mapping 元数据或当前实例绑定关系辅助判断。
 
 ### 2.1 飞书 delivery mirror 现状
 
-当前 LobsterAI pinned runtime 使用 OpenClaw v2026.6.1 与 `@larksuite/openclaw-lark@2026.6.10`。实测和源码排查结果：
+当前 智码 GLM Code pinned runtime 使用 OpenClaw v2026.6.1 与 `@larksuite/openclaw-lark@2026.6.10`。实测和源码排查结果：
 
 1. 飞书 canonical 群聊会话是 `agent:<agentId>:feishu:group:<chatId>`，不带 `accountId`。
 2. cron 运行本身会创建独立 `agent:<agentId>:cron:<jobId>...` 会话。
@@ -65,7 +65,7 @@ agent:<agentId>:<channel>:channel:<peerId>
 4. 发送成功后，OpenClaw 当前 outbound mirror 会把裸 `oc_...` 解析成 `agent:<agentId>:feishu:<accountId>:direct:<chatId>`。这个会话在 OpenClaw Web UI 中也独立存在。
 5. 该现象来自 OpenClaw cron delivery mirror 路径没有把前面已解析出的 group target kind 继续传给 outbound session route；飞书插件本身也没有提供足够的 `resolveOutboundSessionRoute`/target kind 推断能力来把裸 `oc_...` 识别回 group。
 
-因此当前 LobsterAI 侧采用“配置候选隐藏 fake direct，普通会话列表保留 OpenClaw 实际会话”的策略。这样既避免定时任务配置误选，又不篡改 OpenClaw 真实会话结构。
+因此当前 智码 GLM Code 侧采用“配置候选隐藏 fake direct，普通会话列表保留 OpenClaw 实际会话”的策略。这样既避免定时任务配置误选，又不篡改 OpenClaw 真实会话结构。
 
 ### 2.2 主要 IM 渠道对比
 
@@ -104,7 +104,7 @@ agent:<agentId>:<channel>:channel:<peerId>
 
 OpenClaw canonical session key 中的 `group:<chatId>` 是会话键语义，不是飞书出站发送参数。飞书群聊发送的 `delivery.to` 必须保持原生 `chatId`（例如 `oc_...`），不能传 `group:oc_...`，否则飞书 API 会按 open_id 校验并返回 400。
 
-如果 OpenClaw delivery mirror 把裸群聊 id 记录成 `direct:<chatId>` 形态，LobsterAI 的 channel session sync 层不再全局合并到既有 accountless `group:<chatId>`/`channel:<peerId>` mapping。普通会话列表保留 OpenClaw 实际产生的会话；只有定时任务表单候选会隐藏同 peer fake direct。
+如果 OpenClaw delivery mirror 把裸群聊 id 记录成 `direct:<chatId>` 形态，智码 GLM Code 的 channel session sync 层不再全局合并到既有 accountless `group:<chatId>`/`channel:<peerId>` mapping。普通会话列表保留 OpenClaw 实际产生的会话；只有定时任务表单候选会隐藏同 peer fake direct。
 
 任务归属推导也要优先同 peer 的 accountless group/channel mapping。否则历史污染 direct mapping 若更新时间更新，可能先命中选中 Bot 的 `accountId:direct:<chatId>`，把任务重新绑定到错误 Agent。
 
@@ -112,7 +112,7 @@ OpenClaw canonical session key 中的 `group:<chatId>` 是会话键语义，不�
 
 旧任务迁移只使用本地轻量归一化，不调用 gateway `sessions.list`：
 
-1. 只处理 `delivery.mode = announce` 且能解析到 LobsterAI IM 平台的任务。
+1. 只处理 `delivery.mode = announce` 且能解析到 智码 GLM Code IM 平台的任务。
 2. 只比较并 patch 稳定字段：`sessionTarget`、`payload`、`delivery`、`agentId`、`sessionKey`。
 3. 仅当归一化后字段发生变化时调用 `cron.update`，保证幂等。
 4. 手动立即执行前先迁移该 job，再调用 `cron.run`。
@@ -122,14 +122,14 @@ OpenClaw canonical session key 中的 `group:<chatId>` 是会话键语义，不�
 
 ### 3.4 投递后的会话同步
 
-OpenClaw delivery mirror 只追加 transcript，不一定更新 session store 中的 `updatedAt`。因此 LobsterAI 不能只依赖最近活跃会话轮询，还要在收到 delivered cron finished event 后定向同步实际 mirror transcript：
+OpenClaw delivery mirror 只追加 transcript，不一定更新 session store 中的 `updatedAt`。因此 智码 GLM Code 不能只依赖最近活跃会话轮询，还要在收到 delivered cron finished event 后定向同步实际 mirror transcript：
 
 1. 从 cron event 的 resolved delivery 中读取 `channel`、平台原生 `to` 和 `accountId`，并从 job 或 run session key 中取得实际执行 `agentId`。
 2. 对当前 pinned runtime 的飞书裸 `oc_...` 目标，按 OpenClaw 实际行为定位 `agent:<agentId>:feishu:<accountId>:direct:<chatId>`，必要时创建对应本地 mapping；不错误同步 canonical `group:<chatId>`。
 3. 其它 IM 渠道继续按已有 delivery target mapping 解析，不改变私聊、明确 group/channel target 或无通知任务路径。
 4. 同步仍使用延迟异步执行，不阻塞主进程或任务列表加载，并保持重复调用幂等。
 
-OpenClaw 当前还会按最近 assistant 文本对 delivery mirror 去重：若不同执行输出完全相同，IM 仍可能重复收到，但 transcript 不追加新消息。本次不在 LobsterAI 侧合成消息，也不修改该 OpenClaw 行为。
+OpenClaw 当前还会按最近 assistant 文本对 delivery mirror 去重：若不同执行输出完全相同，IM 仍可能重复收到，但 transcript 不追加新消息。本次不在 智码 GLM Code 侧合成消息，也不修改该 OpenClaw 行为。
 
 ## 4. 日志策略
 
@@ -146,7 +146,7 @@ OpenClaw 当前还会按最近 assistant 文本对 delivery mirror 去重：若�
 | 场景 | 处理方式 |
 |------|----------|
 | Bot 实例绑定自定义 Agent | 群聊列表只展示该 Agent 对应的 group mapping |
-| Bot 实例未显式绑定 Agent | 按 OpenClaw/LobsterAI 默认逻辑视为 `main` Agent |
+| Bot 实例未显式绑定 Agent | 按 OpenClaw/智码 GLM Code 默认逻辑视为 `main` Agent |
 | 私聊 mapping 带账号前缀 | 继续使用 `listSessionMappings(platform, accountId)` 过滤 |
 | 群聊 OpenClaw session key 不带 accountId | 不修改 key 规范，只用当前实例绑定关系过滤 UI 候选和修正 cron job |
 | 旧任务已经保存裸群聊 id | 保持平台原生 `chatId`，只修正 agent 归属和 sessionTarget |
@@ -161,9 +161,9 @@ OpenClaw 当前还会按最近 assistant 文本对 delivery mirror 去重：若�
 2. 私聊选项仍按 Bot 实例账号前缀正常过滤。
 3. `dedupeConversationMappings()` 不会把不同 Agent 的同群 mapping 全局折叠。
 4. OpenClaw 群聊 session key 不带 accountId 的规范被明确记录。
-5. 旧飞书群聊定时任务不重新编辑，点击“立即运行”后能成功发送到 IM；若 OpenClaw 仍写出 fake direct mirror，LobsterAI 普通会话列表保持与 OpenClaw 一致。
+5. 旧飞书群聊定时任务不重新编辑，点击“立即运行”后能成功发送到 IM；若 OpenClaw 仍写出 fake direct mirror，智码 GLM Code 普通会话列表保持与 OpenClaw 一致。
 6. OpenClaw 启动后的后台迁移完成后，旧任务自然到点执行也使用修正后的 agent 归属和平台原生 `chatId` target。
 7. 手动运行迁移路径不调用 gateway `sessions.list`。
 8. 定时任务通知目标候选不展示同 peer fake direct；会话列表不做同类过滤。
-9. 飞书群聊 cron 输出发生变化时，LobsterAI 同步 OpenClaw 实际 fake direct transcript，不再错误刷新 canonical group 历史。
+9. 飞书群聊 cron 输出发生变化时，智码 GLM Code 同步 OpenClaw 实际 fake direct transcript，不再错误刷新 canonical group 历史。
 10. 飞书以外渠道和 `delivery.mode = none` 任务的会话同步行为保持不变。

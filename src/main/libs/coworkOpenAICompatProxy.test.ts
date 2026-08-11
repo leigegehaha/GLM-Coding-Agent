@@ -12,13 +12,13 @@ import { __openAICompatProxyTestUtils, isAllowedProxyHost } from './coworkOpenAI
 
 const testUtils = __openAICompatProxyTestUtils;
 
-test('refreshes LobsterAI credentials only for HTTP 401', () => {
+test('refreshes 智码 GLM Code credentials only for HTTP 401', () => {
   expect(testUtils.shouldRefreshProxyToken(401, ProviderName.LobsteraiServer)).toBe(true);
   expect(testUtils.shouldRefreshProxyToken(403, ProviderName.LobsteraiServer)).toBe(false);
   expect(testUtils.shouldRefreshProxyToken(403, ProviderName.Copilot)).toBe(true);
 });
 
-test('maps only transient LobsterAI refresh failures to temporary service errors', () => {
+test('maps only transient 智码 GLM Code refresh failures to temporary service errors', () => {
   expect(testUtils.isTemporaryLobsterAIAuthRefreshFailure(
     ProviderName.LobsteraiServer,
     { outcome: AuthRefreshOutcome.TransientFailure },

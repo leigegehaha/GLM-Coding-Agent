@@ -13,6 +13,7 @@ import type {
   KitReference,
   ResolvedKitCapabilities,
 } from '../../../shared/kit/constants';
+import type { ModelThinkingLevel } from '../../../shared/providers';
 import type { SkinWorkflowKind } from '../../../shared/skin/constants';
 import type { CoworkMessage, CoworkSessionStatus } from '../../coworkStore';
 
@@ -118,6 +119,7 @@ export type CoworkStartOptions = {
   confirmationMode?: 'modal' | 'text';
   imageAttachments?: CoworkImageAttachment[];
   agentId?: string;
+  thinkingLevel?: ModelThinkingLevel;
   mediaSelection?: CoworkMediaSelection;
   workflowKind?: SkinWorkflowKind;
   mediaReferences?: CoworkMediaAttachmentRef[];

@@ -64,7 +64,7 @@ test('workspace rehydration bridge includes bounded capsule and git state', asyn
     commandRunner,
   });
 
-  expect(bridge).toContain('[LobsterAI workspace state after context compaction]');
+  expect(bridge).toContain('[智码 GLM Code workspace state after context compaction]');
   expect(bridge).toContain('Recently touched files:');
   expect(bridge).toContain('src/main/libs/agentEngine/openclawRuntimeAdapter.ts');
   expect(bridge).toContain('Git status:');

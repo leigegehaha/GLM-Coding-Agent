@@ -15,7 +15,7 @@ import {
   type CoworkBrowserAnnotationMessageBatch,
   normalizeBrowserAnnotationBatches,
 } from '@shared/cowork/browserAnnotations';
-import { ProviderName } from '@shared/providers';
+import { ModelThinkingLevel, ProviderName } from '@shared/providers';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -54,9 +54,9 @@ import { getInstalledKitSkillIds } from '../../services/kitCapability';
 import {
   LogReporterAction,
   LogReporterEntry,
-  reportYdAnalyzer,
+  reportAnalytics,
 } from '../../services/logReporter';
-import { resolveLocalizedText, skillService } from '../../services/skill';
+import { skillService } from '../../services/skill';
 import { RootState } from '../../store';
 import { selectDraftPrompts } from '../../store/selectors/coworkSelectors';
 import {
@@ -84,12 +84,13 @@ import {
   setDraftPrompt,
   setDraftSelectedTextSnippets,
   setDraftSkillIds,
+  setDraftThinkingLevel,
   setPlanConfirmationHandled,
   setSteerDraft,
   updateCurrentSessionModelOverride,
   updateSessionGoal,
 } from '../../store/slices/coworkSlice';
-import { setActiveKitIds, toggleActiveKit } from '../../store/slices/kitSlice';
+import { setActiveKitIds } from '../../store/slices/kitSlice';
 import type { Model } from '../../store/slices/modelSlice';
 import { setActiveSkillIds, setSkills, toggleActiveSkill } from '../../store/slices/skillSlice';
 import { CoworkCollaborationMode, CoworkImageAttachment } from '../../types/cowork';
@@ -117,7 +118,7 @@ import SkillIcon from '../icons/SkillIcon';
 import TaskPauseIcon from '../icons/TaskPauseIcon';
 import TrashIcon from '../icons/TrashIcon';
 import XMarkIcon from '../icons/XMarkIcon';
-import { ActiveKitBadge, KitsButton } from '../kits';
+import { ActiveKitBadge } from '../kits';
 import ModelSelector, {
   isModelAgenticBlocked,
   ModelAccessPromptKind,
@@ -130,6 +131,7 @@ import { resolveAgentModelSelection, resolveEffectiveModel, useAgentSelectedMode
 import AttachmentCard from './AttachmentCard';
 import BrowserAnnotationAttachmentBadge from './BrowserAnnotationAttachmentBadge';
 import { getClipboardAttachmentFiles } from './clipboardAttachments';
+import CodingOptimizationControl from './CodingOptimizationControl';
 import { CoworkUiEvent } from './constants';
 import FolderSelectorPopover from './FolderSelectorPopover';
 import { getCaretPixelPosition } from './getCaretPosition';
@@ -141,7 +143,6 @@ import {
   MediaMentionSegmentKind,
   resolveMediaMentionTrigger,
 } from './mediaMentionUtils';
-import MediaModelPicker from './MediaModelPicker';
 import {
   getAttachmentAnalyticsParams,
   getKitAnalyticsParams,
@@ -157,6 +158,7 @@ import { buildSelectedKitContextPrompt } from './selectedKitContextPrompt';
 import { buildSelectedSkillRoutingPrompt } from './selectedSkillRoutingPrompt';
 import SelectedTextSnippetBadge from './SelectedTextSnippetBadge';
 import { buildPlanModeSystemPrompt } from './skillSystemPrompt';
+import ThinkingModeControl from './ThinkingModeControl';
 import { usePersistAgentModelSelection } from './usePersistAgentModelSelection';
 import { useCoworkVoiceInput } from './voiceInput/useCoworkVoiceInput';
 import VoiceInputButton from './voiceInput/VoiceInputButton';
@@ -252,7 +254,7 @@ const reportModelSelected = (
   agentId: string,
   sessionId?: string,
 ): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ModelSelected,
     modelId: model.id,
     modelName: model.name,
@@ -407,6 +409,8 @@ interface CoworkPromptInputProps {
     selectedTextSnippets?: CoworkSelectedTextSnippet[],
     browserAnnotations?: CoworkBrowserAnnotationMessageBatch[],
     collaborationMode?: CoworkCollaborationMode,
+    thinkingLevel?: ModelThinkingLevel,
+    codingOptimized?: boolean,
   ) => boolean | void | Promise<boolean | void>;
   onStop?: () => void | Promise<void>;
   isStreaming?: boolean;
@@ -433,6 +437,10 @@ interface CoworkPromptInputProps {
   canSteer?: boolean;
   /** When true, hides attachment/skill buttons but keeps the input box visible (disabled) */
   remoteManaged?: boolean;
+  codingOptimized?: boolean;
+  onCodingOptimizedChange?: (
+    enabled: boolean,
+  ) => boolean | void | Promise<boolean | void>;
 }
 
 const EMPTY_ATTACHMENTS: CoworkAttachment[] = [];
@@ -458,7 +466,6 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       readOnlyContextTrailingText,
       contextAgentId,
       onManageSkills,
-      onManageKits,
       sessionId,
       contextUsageControl,
       goal,
@@ -467,6 +474,8 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       goalStatusBarAttached = true,
       steerPreviewPortalTarget,
       canSteer = false,
+      codingOptimized = true,
+      onCodingOptimizedChange,
       remoteManaged = false,
     } = props;
     const dispatch = useDispatch();
@@ -627,6 +636,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
 
   const isCompact = size === 'compact';
   const isLarge = size === 'large' || isCompact;
+  const isWebRuntime = window.electron?.platform === 'web';
   const useHomeContextLayout = isLarge && showAgentSelector;
   const useCompactSendButton = isLarge && (useHomeContextLayout || showReadOnlyContext || isCompact);
   const hasActiveContext = hasActiveSkills || hasActiveKits || isPlanMode || goalInputActive || steerInputActive;
@@ -646,6 +656,9 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     globalSelectedModel: currentAgentSelectedModel,
   });
   const modelSupportsImage = !!effectiveSelectedModel?.supportsImage;
+  const draftThinkingLevel = useSelector((state: RootState) => (
+    state.cowork.draftThinkingLevels[draftKey]
+  ));
 
   const resolveSubmitModelAccessPrompt = useCallback((): ModelAccessPromptKind | null => {
     const hasAccessibleUserModel = availableModels.some(
@@ -1468,6 +1481,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
         browserAnnotations: normalizeBrowserAnnotationBatches(browserAnnotationBatches),
         modelSupportsImage,
         skillPrompt: queuedSkillPrompt,
+        codingOptimized,
         selectedSkillIds: activeSkillIds.length > 0 ? [...activeSkillIds] : undefined,
         activeSkillIds: queuedCapabilities.directSkillIds.length > 0
           ? queuedCapabilities.directSkillIds
@@ -1748,6 +1762,8 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       promptPayload.selectedTextSnippets,
       preparedBrowserAnnotations,
       effectiveCollaborationMode,
+      draftThinkingLevel,
+      codingOptimized,
     );
     if (result === false) {
       reportPromptControl('submit_blocked', {
@@ -1805,7 +1821,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     resetGoalInput(false);
     draftStartedAnalyticsRef.current = false;
     inputSourceOverrideRef.current = null;
-  }, [value, steerInputActive, steerValue, isVoiceRecording, stopVoiceRecordingAndRecognize, goalInputActive, goalInputMode, resetGoalInput, isStreaming, canSteer, remoteManaged, disabled, isPatchingModel, onSubmit, onGoalCommand, activeSkillIds, skills, activeKitIds, marketplaceKits, installedKits, attachments, browserAnnotationBatches, showFolderSelector, workingDirectory, dispatch, draftKey, selectedTextSnippets, pendingSteers.length, resolveSubmitModelAccessPrompt, isPlanMode, planConfirmation, reportPromptControl, getPromptCapabilityAnalyticsParams, getPromptContextAnalyticsParams, getPromptInputSource, goal, sessionId, preparePromptPayload, modelSupportsImage, queuedMediaSelection]);
+  }, [value, steerInputActive, steerValue, isVoiceRecording, stopVoiceRecordingAndRecognize, goalInputActive, goalInputMode, resetGoalInput, isStreaming, canSteer, remoteManaged, disabled, isPatchingModel, onSubmit, onGoalCommand, activeSkillIds, skills, activeKitIds, marketplaceKits, installedKits, attachments, browserAnnotationBatches, showFolderSelector, workingDirectory, dispatch, draftKey, selectedTextSnippets, pendingSteers.length, resolveSubmitModelAccessPrompt, isPlanMode, planConfirmation, reportPromptControl, getPromptCapabilityAnalyticsParams, getPromptContextAnalyticsParams, getPromptInputSource, goal, sessionId, preparePromptPayload, modelSupportsImage, queuedMediaSelection, draftThinkingLevel, codingOptimized]);
 
   const handleSelectSkill = useCallback((skill: Skill) => {
     const willSelect = !activeSkillIds.includes(skill.id);
@@ -1829,44 +1845,6 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       onManageSkills();
     }
   }, [activeSkillIds.length, onManageSkills, reportPromptControl]);
-
-  const handleSelectKit = useCallback((kitId: string) => {
-    const willSelect = !activeKitIds.includes(kitId);
-    const marketplaceKit = marketplaceKits.find(kit => kit.id === kitId);
-    const installedKit = installedKits[kitId];
-    reportPromptControl('kit_toggle', {
-      kitId,
-      kitName: marketplaceKit ? resolveLocalizedText(marketplaceKit.name) : installedKit?.id ?? kitId,
-      kitSource: marketplaceKit ? 'lobsterai-kits' : 'installed',
-      targetEnabled: willSelect,
-      isInstalled: !!installedKit,
-      skillCount: installedKit?.skills?.skillIds.length ?? marketplaceKit?.skills?.list.length,
-      mcpServerCount: installedKit?.mcpServers.length ?? marketplaceKit?.mcpServers?.length,
-      connectorCount: installedKit?.connectors.length ?? marketplaceKit?.connectors?.length,
-    });
-    dispatch(toggleActiveKit(kitId));
-    if (willSelect) {
-      void reportYdAnalyzer({
-        action: LogReporterAction.ExpertKitSelected,
-        kitId,
-        kitName: marketplaceKit ? resolveLocalizedText(marketplaceKit.name) : undefined,
-        kitSource: marketplaceKit ? 'lobsterai-kits' : 'installed',
-        isInstalled: !!installedKit,
-        skillCount: installedKit?.skills?.skillIds.length ?? marketplaceKit?.skills?.list.length,
-        mcpServerCount: installedKit?.mcpServers.length ?? marketplaceKit?.mcpServers?.length,
-        connectorCount: installedKit?.connectors.length ?? marketplaceKit?.connectors?.length,
-      });
-    }
-  }, [activeKitIds, dispatch, installedKits, marketplaceKits, reportPromptControl]);
-
-  const handleManageKits = useCallback(() => {
-    reportPromptControl('manage_kits_click', {
-      activeKitCount: activeKitIds.length,
-    });
-    if (onManageKits) {
-      onManageKits();
-    }
-  }, [activeKitIds.length, onManageKits, reportPromptControl]);
 
   const handleSelectAgent = useCallback((agentId: string) => {
     if (!agentId || agentId === currentAgentId) {
@@ -2462,7 +2440,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       }));
     }
     if (nextMode === CoworkCollaborationMode.Plan) {
-      void reportYdAnalyzer({
+      void reportAnalytics({
         action: LogReporterAction.PlanModeEnabled,
         entry: LogReporterEntry.PromptToolsMenu,
       });
@@ -2926,15 +2904,6 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
   const largeInputActions = !remoteManaged ? (
     <div className="flex items-center gap-0.5">
       {addMenuAction}
-      <KitsButton
-        onSelectKit={handleSelectKit}
-        onManageKits={handleManageKits}
-        onOpenChange={(open) => {
-          reportPromptControl(open ? 'kit_menu_open' : 'kit_menu_close', {
-            activeKitCount: activeKitIds.length,
-          });
-        }}
-      />
     </div>
   ) : null;
 
@@ -2960,7 +2929,6 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
   const largeInputToolActions = (
     <div className={`flex items-center ${useLargeToolbarCompactLayout ? 'gap-0' : 'gap-0.5'}`}>
       {largeInputActions}
-      <MediaModelPicker draftKey={draftKey} disabled={disabled || voiceInputLocksEditing} />
     </div>
   );
   const largeSendButtonSizeClass = useCompactSendButton ? 'h-7 w-7' : 'h-8 w-8';
@@ -3339,7 +3307,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       }}
     >
       <ActiveSkillBadge />
-      <ActiveKitBadge />
+      {!isWebRuntime && <ActiveKitBadge />}
       {goalModeBadge}
       {planModeBadge}
       {steerModeBadge}
@@ -3624,6 +3592,24 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                   <div className={`flex shrink-0 items-center ${largeToolbarControlGapClass}`}>
                     {contextUsageControl}
                     {voiceRecordingUiState.showLargeModelSelector && largeModelSelector}
+                    {voiceRecordingUiState.showLargeModelSelector && onCodingOptimizedChange && (
+                      <CodingOptimizationControl
+                        enabled={codingOptimized}
+                        disabled={disabled || isStreaming || isPatchingModel}
+                        compact={useCompactSendButton}
+                        onChange={onCodingOptimizedChange}
+                      />
+                    )}
+                    {voiceRecordingUiState.showLargeModelSelector && (
+                      <ThinkingModeControl
+                        sessionId={sessionId}
+                        model={effectiveSelectedModel}
+                        disabled={disabled || isStreaming || isPatchingModel}
+                        compact={useCompactSendButton}
+                        initialLevel={draftThinkingLevel}
+                        onLevelChange={level => dispatch(setDraftThinkingLevel({ draftKey, level }))}
+                      />
+                    )}
                     {largeVoiceInputButton}
                     {largeSendButton}
                   </div>
@@ -3798,6 +3784,24 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 <div className={`flex shrink-0 items-center ${largeToolbarControlGapClass}`}>
                   {contextUsageControl}
                   {voiceRecordingUiState.showLargeModelSelector && largeModelSelector}
+                  {voiceRecordingUiState.showLargeModelSelector && onCodingOptimizedChange && (
+                    <CodingOptimizationControl
+                      enabled={codingOptimized}
+                      disabled={disabled || isStreaming || isPatchingModel}
+                      compact={useCompactSendButton}
+                      onChange={onCodingOptimizedChange}
+                    />
+                  )}
+                  {voiceRecordingUiState.showLargeModelSelector && (
+                    <ThinkingModeControl
+                      sessionId={sessionId}
+                      model={effectiveSelectedModel}
+                      disabled={disabled || isStreaming || isPatchingModel}
+                      compact={useCompactSendButton}
+                      initialLevel={draftThinkingLevel}
+                      onLevelChange={level => dispatch(setDraftThinkingLevel({ draftKey, level }))}
+                    />
+                  )}
                   {largeVoiceInputButton}
                   {largeSendButton}
                 </div>

@@ -68,27 +68,27 @@ test('billing: OpenAI insufficient_quota', () => {
   expect(classifyError('You exceeded your current quota, please check your plan and billing details. insufficient_quota')).toBe('coworkErrorInsufficientBalance');
 });
 
-test('billing: LobsterAI free quota exhausted', () => {
+test('billing: 智码 GLM Code free quota exhausted', () => {
   expect(classifyError('免费额度已用完，请升级套餐')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: LobsterAI daily free quota code exhausted', () => {
+test('billing: 智码 GLM Code daily free quota code exhausted', () => {
   expect(classifyError('{"error":{"message":"今日免费额度已用完","code":40200}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: LobsterAI free quota code exhausted', () => {
+test('billing: 智码 GLM Code free quota code exhausted', () => {
   expect(classifyError('{"error":{"message":"免费额度已用完，请升级套餐","code":40201}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: LobsterAI monthly credits exhausted', () => {
+test('billing: 智码 GLM Code monthly credits exhausted', () => {
   expect(classifyError('本月积分已用完')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: LobsterAI monthly quota JSON payload', () => {
+test('billing: 智码 GLM Code monthly quota JSON payload', () => {
   expect(classifyError('{"type":"error","error":{"type":"proxy_error","message":"本月积分已用完","code":40202}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: detects LobsterAI quota exhausted for proxy helpers', () => {
+test('billing: detects 智码 GLM Code quota exhausted for proxy helpers', () => {
   expect(isLobsterAIQuotaExhaustedError('monthly credits exhausted')).toBe(true);
   expect(isLobsterAIQuotaExhaustedError('Request failed with status 402')).toBe(false);
 });

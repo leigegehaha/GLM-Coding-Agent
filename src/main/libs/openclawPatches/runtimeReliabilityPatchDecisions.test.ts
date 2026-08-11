@@ -3,7 +3,7 @@ import { describe, test } from 'vitest';
 import { expectCurrentOpenClawPatchMissing } from './patchTestUtils';
 
 describe('runtime reliability OpenClaw patch decisions', () => {
-  test('does not carry chat image attachment size patch because LobsterAI configures OpenClaw mediaMaxMb', () => {
+  test('does not carry chat image attachment size patch because 智码 GLM Code configures OpenClaw mediaMaxMb', () => {
     expectCurrentOpenClawPatchMissing('openclaw-chat-send-image-attachment-30mb.patch');
   });
 

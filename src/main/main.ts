@@ -5,6 +5,7 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  type IpcMainInvokeEvent,
   Menu,
   nativeImage,
   nativeTheme,
@@ -12,6 +13,7 @@ import {
   powerMonitor,
   powerSaveBlocker,
   protocol,
+  safeStorage,
   session,
   shell,
   type WebContents,
@@ -58,6 +60,11 @@ import {
 } from '../shared/browserWebAccess/constants';
 import { ClipboardIpc } from '../shared/clipboard/constants';
 import {
+  CODING_PLAN_CREDENTIAL_REF,
+  CodingPlanAccountErrorCode,
+  CodingPlanAccountIpc,
+} from '../shared/codingPlanAccount/constants';
+import {
   type CoworkBrowserAnnotationMessageBatch,
   normalizeBrowserAnnotationBatches,
 } from '../shared/cowork/browserAnnotations';
@@ -72,6 +79,10 @@ import {
   type CoworkBtwSubmitResponse,
   normalizeCoworkBtwQuestion,
 } from '../shared/cowork/btw';
+import {
+  DEFAULT_CODING_OPTIMIZATION_ENABLED,
+  prependCodingOptimizationSystemPrompt,
+} from '../shared/cowork/codingOptimization';
 import {
   COWORK_MESSAGE_PAGE_SIZE,
   COWORK_SESSION_PAGE_SIZE,
@@ -138,6 +149,7 @@ import {
 import { PlatformRegistry } from '../shared/platform';
 import {
   ModelRuntimeProfile,
+  type ModelThinkingLevel,
   OpenClawProviderId,
   ProviderName,
 } from '../shared/providers';
@@ -159,6 +171,7 @@ import {
 } from '../shared/shareDeployment/constants';
 import type { ShellOpenFailureReason as ShellOpenFailureReasonType } from '../shared/shell/constants';
 import { type ShellGetBrowserAppsInput, ShellIpc, ShellOpenFailureReason } from '../shared/shell/constants';
+import { WebConsoleIpc } from '../shared/webConsole/constants';
 import { AgentManager } from './agentManager';
 import { APP_NAME, APP_USER_MODEL_ID, DB_FILENAME } from './appConstants';
 import { createLocalFileProtocolResponse } from './artifactLocalFileProtocol';
@@ -236,10 +249,12 @@ import {
   type ServerModelMetadataInput,
   ServerModelRunGateReason,
   setAuthTokensGetter,
+  setProviderApiKeyResolver,
   setServerBaseUrlGetter,
   setStoreGetter,
   updateServerModelMetadata,
 } from './libs/claudeSettings';
+import { CodingPlanAccountClient } from './libs/codingPlanAccountClient';
 import {
   clearCopilotTokenState,
   initCopilotTokenManager,
@@ -308,6 +323,7 @@ import {
 import { packageHtmlFile } from './libs/htmlShare/htmlSharePackager';
 import { getKeyfromAttribution, initializeKeyfromAttribution } from './libs/keyfromAttribution';
 import { exportLogsZip } from './libs/logExport';
+import { injectManagedProviderCredential } from './libs/managedProviderCredential';
 import { inferImageMimeTypeFromDataUrl, type PersistedGeneratedImageAsset, persistGeneratedImageAssets, type PersistGeneratedImageAssetsResult, persistGeneratedVideoAssets, type RemoteGeneratedMediaAsset } from './libs/mediaAssetPersistence';
 import {
   migrateAgentModelRefs,
@@ -363,6 +379,10 @@ import { startOpenClawTokenProxy, stopOpenClawTokenProxy } from './libs/openclaw
 import { migrateMainAgentWorkspace } from './libs/openclawWorkspaceMigration';
 import { ensurePythonRuntimeReady } from './libs/pythonRuntime';
 import { sanitizeUrlForLog, serializeForLog } from './libs/sanitizeForLog';
+import {
+  SECURE_CREDENTIAL_STORE_KEY,
+  SecureCredentialStore,
+} from './libs/secureCredentialStore';
 import { packageNodeServiceDeployment } from './libs/shareDeployment/nodeServiceDeploymentPackager';
 import {
   analyzeNodeServiceProjectDirectory,
@@ -431,6 +451,13 @@ import { StartupProfiler } from './startupProfiler';
 import { SubagentMessageStore } from './subagentMessageStore';
 import { SubagentRunStore } from './subagentRunStore';
 import { createTray, destroyTray, updateTrayMenu, updateTrayReminder } from './trayManager';
+import {
+  publishWebConsoleEvent,
+  setWebConsoleEventPublisher,
+} from './webConsole/eventPublisher';
+import { WebConsoleRpcRegistry } from './webConsole/rpcRegistry';
+import { WebConsoleServer } from './webConsole/webConsoleServer';
+import { isPathWithinWorkspaceRoots } from './webConsole/workspacePolicy';
 import {
   AppWindowStoreKey,
   MIN_APP_WINDOW_HEIGHT,
@@ -1670,7 +1697,11 @@ const savePngWithDialog = async (
 
 const configureUserDataPath = (): void => {
   const appDataPath = app.getPath('appData');
-  const preferredUserDataPath = path.join(appDataPath, APP_NAME);
+  // 自动化和并行开发实例可使用独立目录，正式启动仍使用品牌目录。
+  const overridePath = process.env.GLM_CODE_USER_DATA_DIR?.trim();
+  const preferredUserDataPath = overridePath
+    ? path.resolve(overridePath)
+    : path.join(appDataPath, APP_NAME);
   const currentUserDataPath = app.getPath('userData');
 
   if (currentUserDataPath !== preferredUserDataPath) {
@@ -1822,6 +1853,7 @@ process.on('exit', code => {
 });
 
 let store: SqliteStore | null = null;
+let secureCredentialStore: SecureCredentialStore | null = null;
 let coworkStore: CoworkStore | null = null;
 let openClawRuntimeAdapter: OpenClawRuntimeAdapter | null = null;
 let coworkEngineRouter: CoworkEngineRouter | null = null;
@@ -1843,6 +1875,62 @@ let preventSleepBlockerId: number | null = null;
 let appUpdateCoordinator: AppUpdateCoordinator | null = null;
 
 const AUTH_USER_STORE_KEY = 'auth_user';
+
+const getSecureCredentialStore = (): SecureCredentialStore => {
+  if (!secureCredentialStore) {
+    secureCredentialStore = new SecureCredentialStore(getStore(), {
+      isAvailable: () => {
+        if (!safeStorage.isEncryptionAvailable()) return false;
+        if (process.platform !== 'linux') return true;
+        return safeStorage.getSelectedStorageBackend() !== 'basic_text';
+      },
+      encrypt: value => safeStorage.encryptString(value),
+      decrypt: value => safeStorage.decryptString(value),
+    });
+  }
+  return secureCredentialStore;
+};
+
+const migrateLegacyCodingPlanCredential = (): void => {
+  const appConfig = getStore().get<Record<string, unknown>>('app_config');
+  if (!appConfig) return;
+  const providers = appConfig.providers;
+  if (!providers || typeof providers !== 'object' || Array.isArray(providers)) return;
+  const provider = (providers as Record<string, unknown>)[ProviderName.ZhimaCoding];
+  if (!provider || typeof provider !== 'object' || Array.isArray(provider)) return;
+  const providerConfig = provider as Record<string, unknown>;
+  const legacyApiKey = typeof providerConfig.apiKey === 'string'
+    ? providerConfig.apiKey.trim()
+    : '';
+  if (!legacyApiKey) return;
+
+  const credentials = getSecureCredentialStore();
+  if (!credentials.isAvailable()) {
+    console.warn('[CodingPlan] OS credential encryption unavailable; legacy API key migration deferred.');
+    return;
+  }
+  credentials.set(CODING_PLAN_CREDENTIAL_REF, legacyApiKey);
+  const nextProviderConfig = {
+    ...providerConfig,
+    apiKey: '',
+    credentialRef: CODING_PLAN_CREDENTIAL_REF,
+  };
+  const api = appConfig.api && typeof appConfig.api === 'object' && !Array.isArray(appConfig.api)
+    ? appConfig.api as Record<string, unknown>
+    : {};
+  getStore().set('app_config', {
+    ...appConfig,
+    api: {
+      ...api,
+      ...(api.key === legacyApiKey ? { key: '' } : {}),
+    },
+    providers: {
+      ...(providers as Record<string, unknown>),
+      [ProviderName.ZhimaCoding]: nextProviderConfig,
+    },
+  });
+  console.info('[CodingPlan] Migrated the Coding Plan API key to OS-backed secure storage.');
+};
 
 function setPreventSleepBlockerEnabled(enabled: boolean): void {
   if (enabled) {
@@ -1911,6 +1999,7 @@ const getAppUpdateCoordinator = (): AppUpdateCoordinator => {
 };
 
 const forwardOpenClawStatus = (status: OpenClawEngineStatus): void => {
+  publishWebConsoleEvent(OpenClawEngineIpc.OnProgress, status);
   const windows = BrowserWindow.getAllWindows();
   windows.forEach(win => {
     if (win.isDestroyed()) return;
@@ -2745,6 +2834,11 @@ const bindCoworkRuntimeForwarder = (): void => {
 
   runtime.on('message', (sessionId: string, message: unknown, beforeMessageId?: string) => {
     const safeMessage = sanitizeCoworkMessageForIpc(message);
+    publishWebConsoleEvent('cowork:stream:message', {
+      sessionId,
+      message: safeMessage,
+      beforeMessageId,
+    });
     const windows = BrowserWindow.getAllWindows();
     const messageType = typeof message === 'object' && message && 'type' in message
       ? (message as { type?: unknown }).type
@@ -2767,6 +2861,12 @@ const bindCoworkRuntimeForwarder = (): void => {
     'messageUpdate',
     (sessionId: string, messageId: string, content: string, metadata?: Record<string, unknown>) => {
       const safeContent = truncateIpcString(content, IPC_UPDATE_CONTENT_MAX_CHARS);
+      publishWebConsoleEvent('cowork:stream:messageUpdate', {
+        sessionId,
+        messageId,
+        content: safeContent,
+        metadata,
+      });
       const windows = BrowserWindow.getAllWindows();
       windows.forEach(win => {
         if (win.isDestroyed()) return;
@@ -2785,6 +2885,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   );
 
   runtime.on('sessionStatus', (sessionId: string, status: string) => {
+    publishWebConsoleEvent('cowork:stream:sessionStatus', { sessionId, status });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2808,6 +2909,7 @@ const bindCoworkRuntimeForwarder = (): void => {
         ? { error: truncateIpcString(result.error, IPC_STRING_MAX_CHARS) }
         : {}),
     };
+    publishWebConsoleEvent('cowork:stream:btwResult', { sessionId, result: safeResult });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2823,6 +2925,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   });
 
   runtime.on('contextUsageUpdate', (sessionId: string, usage: unknown) => {
+    publishWebConsoleEvent('cowork:stream:contextUsage', { sessionId, usage });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2835,6 +2938,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   });
 
   runtime.on('goalUpdate', (sessionId: string, goal: unknown) => {
+    publishWebConsoleEvent('cowork:stream:goal', { sessionId, goal });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2847,6 +2951,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   });
 
   runtime.on('contextMaintenance', (sessionId: string, active: boolean) => {
+    publishWebConsoleEvent('cowork:stream:contextMaintenance', { sessionId, active });
     const windows = BrowserWindow.getAllWindows();
     console.log(
       `[CoworkRuntime] forwarding context maintenance ${active ? 'start' : 'end'} for session ${sessionId} to ${windows.length} windows.`,
@@ -2866,6 +2971,7 @@ const bindCoworkRuntimeForwarder = (): void => {
       return;
     }
     const safeRequest = sanitizePermissionRequestForIpc(request);
+    publishWebConsoleEvent('cowork:stream:permission', { sessionId, request: safeRequest });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2885,6 +2991,7 @@ const bindCoworkRuntimeForwarder = (): void => {
   });
 
   runtime.on('permissionResolved', (_sessionId: string, requestId: string) => {
+    publishWebConsoleEvent('cowork:stream:permissionDismiss', { requestId });
     getDesktopNotificationManager().handlePermissionResolved(requestId);
   });
 
@@ -2897,6 +3004,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     skinRuntimeController?.handleRuntimeComplete(sessionId);
     mediaReferencesBySession.delete(sessionId);
     getDesktopNotificationManager().handleComplete(sessionId);
+    publishWebConsoleEvent('cowork:stream:complete', { sessionId, claudeSessionId });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -2910,6 +3018,7 @@ const bindCoworkRuntimeForwarder = (): void => {
           if (win.isDestroyed()) return;
           win.webContents.send(AuthIpcChannel.QuotaChanged);
         });
+        publishWebConsoleEvent(AuthIpcChannel.QuotaChanged, undefined);
       }
     } catch {
       // ignore
@@ -2926,6 +3035,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     } catch {
       /* ignore */
     }
+    publishWebConsoleEvent('cowork:stream:error', { sessionId, error });
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
@@ -3408,9 +3518,13 @@ const getNotificationIconPath = (): string | null => {
 let mainWindow: BrowserWindow | null = null;
 let dataMigrationRestoreWindow: BrowserWindow | null = null;
 let desktopNotificationManager: DesktopNotificationManager | null = null;
+let webConsoleServer: WebConsoleServer | null = null;
+const webConsoleRpcRegistry = new WebConsoleRpcRegistry();
 let ensureMainWindowForReason: ((reason: string) => BrowserWindow | null) | null = null;
 let isOpenSessionFromNotificationReady = false;
 let pendingOpenSessionFromNotificationId: string | null = null;
+
+setWebConsoleEventPublisher((topic, payload) => webConsoleServer?.publish(topic, payload));
 
 const flushOpenSessionFromNotification = (): void => {
   if (!pendingOpenSessionFromNotificationId || !isOpenSessionFromNotificationReady) return;
@@ -3420,6 +3534,7 @@ const flushOpenSessionFromNotification = (): void => {
   const sessionId = pendingOpenSessionFromNotificationId;
   pendingOpenSessionFromNotificationId = null;
   console.log(`[DesktopNotification] opening session ${sessionId} from notification`);
+  publishWebConsoleEvent(CoworkIpcChannel.OpenSessionFromNotification, { sessionId });
   mainWindow.webContents.send(CoworkIpcChannel.OpenSessionFromNotification, { sessionId });
 };
 
@@ -3790,6 +3905,7 @@ const clearMediaStatusPollCountsForSession = (sessionId: string): void => {
 };
 
 const emitMediaStatusPollUpdate = (update: MediaStatusPollUpdate): void => {
+  publishWebConsoleEvent(CoworkIpcChannel.MediaStatusPollUpdate, update);
   BrowserWindow.getAllWindows().forEach(win => {
     if (win.isDestroyed()) return;
     win.webContents.send(CoworkIpcChannel.MediaStatusPollUpdate, update);
@@ -3885,18 +4001,215 @@ const scheduleReload = (reason: string, webContents?: WebContents) => {
 // 确保应用程序只有一个实例
 const gotTheLock = app.requestSingleInstanceLock();
 
+const APP_PROTOCOL_SCHEMES = ['glmcode', 'lobsterai'] as const;
+const findAppDeepLink = (args: string[]): string | undefined => (
+  args.find(arg => APP_PROTOCOL_SCHEMES.some(scheme => arg.startsWith(`${scheme}://`)))
+);
+
 if (!gotTheLock) {
   app.quit();
 } else {
-  // Register custom protocol for OAuth callback
-  if (!app.isPackaged) {
-    // In dev mode, setAsDefaultProtocolClient needs the electron exe path
-    // and the app entry point as extra args so the OS can relaunch correctly
-    app.setAsDefaultProtocolClient('lobsterai', process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
-  } else {
-    app.setAsDefaultProtocolClient('lobsterai');
+  // 捕获现有 IPC handler，Web RPC 通过白名单复用同一份业务实现。
+  const originalIpcMainHandle = ipcMain.handle.bind(ipcMain);
+  ipcMain.handle = ((channel, listener) => {
+    webConsoleRpcRegistry.capture(channel, listener as unknown as (
+      event: IpcMainInvokeEvent,
+      ...args: unknown[]
+    ) => unknown);
+    return originalIpcMainHandle(channel, listener);
+  }) as typeof ipcMain.handle;
+
+  /** 创建带真实 sender 的内部调用事件，兼容少量依赖窗口上下文的 handler。 */
+  const createWebConsoleInvokeEvent = (): IpcMainInvokeEvent => {
+    const sender = mainWindow?.webContents
+      ?? BrowserWindow.getAllWindows().find(window => !window.isDestroyed())?.webContents;
+    if (!sender) {
+      throw new Error('桌面窗口尚未就绪');
+    }
+    return { sender } as IpcMainInvokeEvent;
+  };
+
+  const webWorkspaceUploadsRoot = path.join(app.getPath('userData'), 'web-workspaces');
+
+  /** 返回 Web 可见的工作区根目录，不把任意绝对路径暴露给浏览器。 */
+  const getWebWorkspaceRoots = (): string[] => {
+    const roots = new Set<string>([path.resolve(webWorkspaceUploadsRoot)]);
+    const configured = getCoworkStore().getConfig().workingDirectory?.trim();
+    if (configured) roots.add(path.resolve(configured));
+    for (const recent of getCoworkStore().listRecentSessionCwds(0)) {
+      if (recent?.trim()) roots.add(path.resolve(recent));
+    }
+    return [...roots].filter(root => fs.existsSync(root) && fs.statSync(root).isDirectory());
+  };
+
+  /** 校验 Web 提交的路径必须位于已经授权的工作区根目录内。 */
+  const assertWebWorkspacePath = (candidate: unknown): void => {
+    if (typeof candidate !== 'string' || !candidate.trim()) return;
+    const allowed = isPathWithinWorkspaceRoots(candidate, getWebWorkspaceRoots());
+    if (!allowed) {
+      throw new Error('WEB_WORKSPACE_PATH_REJECTED:路径不在已授权工作区内');
+    }
+  };
+
+  /** 在进入现有 IPC handler 前执行 Web 专属的目录边界校验。 */
+  const invokeWebConsoleRpc = async (method: string, params: unknown[]): Promise<unknown> => {
+    const options = params[0] && typeof params[0] === 'object'
+      ? params[0] as Record<string, unknown>
+      : null;
+    if (method === 'api.fetch') {
+      const requestUrl = typeof options?.url === 'string' ? new URL(options.url) : null;
+      const isGlmCodingHost = requestUrl?.hostname === 'glmcoding.cn'
+        || requestUrl?.hostname.endsWith('.glmcoding.cn') === true;
+      const isDevelopmentLoopback = process.env.NODE_ENV === 'development'
+        && (requestUrl?.hostname === '127.0.0.1' || requestUrl?.hostname === 'localhost');
+      if (!requestUrl || (requestUrl.protocol !== 'https:' && !isDevelopmentLoopback) || (!isGlmCodingHost && !isDevelopmentLoopback)) {
+        throw new Error('WEB_API_URL_REJECTED:Web API 请求地址不在允许范围内');
+      }
+    }
+    if (method === 'cowork.startSession') assertWebWorkspacePath(options?.cwd);
+    if (method === 'cowork.setConfig') assertWebWorkspacePath(options?.workingDirectory);
+    if (method === 'agents.create') assertWebWorkspacePath(options?.workingDirectory);
+    if (method === 'agents.update') {
+      const updates = params[1] && typeof params[1] === 'object'
+        ? params[1] as Record<string, unknown>
+        : null;
+      assertWebWorkspacePath(updates?.workingDirectory);
+    }
+    if (
+      method === 'dialog.readFileAsDataUrl'
+      || method === 'dialog.statFile'
+      || method === 'dialog.readTextFile'
+      || method === 'artifact.createPreviewSession'
+      || method === 'artifact.createOfficePreviewSession'
+      || method === 'shell.openPath'
+      || method === 'shell.showItemInFolder'
+    ) {
+      assertWebWorkspacePath(params[0]);
+    }
+    if (method === 'dialog.saveInlineFile') assertWebWorkspacePath(options?.cwd);
+    return webConsoleRpcRegistry.invoke(method, params, createWebConsoleInvokeEvent());
+  };
+
+  /** 按需创建本机 Web 服务，工作区根目录复用现有 Cowork 配置。 */
+  const ensureWebConsoleServer = async (): Promise<WebConsoleServer> => {
+    if (!webConsoleServer) {
+      webConsoleServer = new WebConsoleServer({
+        staticRoot: path.join(__dirname, '..', 'dist-web'),
+        uploadsRoot: webWorkspaceUploadsRoot,
+        invokeRpc: invokeWebConsoleRpc,
+        getWorkspaceRoots: getWebWorkspaceRoots,
+      });
+    }
+    await webConsoleServer.start();
+    return webConsoleServer;
+  };
+
+  /** 启动服务、生成一次性配对链接并交给系统浏览器。 */
+  const openWebConsole = async (): Promise<{ success: boolean; url?: string; error?: string }> => {
+    try {
+      const server = await ensureWebConsoleServer();
+      const url = server.createPairingUrl();
+      await shell.openExternal(url);
+      return { success: true, url };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[WebConsole] 打开失败：${message}`);
+      return { success: false, error: message };
+    }
+  };
+
+  ipcMain.handle(WebConsoleIpc.GetStatus, () => webConsoleServer?.getStatus() ?? {
+    running: false,
+    clients: 0,
+  });
+  ipcMain.handle(WebConsoleIpc.Open, () => openWebConsole());
+  ipcMain.handle(WebConsoleIpc.Stop, async () => {
+    await webConsoleServer?.stop();
+    webConsoleServer = null;
+    return { success: true };
+  });
+
+  const codingPlanAccountClient = new CodingPlanAccountClient({
+    fetch: (url, init) => session.defaultSession.fetch(url, init),
+    getBaseUrl: getServerApiBaseUrl,
+  });
+  const isTrustedCodingPlanSender = (event: IpcMainInvokeEvent): boolean => (
+    !!mainWindow
+    && !mainWindow.isDestroyed()
+    && event.sender === mainWindow.webContents
+  );
+  ipcMain.handle(
+    CodingPlanAccountIpc.Login,
+    (event, email: unknown, password: unknown) => {
+      if (!isTrustedCodingPlanSender(event)) {
+        return { success: false, errorCode: CodingPlanAccountErrorCode.InvalidRequest };
+      }
+      return codingPlanAccountClient.login(
+        typeof email === 'string' ? email : '',
+        typeof password === 'string' ? password : '',
+      );
+    },
+  );
+  ipcMain.handle(CodingPlanAccountIpc.GetAccount, event => (
+    isTrustedCodingPlanSender(event)
+      ? codingPlanAccountClient.getAccount()
+      : { success: false, errorCode: CodingPlanAccountErrorCode.InvalidRequest }
+  ));
+  ipcMain.handle(CodingPlanAccountIpc.GetOverview, event => (
+    isTrustedCodingPlanSender(event)
+      ? codingPlanAccountClient.getOverview()
+      : { success: false, errorCode: CodingPlanAccountErrorCode.InvalidRequest }
+  ));
+  ipcMain.handle(
+    CodingPlanAccountIpc.Configure,
+    async (event, tokenId: unknown) => {
+      if (!isTrustedCodingPlanSender(event) || !Number.isSafeInteger(tokenId) || Number(tokenId) <= 0) {
+        return { success: false, errorCode: CodingPlanAccountErrorCode.InvalidRequest };
+      }
+      const prepared = await codingPlanAccountClient.prepareConfiguration(Number(tokenId));
+      if (!prepared.success) return prepared;
+      try {
+        const credentials = getSecureCredentialStore();
+        if (!credentials.isAvailable()) {
+          return {
+            success: false,
+            errorCode: CodingPlanAccountErrorCode.SecureStorageUnavailable,
+          };
+        }
+        credentials.set(CODING_PLAN_CREDENTIAL_REF, prepared.data.apiKey);
+        return {
+          success: true,
+          data: {
+            credentialRef: CODING_PLAN_CREDENTIAL_REF,
+            models: prepared.data.models,
+            tokenId: prepared.data.tokenId,
+          },
+        };
+      } catch (error) {
+        console.error('[CodingPlan] Failed to store the plan credential securely:', error);
+        return {
+          success: false,
+          errorCode: CodingPlanAccountErrorCode.SecureStorageUnavailable,
+        };
+      }
+    },
+  );
+  ipcMain.handle(CodingPlanAccountIpc.Logout, event => (
+    isTrustedCodingPlanSender(event)
+      ? codingPlanAccountClient.logout()
+      : { success: false, errorCode: CodingPlanAccountErrorCode.InvalidRequest }
+  ));
+
+  // Register the current protocol plus the legacy scheme for existing OAuth
+  // callbacks and previously installed links.
+  for (const scheme of APP_PROTOCOL_SCHEMES) {
+    if (!app.isPackaged) {
+      app.setAsDefaultProtocolClient(scheme, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    } else {
+      app.setAsDefaultProtocolClient(scheme);
+    }
   }
 
   const authCallbackRouter = new AuthCallbackRouter({
@@ -3910,7 +4223,7 @@ if (!gotTheLock) {
   });
 
   /**
-   * Parse a lobsterai:// deep link and send (or buffer) the auth code.
+   * Parse a 智码 GLM Code deep link and send (or buffer) the auth code.
    */
   const handleDeepLink = (url: string) => {
     authCallbackRouter.handleDeepLink(url);
@@ -3966,7 +4279,7 @@ if (!gotTheLock) {
     }
 
     // Check for deep link in command line args (Windows/Linux)
-    const deepLink = commandLine.find(arg => arg.startsWith('lobsterai://'));
+    const deepLink = findAppDeepLink(commandLine);
     if (deepLink) {
       handleDeepLink(deepLink);
     }
@@ -3976,10 +4289,16 @@ if (!gotTheLock) {
 
   // IPC 处理程序
   ipcMain.handle('store:get', (_event, key) => {
+    if (key === SECURE_CREDENTIAL_STORE_KEY) {
+      throw new Error('This store key is not available to the renderer.');
+    }
     return getStore().get(key);
   });
 
   ipcMain.handle('store:set', async (_event, key, value) => {
+    if (key === SECURE_CREDENTIAL_STORE_KEY) {
+      throw new Error('This store key is not writable from the renderer.');
+    }
     const previousAppConfig = key === 'app_config'
       ? getStore().get<AppConfigSettings>('app_config')
       : undefined;
@@ -4053,6 +4372,9 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle('store:remove', (_event, key) => {
+    if (key === SECURE_CREDENTIAL_STORE_KEY) {
+      throw new Error('This store key is not removable from the renderer.');
+    }
     getStore().delete(key);
   });
 
@@ -4121,7 +4443,7 @@ if (!gotTheLock) {
             ? [
                 {
                   archiveName: 'install-timing.log',
-                  filePath: path.join(app.getPath('appData'), 'LobsterAI', 'install-timing.log'),
+                  filePath: path.join(app.getPath('appData'), 'GLMCode', 'install-timing.log'),
                 },
               ]
             : []),
@@ -4380,12 +4702,14 @@ if (!gotTheLock) {
   };
 
   const emitAuthLifecycleEvent = (event: AuthLifecycleEvent): void => {
+    publishWebConsoleEvent(AuthIpcChannel.LifecycleEvent, event);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(AuthIpcChannel.LifecycleEvent, event);
     }
   };
 
   const emitAuthSessionChanged = (event: AuthSessionChangedEvent): void => {
+    publishWebConsoleEvent(AuthIpcChannel.SessionChanged, event);
     for (const window of BrowserWindow.getAllWindows()) {
       if (!window.isDestroyed()) {
         window.webContents.send(AuthIpcChannel.SessionChanged, event);
@@ -5427,6 +5751,7 @@ if (!gotTheLock) {
           BrowserWindow.getAllWindows().forEach(win => {
             if (!win.isDestroyed()) win.webContents.send(AuthIpcChannel.QuotaChanged);
           });
+          publishWebConsoleEvent(AuthIpcChannel.QuotaChanged, undefined);
         }
       } catch {
         // Network error, retry on next poll
@@ -6834,7 +7159,7 @@ if (!gotTheLock) {
       console.error('[DataMigration] backup failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to back up LobsterAI data',
+        error: error instanceof Error ? error.message : 'Failed to back up 智码 GLM Code data',
       };
     }
   });
@@ -6893,11 +7218,11 @@ if (!gotTheLock) {
         success,
         scheduledRestart: rendererReleased,
         rollbackPath: restoreResult?.rollbackPath,
-        error: success ? undefined : restoreResult?.error || 'Failed to import LobsterAI data backup',
+        error: success ? undefined : restoreResult?.error || 'Failed to import 智码 GLM Code data backup',
       };
     } catch (error) {
       isCleanupInProgress = false;
-      const message = error instanceof Error ? error.message : 'Failed to import LobsterAI data backup';
+      const message = error instanceof Error ? error.message : 'Failed to import 智码 GLM Code data backup';
       console.error('[DataMigration] restore scheduling failed:', error);
       if (rendererReleased) {
         dialog.showErrorBox(t('dataMigrationRestoreDialogTitle'), message);
@@ -7124,6 +7449,8 @@ if (!gotTheLock) {
         imageAttachments?: CoworkImageAttachmentMain[];
         agentId?: string;
         modelOverride?: string;
+        thinkingLevel?: ModelThinkingLevel;
+        codingOptimized?: boolean;
         mediaSelection?: {
           mode: 'auto' | 'image' | 'video' | 'none';
           modelId?: string;
@@ -7164,6 +7491,13 @@ if (!gotTheLock) {
         const persistedSystemPrompt = containsPlanModePrompt(systemPrompt)
           ? mergeCoworkSystemPrompt(config.systemPrompt)
           : systemPrompt;
+        const codingOptimized = options.codingOptimized
+          ?? config.codingOptimizationEnabled
+          ?? DEFAULT_CODING_OPTIMIZATION_ENABLED;
+        const turnSystemPrompt = prependCodingOptimizationSystemPrompt(
+          systemPrompt,
+          codingOptimized,
+        );
         const selectedTaskDirectory = resolveSessionWorkingDirectory({
           cwd: options.cwd,
           agentId: options.agentId,
@@ -7210,6 +7544,7 @@ if (!gotTheLock) {
           runtimeSkillIds || [],
           options.agentId || 'main',
           options.modelOverride || '',
+          codingOptimized,
         );
 
         if (options.modelOverride) {
@@ -7277,7 +7612,7 @@ if (!gotTheLock) {
         runtime
           .startSession(session.id, prompt, {
             skipInitialUserMessage: true,
-            systemPrompt,
+            systemPrompt: turnSystemPrompt,
             skillIds: runtimeSkillIds,
             messageSkillIds: options.activeSkillIds,
             kitIds: options.kitIds,
@@ -7287,6 +7622,7 @@ if (!gotTheLock) {
             confirmationMode: 'modal',
             imageAttachments: options.imageAttachments,
             agentId: options.agentId,
+            thinkingLevel: options.thinkingLevel,
             mediaSelection: normalizedMediaSelection,
             workflowKind,
             mediaReferences: options.mediaReferences,
@@ -7353,6 +7689,7 @@ if (!gotTheLock) {
         mediaReferences?: MediaAttachmentRefMain[];
         selectedTextSnippets?: CoworkSelectedTextSnippet[];
         browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
+        codingOptimized?: boolean;
       },
     ) => {
       try {
@@ -7383,6 +7720,25 @@ if (!gotTheLock) {
           options.systemPrompt
             ?? (hasLegacyPersistedPlanMode ? config.systemPrompt : existingSession?.systemPrompt),
         );
+        const codingOptimized = options.codingOptimized
+          ?? existingSession?.codingOptimized
+          ?? config.codingOptimizationEnabled
+          ?? DEFAULT_CODING_OPTIMIZATION_ENABLED;
+        const turnSystemPrompt = prependCodingOptimizationSystemPrompt(
+          continuationSystemPrompt,
+          codingOptimized,
+        );
+        if (
+          existingSession
+          && options.codingOptimized !== undefined
+          && existingSession.codingOptimized !== codingOptimized
+        ) {
+          coworkStoreInstance.updateSession(
+            options.sessionId,
+            { codingOptimized },
+            { touchUpdatedAt: false },
+          );
+        }
         if (hasLegacyPersistedPlanMode) {
           coworkStoreInstance.updateSession(options.sessionId, {
             systemPrompt: mergeCoworkSystemPrompt(config.systemPrompt) ?? '',
@@ -7445,7 +7801,7 @@ if (!gotTheLock) {
         );
         runtime
           .continueSession(options.sessionId, options.prompt, {
-            systemPrompt: continuationSystemPrompt,
+            systemPrompt: turnSystemPrompt,
             skillIds: options.runtimeSkillIds ?? options.activeSkillIds,
             messageSkillIds: options.activeSkillIds,
             kitIds: options.kitIds,
@@ -7749,6 +8105,35 @@ if (!gotTheLock) {
       };
     }
   });
+
+  ipcMain.handle(
+    CoworkIpcChannel.SetCodingOptimization,
+    async (_event, options: { sessionId?: string; enabled?: boolean }) => {
+      try {
+        const sessionId = typeof options?.sessionId === 'string' ? options.sessionId.trim() : '';
+        if (!sessionId || typeof options?.enabled !== 'boolean') {
+          return { success: false, error: 'Session id and coding optimization state are required.' };
+        }
+        const store = getCoworkStore();
+        if (!store.getSession(sessionId, 0)) {
+          return { success: false, error: `Session ${sessionId} not found.` };
+        }
+        store.updateSession(
+          sessionId,
+          { codingOptimized: options.enabled },
+          { touchUpdatedAt: false },
+        );
+        return { success: true, codingOptimized: options.enabled };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error
+            ? error.message
+            : 'Failed to update coding optimization.',
+        };
+      }
+    },
+  );
 
   ipcMain.handle(CoworkIpcChannel.MarkSessionViewed, async (_event, sessionId: string) => {
     try {
@@ -8787,6 +9172,7 @@ if (!gotTheLock) {
     workingDirectory?: string;
     executionMode?: 'auto' | 'local' | 'sandbox';
     agentEngine?: CoworkAgentEngine;
+    codingOptimizationEnabled?: boolean;
     memoryEnabled?: boolean;
     memoryImplicitUpdateEnabled?: boolean;
     memoryLlmJudgeEnabled?: boolean;
@@ -8810,6 +9196,10 @@ if (!gotTheLock) {
       const normalizedAgentEngine = config.agentEngine === 'openclaw'
         ? 'openclaw'
         : undefined;
+      const normalizedCodingOptimizationEnabled =
+        typeof config.codingOptimizationEnabled === 'boolean'
+          ? config.codingOptimizationEnabled
+          : undefined;
       const normalizedMemoryEnabled = typeof config.memoryEnabled === 'boolean'
         ? config.memoryEnabled
         : undefined;
@@ -8842,6 +9232,7 @@ if (!gotTheLock) {
         ...config,
         executionMode: normalizedExecutionMode,
         agentEngine: normalizedAgentEngine,
+        codingOptimizationEnabled: normalizedCodingOptimizationEnabled,
         memoryEnabled: normalizedMemoryEnabled,
         memoryImplicitUpdateEnabled: normalizedMemoryImplicitUpdateEnabled,
         memoryLlmJudgeEnabled: normalizedMemoryLlmJudgeEnabled,
@@ -10888,6 +11279,25 @@ if (!gotTheLock) {
 
   // Helper: detect if a URL belongs to GitHub Copilot and apply token refresh on 401.
   const isCopilotUrl = (url: string) => url.includes('githubcopilot.com');
+  const injectProviderCredential = (
+    url: string,
+    headers: Record<string, string>,
+    credentialRef?: string,
+  ): Record<string, string> => {
+    const appConfig = getStore().get<AppConfigSettings>('app_config');
+    const providerValue = appConfig?.providers?.[ProviderName.ZhimaCoding];
+    const providerConfig = providerValue && typeof providerValue === 'object' && !Array.isArray(providerValue)
+      ? providerValue as Record<string, unknown>
+      : null;
+    return injectManagedProviderCredential({
+      url,
+      headers,
+      credentialRef,
+      credentialIsActive: providerConfig?.credentialRef === credentialRef
+        && providerConfig.enabled === true,
+      readCredential: reference => getSecureCredentialStore().get(reference),
+    });
+  };
   const retryCopilotWithRefreshedToken = async (opts: {
     url: string;
     method: string;
@@ -10915,6 +11325,7 @@ if (!gotTheLock) {
         method: string;
         headers: Record<string, string>;
         body?: string;
+        credentialRef?: string;
       },
     ) => {
       const sanitizedUrl = sanitizeUrlForLog(options.url);
@@ -10950,7 +11361,12 @@ if (!gotTheLock) {
       };
 
       try {
-        let result = await doFetch(options.headers);
+        const requestHeaders = injectProviderCredential(
+          options.url,
+          options.headers,
+          options.credentialRef,
+        );
+        let result = await doFetch(requestHeaders);
         console.log(
           `[api:fetch] ${options.method} ${sanitizedUrl} -> ${result.status} ${result.statusText}`,
           typeof result.data === 'object' ? JSON.stringify(result.data) : result.data,
@@ -11000,6 +11416,7 @@ if (!gotTheLock) {
         headers: Record<string, string>;
         body?: string;
         requestId: string;
+        credentialRef?: string;
       },
     ) => {
       const controller = new AbortController();
@@ -11008,9 +11425,14 @@ if (!gotTheLock) {
       activeStreamControllers.set(options.requestId, controller);
 
       try {
+        const requestHeaders = injectProviderCredential(
+          options.url,
+          options.headers,
+          options.credentialRef,
+        );
         let response = await session.defaultSession.fetch(options.url, {
           method: options.method,
-          headers: options.headers,
+          headers: requestHeaders,
           body: options.body,
           signal: controller.signal,
         });
@@ -11458,7 +11880,11 @@ if (!gotTheLock) {
       const initLang = getStore().get<{ language?: string }>('app_config')?.language;
       setLanguage(initLang === 'en' ? 'en' : 'zh');
       // 窗口就绪后创建系统托盘
-      createTray(() => mainWindow);
+      createTray(() => mainWindow, {
+        openWebConsole: () => {
+          void openWebConsole();
+        },
+      });
 
       // Start cron polling after the window is ready.
       (async () => {
@@ -11669,6 +12095,10 @@ if (!gotTheLock) {
   const runAppCleanup = async (reason = 'quit'): Promise<void> => {
     console.log(`[Main] App cleanup started for ${reason}`);
     destroyTray();
+    await webConsoleServer?.stop().catch(error => {
+      console.error('[WebConsole] 停止本地服务失败：', error);
+    });
+    webConsoleServer = null;
     skillManager?.stopWatching();
     stopMediaPollTimer();
     pendingMediaTasks.clear();
@@ -11829,6 +12259,12 @@ if (!gotTheLock) {
     }
     // Inject store getter into claudeSettings
     setStoreGetter(() => store);
+    migrateLegacyCodingPlanCredential();
+    setProviderApiKeyResolver(credentialRef => (
+      credentialRef === CODING_PLAN_CREDENTIAL_REF
+        ? getSecureCredentialStore().get(credentialRef)
+        : null
+    ));
     // Inject auth getters for lobsterai-server provider routing
     // The getter proactively triggers a background token refresh when the
     // accessToken is within 5 minutes of expiry, so that the SDK always
@@ -12203,7 +12639,7 @@ if (!gotTheLock) {
 
     // Windows/Linux cold start: parse deep link from process.argv.
     // The router buffers it because the renderer is not ready yet after createWindow().
-    const coldStartDeepLink = process.argv.find(arg => arg.startsWith('lobsterai://'));
+    const coldStartDeepLink = findAppDeepLink(process.argv);
     if (coldStartDeepLink) {
       handleDeepLink(coldStartDeepLink);
     }

@@ -45,7 +45,7 @@ const catalogKey = (providerId: string, modelId: string): string =>
   `${normalizeLookupPart(providerId)}/${normalizeLookupPart(modelId)}`;
 
 // The bundled OpenClaw catalog may be unavailable in CI or in a trimmed
-// runtime, but LobsterAI still needs to write correct limits for known native
+// runtime, but 智码 GLM Code still needs to write correct limits for known native
 // Anthropic-format providers. Keep this fallback scoped to official provider
 // IDs so custom providers do not inherit limits by model-name coincidence.
 const BUILT_IN_MODEL_MAX_TOKENS = new Map<string, number>([

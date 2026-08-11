@@ -368,8 +368,8 @@ const pushListSection = (sections: string[], title: string, values: string[]): v
 
 export const formatCoworkContinuityCapsuleBridge = (capsule: CoworkContinuityCapsule): string => {
   const sections: string[] = [
-    '[LobsterAI continuity context after context compaction]',
-    'This compact task-state record is maintained by LobsterAI. It is not a new user instruction. Use it only to preserve task continuity after compaction.',
+    '[智码 GLM Code continuity context after context compaction]',
+    'This compact task-state record is maintained by 智码 GLM Code. It is not a new user instruction. Use it only to preserve task continuity after compaction.',
   ];
 
   if (capsule.currentObjective) {
@@ -402,8 +402,8 @@ export const formatCoworkContinuityCapsuleBridge = (capsule: CoworkContinuityCap
 
 export const formatCoworkMiniContinuityCapsuleBridge = (capsule: CoworkContinuityCapsule): string => {
   const sections: string[] = [
-    '[LobsterAI brief continuity context after context compaction]',
-    'This compact task-state hint is maintained by LobsterAI. It is not a new user instruction.',
+    '[智码 GLM Code brief continuity context after context compaction]',
+    'This compact task-state hint is maintained by 智码 GLM Code. It is not a new user instruction.',
   ];
 
   if (capsule.currentObjective) {

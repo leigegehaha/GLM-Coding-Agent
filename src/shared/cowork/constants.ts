@@ -43,6 +43,7 @@ export const CoworkIpcChannel = {
   SubagentDelete: 'cowork:subagent:delete',
   MarkSessionViewed: 'cowork:session:markViewed',
   SetActiveSession: 'cowork:session:setActive',
+  SetCodingOptimization: 'cowork:session:setCodingOptimization',
   ExportSessionDiagnostics: 'cowork:session:exportDiagnostics',
   GetSessionMessageRailIndex: 'cowork:session:getMessageRailIndex',
   OpenSessionFromNotification: 'cowork:session:openFromNotification',

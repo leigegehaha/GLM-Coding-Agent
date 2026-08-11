@@ -9,7 +9,7 @@ import {
 describe('appendLoginParams', () => {
   test('appends params inside hash route query for portal URLs', () => {
     const result = appendLoginParams(
-      'https://lobsterai.youdao.com/portal#/login',
+      'https://glmcoding.cn/portal#/login',
       {
         source: 'electron',
         redirect_uri: 'http://127.0.0.1:43210/auth/callback',
@@ -18,18 +18,18 @@ describe('appendLoginParams', () => {
     );
 
     expect(result).toBe(
-      'https://lobsterai.youdao.com/portal#/login?source=electron&redirect_uri=http%3A%2F%2F127.0.0.1%3A43210%2Fauth%2Fcallback&state=test-state',
+      'https://glmcoding.cn/portal#/login?source=electron&redirect_uri=http%3A%2F%2F127.0.0.1%3A43210%2Fauth%2Fcallback&state=test-state',
     );
   });
 
   test('preserves existing hash route params', () => {
     const result = appendLoginParams(
-      'https://lobsterai.youdao.com/portal#/login?invitationCode=ABC123',
+      'https://glmcoding.cn/portal#/login?invitationCode=ABC123',
       { source: 'electron' },
     );
 
     expect(result).toBe(
-      'https://lobsterai.youdao.com/portal#/login?invitationCode=ABC123&source=electron',
+      'https://glmcoding.cn/portal#/login?invitationCode=ABC123&source=electron',
     );
   });
 
@@ -46,11 +46,11 @@ describe('appendCallbackReturnTo', () => {
   test('adds portal return URL to the local callback redirect URI', () => {
     const result = appendCallbackReturnTo(
       'http://127.0.0.1:43210/auth/callback',
-      'https://lobsterai.youdao.com/portal#/login?source=electron&electronLogin=success',
+      'https://glmcoding.cn/portal#/login?source=electron&electronLogin=success',
     );
 
     expect(result).toBe(
-      'http://127.0.0.1:43210/auth/callback?return_to=https%3A%2F%2Flobsterai.youdao.com%2Fportal%23%2Flogin%3Fsource%3Delectron%26electronLogin%3Dsuccess',
+      'http://127.0.0.1:43210/auth/callback?return_to=https%3A%2F%2Fglmcoding.cn%2Fportal%23%2Flogin%3Fsource%3Delectron%26electronLogin%3Dsuccess',
     );
   });
 });
@@ -117,7 +117,7 @@ describe('startAuthLocalCallback', () => {
   test('returns a success page that redirects back to the portal when return_to is safe', async () => {
     const callback = await startAuthLocalCallback({ onCode: () => {} });
     const returnTo = encodeURIComponent(
-      'https://lobsterai.youdao.com/portal#/login?source=electron&electronLogin=success',
+      'https://glmcoding.cn/portal#/login?source=electron&electronLogin=success',
     );
 
     const response = await fetch(

@@ -1,4 +1,4 @@
-# LobsterAI 架构说明：OpenClaw、GUI 与 Cowork 的关系
+# 智码 GLM Code 架构说明：OpenClaw、GUI 与 Cowork 的关系
 
 ## 1. 一句话结论
 
@@ -128,9 +128,9 @@ sequenceDiagram
 
 ## 6. 你可以把它理解为
 
-- `GUI`：控制台与展示层  
-- `Cowork`：统一任务协议与状态机  
-- `OpenClaw`：可插拔执行内核之一  
+- `GUI`：控制台与展示层
+- `Cowork`：统一任务协议与状态机
+- `OpenClaw`：可插拔执行内核之一
 
 ## 7. 关键代码入口（便于继续深入）
 

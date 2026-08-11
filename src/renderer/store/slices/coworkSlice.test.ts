@@ -28,6 +28,7 @@ import coworkReducer, {
   setCurrentSessionId,
   setSessions,
   settleBtwEntry,
+  updateCurrentSessionCodingOptimization,
   updateCurrentSessionModelOverride,
   updateMessageContent,
   updateSessionGoal,
@@ -171,6 +172,28 @@ test('updateCurrentSessionModelOverride only patches the active session', () => 
   );
 
   expect(ignoredState.currentSession?.modelOverride).toBe('lobsterai-server/qwen3.6-plus-YoudaoInner');
+});
+
+test('updateCurrentSessionCodingOptimization only patches the active session', () => {
+  const activeState = coworkReducer(
+    coworkReducer(undefined, addSession(makeSession({ codingOptimized: true }))),
+    updateCurrentSessionCodingOptimization({
+      sessionId: 'session-1',
+      codingOptimized: false,
+    }),
+  );
+
+  expect(activeState.currentSession?.codingOptimized).toBe(false);
+
+  const ignoredState = coworkReducer(
+    activeState,
+    updateCurrentSessionCodingOptimization({
+      sessionId: 'session-2',
+      codingOptimized: true,
+    }),
+  );
+
+  expect(ignoredState.currentSession?.codingOptimized).toBe(false);
 });
 
 test('updateSessionTitle preserves the session updated time', () => {

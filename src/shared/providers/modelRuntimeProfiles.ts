@@ -14,8 +14,10 @@ export const ModelRuntimeProfileSource = {
 export type ModelRuntimeProfileSource =
   typeof ModelRuntimeProfileSource[keyof typeof ModelRuntimeProfileSource];
 
-export const LOBSTERAI_CLIENT_CAPABILITIES_HEADER = 'X-LobsterAI-Client-Capabilities';
-export const LOBSTERAI_CLIENT_VERSION_HEADER = 'X-LobsterAI-Client-Version';
+// Constant names remain stable for the bundled Runtime patch contract; HTTP
+// header values must stay ASCII-safe.
+export const LOBSTERAI_CLIENT_CAPABILITIES_HEADER = 'X-GLM-Code-Client-Capabilities';
+export const LOBSTERAI_CLIENT_VERSION_HEADER = 'X-GLM-Code-Client-Version';
 export const KIMI_K3_AGENTIC_CAPABILITY = 'kimi-k3-agentic-v1';
 
 const KIMI_K3_REASONING_EFFORTS = [

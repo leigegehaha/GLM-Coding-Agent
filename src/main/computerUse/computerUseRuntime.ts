@@ -33,7 +33,7 @@ export const ComputerUseHelperConfig = {
   Direction: 'ltr',
   Locale: 'zh-CN',
   EscToCancel: '按 Esc 取消',
-  UsingComputer: 'LobsterAI正在使用你的电脑',
+  UsingComputer: '智码 GLM Code正在使用你的电脑',
 } as const;
 export type ComputerUseHelperConfig =
   typeof ComputerUseHelperConfig[keyof typeof ComputerUseHelperConfig];

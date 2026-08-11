@@ -13,7 +13,7 @@
 
 这会让用户误以为自己直接选择了多个 Skill，也暴露了 Kit 的内部组织方式。更重要的是，后续 Kit 如果继续使用市场 API 中已经预留的 `mcpServers`、`connectors` 字段，单纯用 `skillIds` 表示 Kit 会变得不可扩展。
 
-Codex 的插件引用方式提供了一个更合适的用户体验：用户可见层只显示一个插件引用，例如 `[@github](plugin://github@openai-curated)`，底层包含哪些 skills、MCP tools、apps/connectors 不直接暴露。LobsterAI 的 Kit 不应直接等同于 Codex plugin 或 OpenClaw plugin，但可以参考这种"用户可见引用 + 内部能力解析"的分层设计。
+Codex 的插件引用方式提供了一个更合适的用户体验：用户可见层只显示一个插件引用，例如 `[@github](plugin://github@openai-curated)`，底层包含哪些 skills、MCP tools、apps/connectors 不直接暴露。智码 GLM Code 的 Kit 不应直接等同于 Codex plugin 或 OpenClaw plugin，但可以参考这种"用户可见引用 + 内部能力解析"的分层设计。
 
 ### 1.2 目标
 
@@ -176,13 +176,13 @@ interface InstalledKit {
 
 ### 4.3 Plugin 概念边界
 
-Codex plugin、OpenClaw plugin、LobsterAI Kit 是三个不同概念：
+Codex plugin、OpenClaw plugin、智码 GLM Code Kit 是三个不同概念：
 
 | 概念 | 归属 | 典型标识 | 说明 |
 |------|------|----------|------|
 | Codex plugin | Codex 客户端 | `plugin://github@openai-curated` | Codex 侧能力包，可包含 skills、MCP tools、apps/connectors |
 | OpenClaw plugin | OpenClaw runtime | `openclaw.plugin.json` / `plugins.entries` | OpenClaw 运行时扩展 |
-| LobsterAI Kit | LobsterAI | `kit://<id>@lobsterai-kits` | LobsterAI 专家套件，可聚合多类能力 |
+| 智码 GLM Code Kit | 智码 GLM Code | `kit://<id>@lobsterai-kits` | 智码 GLM Code 专家套件，可聚合多类能力 |
 
 因此 Kit 的默认 URI 应使用 `kit://`，而不是直接复用 Codex 的 `plugin://`。
 
@@ -527,7 +527,7 @@ const selectedSkillRoutingPrompt = buildSelectedSkillRoutingPrompt(
 | 追问再次选择同一 Kit | 视为本轮新的显式选择，重新生成 Kit 引用和 routing block |
 | 追问不选择 Kit | 不继承上一轮 Kit；只保留历史对话文本带来的上下文 |
 | 市场 API 的 `mcpServers` / `connectors` 为 `null` | 客户端归一化为空数组 |
-| `kit://` 链接被复制到普通 Markdown 环境 | 作为普通链接文本保留，不影响 LobsterAI 内部渲染 |
+| `kit://` 链接被复制到普通 Markdown 环境 | 作为普通链接文本保留，不影响 智码 GLM Code 内部渲染 |
 | MCP/Connector 能力暂未实现 | `mcpServers`、`connectors` 允许为空数组；resolver 返回空数组 |
 
 ## 8. 验收标准
@@ -540,7 +540,7 @@ const selectedSkillRoutingPrompt = buildSelectedSkillRoutingPrompt(
 6. 新消息 metadata 中包含 `kitIds` 和 `kitReferences`。
 7. 新消息 metadata 中的 `skillIds` 只包含用户直接选择的 Skill。
 8. re-edit 历史消息能恢复 Kit 选择状态。
-9. `kit://` Markdown 链接在 LobsterAI 内部渲染为安全的 Kit 引用，不打开外部浏览器。
+9. `kit://` Markdown 链接在 智码 GLM Code 内部渲染为安全的 Kit 引用，不打开外部浏览器。
 10. Kit 市场 API 保留顶层 `skills`、`mcpServers`、`connectors`，客户端按同名字段保存内部安装记录。
 11. 本地安装记录不再写旧版顶层 `skillIds`。
 12. 数据模型可以表达未来的 `mcpServers`、`connectors`。

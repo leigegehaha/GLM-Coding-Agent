@@ -1,10 +1,10 @@
-# LobsterAI Cowork Steer 设计文档
+# 智码 GLM Code Cowork Steer 设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI Cowork 当前把一次用户提交视为一个完整 turn。Agent 运行期间，
+智码 GLM Code Cowork 当前把一次用户提交视为一个完整 turn。Agent 运行期间，
 输入框通常进入 busy 状态，用户只能停止当前任务，或等任务结束后再发送下一条
 follow-up。这会带来几个协作问题：
 
@@ -18,7 +18,7 @@ Codex 中的 `Steer` 能力解决的是同一问题：在一个 active turn 仍�
 边界采纳新方向。它不是普通新会话消息，也不是强制中断重试，而是对当前 turn 的
 同轮追加输入。
 
-LobsterAI 需要在 Cowork 中实现类似能力，并与当前 OpenClaw runtime、Cowork
+智码 GLM Code 需要在 Cowork 中实现类似能力，并与当前 OpenClaw runtime、Cowork
 消息持久化、输入框 busy 状态、权限弹窗、计划模式、目标模式、IM 渠道和
 scheduled task 等现有状态机兼容。
 
@@ -51,7 +51,7 @@ scheduled task 等现有状态机兼容。
 
 ## 3. 非目标
 
-- 不实现 Codex App 前端的完整交互复刻；LobsterAI 采用自身输入框布局和视觉语言。
+- 不实现 Codex App 前端的完整交互复刻；智码 GLM Code 采用自身输入框布局和视觉语言。
 - 不把 steer 当作普通 message 立即插入历史对话气泡；pending 状态应显示在输入区
   附近，直到 runtime 确认或降级。
 - 不要求所有 turn 类型都支持 steer。计划确认、review、compact、用户 shell、
@@ -59,7 +59,7 @@ scheduled task 等现有状态机兼容。
 - 不让 steer 绕过权限审批、沙箱策略、计划模式工具限制或用户 stop 操作。
 - 不新增独立 agent runtime。OpenClaw 仍是唯一运行时。
 - 不为第一版实现跨设备或 IM 渠道的 steer 按钮。
-- 不在第一版修改 OpenClaw 源码，除非确认当前 LobsterAI 侧没有可用集成点。
+- 不在第一版修改 OpenClaw 源码，除非确认当前 智码 GLM Code 侧没有可用集成点。
 
 ## 4. 产品语义
 
@@ -243,7 +243,7 @@ Open-source Codex 把 Steer、Plan、Goal 分在三个不同层次：
 9. **Goal 与 interrupt 有联动**：TUI 在用户中断运行任务时会暂停 active goal，避免
    长目标在用户明确打断后继续自动推进。
 
-对 LobsterAI 的启发：
+对 智码 GLM Code 的启发：
 
 - 输入框不应直接把 “running 下的 Enter” 改成普通发送；它应该产出明确 submit intent。
 - Steer 应复用普通消息构建能力，但必须有独立的 UI/history policy。
@@ -423,7 +423,7 @@ Main 责任：
 第一版优先走 OpenClaw 原生 active-run queue / steering 能力。如果 OpenClaw
 gateway 暴露类似 Codex `turn/steer`、`chat.steer`、`agent` active-run queue
 fallback，或可公开封装 `queueEmbeddedAgentMessageWithOutcomeAsync(...,
-{ steeringMode: "all" })` 的 RPC，LobsterAI 应在 adapter 内封装为：
+{ steeringMode: "all" })` 的 RPC，智码 GLM Code 应在 adapter 内封装为：
 
 ```ts
 interface CoworkAgentRuntime {
@@ -440,7 +440,7 @@ interface CoworkAgentRuntime {
 注意：不要仅凭方法名接入 `sessions.steer`。当前 OpenClaw 源码中
 `sessions.steer` 走的是 `handleSessionSend(..., interruptIfActive: true)`，会先
 中断 active run 再 `chat.send` 新消息，更接近“interrupt and send”，不是 Codex
-截图里的同轮 steer。LobsterAI 的 `Steer` 主路径必须保持当前 turn 继续运行，只
+截图里的同轮 steer。智码 GLM Code 的 `Steer` 主路径必须保持当前 turn 继续运行，只
 在用户选择“立即中断并发送”时才调用 abort/stop。
 
 如果当前 pinned OpenClaw 还没有可用的同轮 steering RPC：
@@ -468,12 +468,12 @@ interface CoworkActiveTurnState {
 
 1. OpenClaw stream event 中的 turn id / run id。
 2. OpenClaw `sessions.list` 或 `chat.status` 返回的 running metadata。
-3. LobsterAI 本地 streaming state fallback。
+3. 智码 GLM Code 本地 streaming state fallback。
 
 没有 reliable active turn id 时，不直接调用 steer；先进入 pending，并等待下一个
 runtime event 补齐。
 
-### 6.6 当前 LobsterAI 对接点与异常点
+### 6.6 当前 智码 GLM Code 对接点与异常点
 
 基于当前代码，Steer 不能复用普通继续会话链路，原因如下：
 
@@ -545,7 +545,7 @@ Goal command 的后续 continuation 目前在 adapter 里通过 `pendingGoalCont
 排队，并在 `cleanupSessionTurn()` 正常完成后启动。Steer 的 rejected/follow-up
 降级可以借鉴这个机制，但 accepted steer 不能启动新 turn。
 
-### 6.8 LobsterAI 推荐实现形态
+### 6.8 智码 GLM Code 推荐实现形态
 
 第一版建议把实现拆成四层，尽量贴近 Codex 的责任边界：
 
@@ -655,7 +655,7 @@ StartNewTurnWithMergedSteers
 
 - 默认显示 stop 按钮和 `Steer` 按钮。
 - 点击 `Steer` 后 textarea 可编辑。
-- placeholder：`Ask for follow-up changes` 的 LobsterAI 文案可为
+- placeholder：`Ask for follow-up changes` 的 智码 GLM Code 文案可为
   “补充当前任务的调整要求”。
 - 发送按钮 tooltip：`Steer current task` / `引导当前任务`。
 

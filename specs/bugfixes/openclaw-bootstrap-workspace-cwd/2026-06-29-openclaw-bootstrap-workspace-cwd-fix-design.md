@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-升级 OpenClaw 后，用户在 LobsterAI Agent 设置中配置的三类内容不再生效：
+升级 OpenClaw 后，用户在 智码 GLM Code Agent 设置中配置的三类内容不再生效：
 
 - 助手身份，对应 `IDENTITY.md` 或 Agent 表中的 `identity`；
 - 助手性格，对应 `SOUL.md` 或 Agent 表中的 `systemPrompt`；
@@ -25,14 +25,14 @@
 
 这不是设置保存失败，而是 OpenClaw run 入参里的 `workspaceDir` 和 `cwd` 语义被混用。
 
-当前 LobsterAI 的目标路径模型是：
+当前 智码 GLM Code 的目标路径模型是：
 
 | 概念 | 用途 |
 |------|------|
 | OpenClaw agent workspace | 存放 `AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、`MEMORY.md`、`memory/` |
 | run cwd / task cwd | 用户项目目录，作为工具读写、命令执行和文件生成的默认目录 |
 
-LobsterAI 侧已经按这个模型写入配置：
+智码 GLM Code 侧已经按这个模型写入配置：
 
 - `agents.defaults.workspace` 固定为 OpenClaw state 下的 `workspace-main`；
 - 非主 Agent 使用 `workspace-{agentId}`；
@@ -62,7 +62,7 @@ runCwd = 用户任务目录
 
 但随后把下游 agent run 的 `workspaceDir` 传成了 `runCwd`。结果 OpenClaw 会去用户项目
 目录读取 `SOUL.md`、`IDENTITY.md`、`USER.md`、`MEMORY.md` 和 `memory/`，而这些文件
-实际在 LobsterAI 管理的 OpenClaw workspace 中，因此 profile、root memory 和每日记忆
+实际在 智码 GLM Code 管理的 OpenClaw workspace 中，因此 profile、root memory 和每日记忆
 会一起偏离正确位置。
 
 `systemPromptOverride` 不是可行修复方向。新版 OpenClaw 已将
@@ -145,15 +145,15 @@ Agent workspace，而不是用户任务目录。
 
 ### FR-3: 不把 profile 文件拼进用户消息作为主修复
 
-LobsterAI 侧不应通过把 `SOUL.md`、`IDENTITY.md`、`USER.md` 拼进用户消息来规避本问题。
+智码 GLM Code 侧不应通过把 `SOUL.md`、`IDENTITY.md`、`USER.md` 拼进用户消息来规避本问题。
 这些内容应该继续作为 OpenClaw system/project context 注入。
 
-可接受的 LobsterAI 防御仅限于：
+可接受的 智码 GLM Code 防御仅限于：
 
 - 诊断日志；
 - 回归测试；
 - 在检测到 `workspaceDir` 异常时 fail fast 或给出明确 warning；
-- 保留现有 `[LobsterAI system instructions]` 机制用于 LobsterAI 自己的全局系统提示。
+- 保留现有 `[智码 GLM Code system instructions]` 机制用于 智码 GLM Code 自己的全局系统提示。
 
 ### FR-4: 不恢复 `systemPromptOverride`
 
@@ -178,14 +178,14 @@ run 或必要的 session patch/restart 纠正，而不是只影响新会话。
 2. `memory/**/*.md` 作为每日记忆语料时，只应默认扫描 Agent workspace 下的目录；
 3. memory flush 或 post-compaction refresh 写入相对路径 `memory/<date>.md` 时，根目录
    必须是 Agent workspace；
-4. 用户项目目录中的 `MEMORY.md` 或 `memory/` 不应覆盖 LobsterAI Agent 的长期记忆，除非
+4. 用户项目目录中的 `MEMORY.md` 或 `memory/` 不应覆盖 智码 GLM Code Agent 的长期记忆，除非
    用户显式把该目录配置为 Agent workspace 或显式添加为 memory search extra path。
 
 ## 4. 实现方案
 
 ### 4.1 修正 OpenClaw v2026.6.1 patch
 
-修复应落在 LobsterAI 管理的 OpenClaw 版本 patch 中，而不是手改相邻 OpenClaw checkout
+修复应落在 智码 GLM Code 管理的 OpenClaw 版本 patch 中，而不是手改相邻 OpenClaw checkout
 作为最终状态。
 
 需要调整的 patch：
@@ -244,9 +244,9 @@ workspaceDir: runCwd
 如果某条路径只有 `workspaceDir` 没有 `cwd`，应补齐 `cwd` 参数，而不是把
 `workspaceDir` 改成 cwd。
 
-### 4.3 LobsterAI 侧保持现有配置语义
+### 4.3 智码 GLM Code 侧保持现有配置语义
 
-LobsterAI 侧不需要推翻现有 workspace/cwd 解耦：
+智码 GLM Code 侧不需要推翻现有 workspace/cwd 解耦：
 
 - `openclawConfigSync.ts` 继续写：
   - `agents.defaults.workspace = getMainAgentWorkspacePath(stateDir)`；
@@ -258,7 +258,7 @@ LobsterAI 侧不需要推翻现有 workspace/cwd 解耦：
 - `OpenClawRuntimeAdapter` 继续在 `chat.send` 中传入 `cwd: session.cwd`。
 
 如果后续发现 `chat.send` 仍无法让 OpenClaw 正确区分两者，应修 OpenClaw gateway/reply
-runtime，而不是回退 LobsterAI 的 workspace 解耦。
+runtime，而不是回退 智码 GLM Code 的 workspace 解耦。
 
 ### 4.4 增加诊断和防御
 
@@ -276,14 +276,14 @@ runtime，而不是回退 LobsterAI 的 workspace 解耦。
 
 | 场景 | 处理方式 |
 |------|---------|
-| 用户项目目录中刚好也有 `SOUL.md` | 不应作为 LobsterAI Agent profile 注入，除非它是 OpenClaw workspace 本身 |
+| 用户项目目录中刚好也有 `SOUL.md` | 不应作为 智码 GLM Code Agent profile 注入，除非它是 OpenClaw workspace 本身 |
 | Agent 未设置 workingDirectory | `cwd` 按现有 fallback 解析；`workspaceDir` 仍是 Agent workspace |
 | 用户显式把 workingDirectory 设为 Agent workspace | 允许 `cwd === workspaceDir`，但这只是用户选择，不应成为默认路径 |
 | IM 绑定非主 Agent | `workspaceDir` 用绑定 Agent workspace，`cwd` 用绑定 Agent cwd |
 | 继续旧 session | 下一轮 run 使用修复后的 workspace/cwd 解析；必要时通过 gateway restart 刷新 runtime config |
 | OpenClaw 独立使用且没有 `cwd` | 兼容回退到 `workspaceDir` |
 | `systemPromptOverride` 老配置存在 | 交给 OpenClaw doctor/legacy migration 移除，不新增写入 |
-| 用户项目目录中存在 `MEMORY.md` 或 `memory/` | 不应作为 LobsterAI Agent 的默认长期记忆，除非用户显式配置该目录为 Agent workspace 或 extra path |
+| 用户项目目录中存在 `MEMORY.md` 或 `memory/` | 不应作为 智码 GLM Code Agent 的默认长期记忆，除非用户显式配置该目录为 Agent workspace 或 extra path |
 | 修复前已有记忆写入用户项目目录 | 不自动迁移，先通过诊断暴露；如需迁移应另开数据修复方案，避免误搬用户项目文件 |
 | memory dreaming 后台任务 | 以 OpenClaw config 中的 Agent workspace 为准；修复重点是交互 run 中错误传入的 `workspaceDir` |
 
@@ -361,7 +361,7 @@ memory/2026-06-29.md: DAILY_MEMORY_MARKER
 - `workspaceDir` 没有被替换成 `/tmp/user-project`；
 - `systemPromptOverride` 没有出现在生成配置或 patch 后源码路径中。
 
-### 7.3 LobsterAI 桌面验收
+### 7.3 智码 GLM Code 桌面验收
 
 手动或自动验证：
 

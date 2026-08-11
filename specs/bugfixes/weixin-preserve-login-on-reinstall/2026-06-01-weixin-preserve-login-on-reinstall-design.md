@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户反馈：Windows 覆盖安装 LobsterAI 后，打开“设置 → IM 机器人 → 微信”会显示连接失败，错误为 `not configured`，必须重新扫码后微信连接才恢复正常。
+用户反馈：Windows 覆盖安装 智码 GLM Code 后，打开“设置 → IM 机器人 → 微信”会显示连接失败，错误为 `not configured`，必须重新扫码后微信连接才恢复正常。
 
 同一台机器上，飞书、钉钉、企业微信等其他 IM 渠道没有相同问题。覆盖安装后仍能读取原有配置并继续连接。
 
@@ -35,7 +35,7 @@ DetailPrint "[Installer] Clearing stale Weixin session data"
 nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
   $$dirs = @(\
     (Join-Path $$env:USERPROFILE \".openclaw\openclaw-weixin\accounts\"),\
-    (Join-Path $$env:APPDATA \"LobsterAI\openclaw\state\openclaw-weixin\accounts\")\
+    (Join-Path $$env:APPDATA \"智码 GLM Code\openclaw\state\openclaw-weixin\accounts\")\
   );\
   foreach ($$d in $$dirs) {\
     if (Test-Path $$d) {\
@@ -45,7 +45,7 @@ nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
   }"'
 ```
 
-其中 `%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts` 是 LobsterAI 管理的 OpenClaw 状态目录下的微信登录凭据目录。覆盖安装删除它后，本地 SQLite 里仍然保存 `weixin.accountId`，但插件读取不到对应账号 token，于是报 `not configured`。
+其中 `%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts` 是 智码 GLM Code 管理的 OpenClaw 状态目录下的微信登录凭据目录。覆盖安装删除它后，本地 SQLite 里仍然保存 `weixin.accountId`，但插件读取不到对应账号 token，于是报 `not configured`。
 
 ### 1.4 为什么只有微信受影响
 
@@ -54,8 +54,8 @@ nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
 飞书、钉钉、企业微信等渠道通常是配置型机器人：
 
 1. 用户配置的是后台生成的稳定凭据，如 `appId`、`appSecret`、`botId`、`secret`。
-2. 凭据保存在 LobsterAI 的 SQLite IM 配置中。
-3. 启动或保存时，LobsterAI 将这些配置同步到 OpenClaw config 或 secret env。
+2. 凭据保存在 智码 GLM Code 的 SQLite IM 配置中。
+3. 启动或保存时，智码 GLM Code 将这些配置同步到 OpenClaw config 或 secret env。
 4. 覆盖安装不会删除 SQLite，因此这些 IM 能重新生成运行时配置并连接。
 
 微信 `openclaw-weixin` 是扫码登录态型账号：
@@ -64,7 +64,7 @@ nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
 2. 扫码后插件从微信 iLink 获取 `botToken`。
 3. token 存在 `<OPENCLAW_STATE_DIR>/openclaw-weixin/accounts/{accountId}.json`。
 4. 插件通过读取该 token 判断 `configured=true`。
-5. LobsterAI 本地 IM 配置只保存 `enabled`、`accountId`、`dmPolicy`、`allowFrom` 等控制配置，不保存真正的微信 token。
+5. 智码 GLM Code 本地 IM 配置只保存 `enabled`、`accountId`、`dmPolicy`、`allowFrom` 等控制配置，不保存真正的微信 token。
 
 因此，installer 删除微信 accounts 目录等价于删除微信扫码登录态。飞书、钉钉、企业微信没有使用这个目录，也没有对应的 installer 删除逻辑，所以不受影响。
 
@@ -83,26 +83,26 @@ nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
 
 ### 场景 A: 已连接微信后覆盖安装
 
-**Given** 用户已经在 LobsterAI 中扫码连接微信  
-**When** 用户安装新版本覆盖旧版本  
+**Given** 用户已经在 智码 GLM Code 中扫码连接微信
+**When** 用户安装新版本覆盖旧版本
 **Then** 微信登录态必须保留，打开 IM 设置时不应显示 `not configured`。
 
 ### 场景 B: 覆盖安装后启动 OpenClaw gateway
 
-**Given** 用户的 `%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts` 中存在微信 token 文件  
-**When** 覆盖安装完成并启动 LobsterAI  
+**Given** 用户的 `%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts` 中存在微信 token 文件
+**When** 覆盖安装完成并启动 智码 GLM Code
 **Then** OpenClaw gateway 应能从原状态目录读取 token，并让 `openclaw-weixin` 账号保持 `configured=true`。
 
 ### 场景 C: 用户主动重新扫码
 
-**Given** 用户点击“重新扫码”  
-**When** 新扫码流程确实需要清理旧账号冲突  
+**Given** 用户点击“重新扫码”
+**When** 新扫码流程确实需要清理旧账号冲突
 **Then** 系统可以在扫码流程中做定向清理或替换，但不能在覆盖安装阶段无条件删除所有账号。
 
 ### 场景 D: 旧版本已经删除过 token
 
-**Given** 用户已经安装过包含清理逻辑的版本，微信 token 已被删除  
-**When** 用户升级到修复后的版本  
+**Given** 用户已经安装过包含清理逻辑的版本，微信 token 已被删除
+**When** 用户升级到修复后的版本
 **Then** 如果 app-managed 状态目录中没有可用 token，系统无法凭 `accountId` 恢复微信登录态，应提示用户重新扫码一次。
 
 ## 3. 功能需求
@@ -112,7 +112,7 @@ nsExec::ExecToLog 'powershell -NoProfile -NonInteractive -Command "\
 Windows installer 不得删除：
 
 ```text
-%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts
+%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts
 ```
 
 该目录属于用户数据，不属于安装产物。
@@ -129,16 +129,16 @@ Windows installer 不得删除：
 
 ### FR-3: 不读取 standalone OpenClaw 状态目录
 
-LobsterAI 管理的 OpenClaw runtime 启动时会显式设置：
+智码 GLM Code 管理的 OpenClaw runtime 启动时会显式设置：
 
 ```text
-OPENCLAW_STATE_DIR=%APPDATA%\LobsterAI\openclaw\state
+OPENCLAW_STATE_DIR=%APPDATA%\智码 GLM Code\openclaw\state
 ```
 
-因此 LobsterAI 的微信登录态边界应限定在：
+因此 智码 GLM Code 的微信登录态边界应限定在：
 
 ```text
-%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts
+%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts
 ```
 
 修复方案不应主动读取、复制或删除：
@@ -147,9 +147,9 @@ OPENCLAW_STATE_DIR=%APPDATA%\LobsterAI\openclaw\state
 %USERPROFILE%\.openclaw\openclaw-weixin\accounts
 ```
 
-该目录属于 standalone OpenClaw 的默认状态目录。LobsterAI 读取它可能误用用户另一个 OpenClaw 实例的微信账号，造成账号串用、状态污染或安全边界不清。
+该目录属于 standalone OpenClaw 的默认状态目录。智码 GLM Code 读取它可能误用用户另一个 OpenClaw 实例的微信账号，造成账号串用、状态污染或安全边界不清。
 
-当前 installer 中对 `%USERPROFILE%\.openclaw\openclaw-weixin\accounts` 的删除也应移除。移除理由不是为了迁移该目录，而是为了避免 LobsterAI installer 破坏 standalone OpenClaw 的用户数据。
+当前 installer 中对 `%USERPROFILE%\.openclaw\openclaw-weixin\accounts` 的删除也应移除。移除理由不是为了迁移该目录，而是为了避免 智码 GLM Code installer 破坏 standalone OpenClaw 的用户数据。
 
 ### FR-4: 微信配置缺 token 时给出明确诊断
 
@@ -176,7 +176,7 @@ OPENCLAW_STATE_DIR=%APPDATA%\LobsterAI\openclaw\state
 删除目标包括：
 
 1. 对 `%USERPROFILE%\.openclaw\openclaw-weixin\accounts` 的 `Remove-Item`。
-2. 对 `%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts` 的 `Remove-Item`。
+2. 对 `%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts` 的 `Remove-Item`。
 3. 对应的 `DetailPrint "[Installer] Clearing stale Weixin session data"`。
 
 这是本问题的最小必要修复。
@@ -187,10 +187,10 @@ OPENCLAW_STATE_DIR=%APPDATA%\LobsterAI\openclaw\state
 
 原因：
 
-1. 该目录不是 LobsterAI 管理的状态目录。
-2. 用户可能同时安装 standalone OpenClaw，里面的微信 token 不一定属于 LobsterAI。
+1. 该目录不是 智码 GLM Code 管理的状态目录。
+2. 用户可能同时安装 standalone OpenClaw，里面的微信 token 不一定属于 智码 GLM Code。
 3. 自动复制 token 会让两个运行环境共享或串用同一微信登录态。
-4. 对已经被旧 installer 删除的 LobsterAI token，如果 app-managed 目录中没有备份，无法安全自动恢复。
+4. 对已经被旧 installer 删除的 智码 GLM Code token，如果 app-managed 目录中没有备份，无法安全自动恢复。
 
 因此本次恢复策略是：
 
@@ -248,7 +248,7 @@ WeChat login credentials are missing. Please scan the QR code again.
 ## 6. 涉及文件
 
 - `scripts/nsis-installer.nsh`：移除覆盖安装时的微信 accounts 删除逻辑。
-- `src/main/libs/openclawEngineManager.ts`：提供 LobsterAI app-managed OpenClaw stateDir，明确状态目录边界。
+- `src/main/libs/openclawEngineManager.ts`：提供 智码 GLM Code app-managed OpenClaw stateDir，明确状态目录边界。
 - `src/main/im/imGatewayManager.ts`：微信状态查询、扫码、token 缺失诊断的主入口。
 - `src/main/im/imStore.ts`：读取 `weixin.accountId` 和 `enabled`。
 - `src/renderer/components/im/IMSettings.tsx`：优化 `not configured` 的用户可见文案。
@@ -260,9 +260,9 @@ WeChat login credentials are missing. Please scan the QR code again.
 
 1. 在 Windows 上安装旧版本或当前版本。
 2. 打开 IM 设置，扫码连接微信。
-3. 确认 `%APPDATA%\LobsterAI\openclaw\state\openclaw-weixin\accounts` 下存在账号 token 文件。
+3. 确认 `%APPDATA%\智码 GLM Code\openclaw\state\openclaw-weixin\accounts` 下存在账号 token 文件。
 4. 覆盖安装修复后的版本。
-5. 启动 LobsterAI。
+5. 启动 智码 GLM Code。
 6. 打开“设置 → IM 机器人 → 微信”。
 7. 预期：不显示 `not configured`，微信仍为已连接或能自动恢复连接。
 
@@ -270,13 +270,13 @@ WeChat login credentials are missing. Please scan the QR code again.
 
 1. 配置飞书、钉钉或企业微信。
 2. 覆盖安装修复后的版本。
-3. 启动 LobsterAI。
+3. 启动 智码 GLM Code。
 4. 预期：原有 IM 配置仍在，连接行为与修复前一致。
 
 ### 7.3 已丢失 token 的用户得到明确提示
 
 1. 手动模拟只保留 `weixin.accountId`，删除 app-managed token 文件。
-2. 启动 LobsterAI 并打开微信设置。
+2. 启动 智码 GLM Code 并打开微信设置。
 3. 预期：UI 提示微信登录凭据缺失，需要重新扫码，而不是只展示原始 `not configured`。
 
 ### 7.4 installer 不再输出微信账号清理日志

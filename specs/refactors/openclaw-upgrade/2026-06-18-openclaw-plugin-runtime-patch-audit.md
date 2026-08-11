@@ -2,7 +2,7 @@
 
 ## 1. 背景
 
-OpenClaw 升级到 `v2026.6.1` 后，LobsterAI 通过 `scripts/ensure-openclaw-plugins.cjs` 安装第三方 IM 插件，并在安装后对部分插件做 LobsterAI 侧兼容 patch。
+OpenClaw 升级到 `v2026.6.1` 后，智码 GLM Code 通过 `scripts/ensure-openclaw-plugins.cjs` 安装第三方 IM 插件，并在安装后对部分插件做 智码 GLM Code 侧兼容 patch。
 
 2026-06-18 调试微信扫码登录时发现，OpenClaw gateway 已加载 `openclaw-weixin` 插件，但 `web.login.start` 仍返回：
 
@@ -102,7 +102,7 @@ vendor/openclaw-runtime/win-x64/third-party-extensions/openclaw-weixin/dist/src/
 
 ### 3.3 微信 allowFrom 通配符
 
-后续复测发现，微信扫码登录和轮询均正常，但从移动端微信发送消息后 LobsterAI 没有任何响应。OpenClaw gateway 日志显示消息已经进入微信插件，但在分发到 LobsterAI 会话前被授权层丢弃：
+后续复测发现，微信扫码登录和轮询均正常，但从移动端微信发送消息后 智码 GLM Code 没有任何响应。OpenClaw gateway 日志显示消息已经进入微信插件，但在分发到 智码 GLM Code 会话前被授权层丢弃：
 
 ```text
 [87beb752b073-im-bot] inbound message: from=o9cq80xLqr83VS4fLmvm8JXW6hfI@im.wechat types=1
@@ -129,7 +129,7 @@ authorization: dropping message from=o9cq80xLqr83VS4fLmvm8JXW6hfI@im.wechat outc
 list.length === 0 || list.includes(id)
 ```
 
-因此 `allowFrom: ["*"]` 会被视为一个非空 allow list，但 `*` 又不会匹配具体发送者 ID，最终得到 `senderAllowedForCommands=false`，私聊消息被判定为 `unauthorized`。这不是 IM 入站图片 metadata 展示逻辑导致的；消息在进入 LobsterAI history/UI 之前已经被插件拒绝。
+因此 `allowFrom: ["*"]` 会被视为一个非空 allow list，但 `*` 又不会匹配具体发送者 ID，最终得到 `senderAllowedForCommands=false`，私聊消息被判定为 `unauthorized`。这不是 IM 入站图片 metadata 展示逻辑导致的；消息在进入 智码 GLM Code history/UI 之前已经被插件拒绝。
 
 已在 `scripts/openclaw-plugin-patches/weixin.cjs` 中新增 `patchWeixinAllowFromWildcard()`，同时覆盖：
 
@@ -148,7 +148,7 @@ list.length === 0 || list.includes("*") || list.includes(id)
 
 1. 精确 allow-list 行为保持不变。
 2. 空 allow list 仍保持插件原有的宽松语义。
-3. `allowFrom: ["*"]` 现在与 LobsterAI config sync 写入的 `dmPolicy: "open"` 语义一致。
+3. `allowFrom: ["*"]` 现在与 智码 GLM Code config sync 写入的 `dmPolicy: "open"` 语义一致。
 4. 已运行 `npm run openclaw:plugins` 同步当前本地 runtime；运行中的 OpenClaw gateway 仍需重启后才会加载补丁后的插件代码。
 
 ## 4. 其它 patch 风险评估
@@ -199,7 +199,7 @@ C:\Users\yangwn\.openclaw\workspace\media\inbound\openclaw-media-1781763714048-d
 1. 只检查 `agents.list[].workspace`。
 2. 如果没有命中，main agent 回退到 `~/.openclaw/workspace`。
 
-但 LobsterAI 在 OpenClaw 6.1 下生成的配置将 main workspace 写在：
+但 智码 GLM Code 在 OpenClaw 6.1 下生成的配置将 main workspace 写在：
 
 ```text
 agents.defaults.workspace
@@ -208,7 +208,7 @@ agents.defaults.workspace
 实际配置示例：
 
 ```text
-C:\Users\yangwn\AppData\Roaming\LobsterAI\openclaw\state\workspace-main
+C:\Users\yangwn\AppData\Roaming\智码 GLM Code\openclaw\state\workspace-main
 ```
 
 因此钉钉入站图片被放到了 OpenClaw 当前本地媒体白名单之外。agent 后续只能通过 `exec` 手动复制到 `C:\Users\yangwn\lobsterai\project` 后再调用 `image` 工具。
@@ -274,7 +274,7 @@ openclaw.extensions: ["./index.js"]
 
 ### 5.2 accountId wildcard bindings
 
-复现目标：验证 LobsterAI 写入的 `accountId: "*"` 平台级绑定是否能匹配具体钉钉账号。
+复现目标：验证 智码 GLM Code 写入的 `accountId: "*"` 平台级绑定是否能匹配具体钉钉账号。
 
 场景：
 
@@ -342,7 +342,7 @@ localfile://${artifact.filePath}
 C:\Users\...\image.jpg -> localfile:///C:/Users/.../image.jpg
 ```
 
-这项修复只影响 LobsterAI 前端如何显示已检测到的本地图片 artifact；DingTalk 插件侧的入站下载目录修复仍然负责让新图片落到 OpenClaw 允许读取的 workspace 下。
+这项修复只影响 智码 GLM Code 前端如何显示已检测到的本地图片 artifact；DingTalk 插件侧的入站下载目录修复仍然负责让新图片落到 OpenClaw 允许读取的 workspace 下。
 
 ## 8. 2026-06-18 Feishu 插件契约与 DingTalk 复测补充
 
@@ -359,7 +359,7 @@ plugin must declare contracts.tools before registering agent tools
 
 根因：
 
-1. LobsterAI 为降低启动耗时，给 `openclaw-lark` 生成了轻量 `setup-entry.js`，但旧内容只有静态 channel metadata，缺少 `config.listAccountIds` 与 `config.resolveAccount`。
+1. 智码 GLM Code 为降低启动耗时，给 `openclaw-lark` 生成了轻量 `setup-entry.js`，但旧内容只有静态 channel metadata，缺少 `config.listAccountIds` 与 `config.resolveAccount`。
 2. `openclaw-lark/index.js` 注册了大量 `feishu_*` agent tools，但 `openclaw.plugin.json` 没有声明 `contracts.tools`。
 
 已处理：
@@ -377,7 +377,7 @@ scripts/ensure-openclaw-plugins.cjs
 复测 DingTalk 后，新图片已经落到正确 workspace：
 
 ```text
-C:\Users\yangwn\AppData\Roaming\LobsterAI\openclaw\state\workspace-main\media\inbound\openclaw-media-1781765235624-w5cu9j.jpg
+C:\Users\yangwn\AppData\Roaming\智码 GLM Code\openclaw\state\workspace-main\media\inbound\openclaw-media-1781765235624-w5cu9j.jpg
 ```
 
 这说明 `dingtalk-connector` 的 workspace resolver 修复已经生效。日志中本轮 `image` 工具调用也成功返回，旧的 `Local media path is not under an allowed directory` 没有再次出现。

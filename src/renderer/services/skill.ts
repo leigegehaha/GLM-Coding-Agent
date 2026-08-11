@@ -1,6 +1,8 @@
+import type { ClawHubMarketplacePage } from '../../shared/skills/constants';
+import { SkillMarketplaceSource } from '../../shared/skills/constants';
 import { LocalizedText, LocalSkillInfo, MarketplaceSkill, MarketTag, Skill } from '../types/skill';
 import { i18nService } from './i18n';
-import { LogReporterAction, reportYdAnalyzer } from './logReporter';
+import { LogReporterAction, reportAnalytics } from './logReporter';
 
 export function resolveLocalizedText(text: string | LocalizedText): string {
   if (!text) return '';
@@ -66,14 +68,39 @@ export type EmailSkillAccountsConfig = {
   accounts: EmailSkillAccountConfig[];
 };
 
+export type MarketplaceCatalog = {
+  skills: MarketplaceSkill[];
+  tags: MarketTag[];
+  clawHubNextCursor: string | null;
+};
+
+const CLAWHUB_MARKET_TAG: MarketTag = {
+  id: SkillMarketplaceSource.ClawHub,
+  en: 'ClawHub',
+  zh: 'ClawHub',
+};
+
+const mergeMarketplaceSkills = (...skillGroups: MarketplaceSkill[][]): MarketplaceSkill[] => {
+  const uniqueSkills = new Map<string, MarketplaceSkill>();
+  for (const skill of skillGroups.flat()) {
+    const sourceKey = skill.source?.url || skill.url || skill.id;
+    uniqueSkills.set(`${skill.source?.from ?? 'unknown'}:${sourceKey}`, skill);
+  }
+  return [...uniqueSkills.values()];
+};
+
 class SkillService {
   private skills: Skill[] = [];
   private initialized = false;
   private localSkillDescriptions: Map<string, string | LocalizedText> = new Map();
   private marketplaceSkillDescriptions: Map<string, string | LocalizedText> = new Map();
   private installedKitSkillDescriptions: Map<string, string | LocalizedText> = new Map();
-  private marketplaceCache: { skills: MarketplaceSkill[]; tags: MarketTag[] } | null = null;
-  private marketplaceFetchPromise: Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> | null = null;
+  private primaryMarketplaceCache: { skills: MarketplaceSkill[]; tags: MarketTag[] } | null = null;
+  private primaryMarketplaceFetchPromise: Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> | null = null;
+  private clawHubBrowseCache: ClawHubMarketplacePage | null = null;
+  private clawHubBrowseFetchPromise: Promise<ClawHubMarketplacePage> | null = null;
+  private clawHubSearchCache = new Map<string, ClawHubMarketplacePage>();
+  private marketplaceCacheGeneration = 0;
 
   async init(): Promise<void> {
     if (this.initialized) return;
@@ -106,7 +133,7 @@ class SkillService {
         this.skills = result.skills;
         const updatedSkill = this.skills.find(skill => skill.id === id) ?? previousSkill;
         if (enabled && previousSkill?.enabled !== true && updatedSkill) {
-          void reportYdAnalyzer({
+          void reportAnalytics({
             action: LogReporterAction.SkillEnabled,
             skillId: updatedSkill.id,
             skillName: updatedSkill.name,
@@ -356,28 +383,88 @@ class SkillService {
       || this.installedKitSkillDescriptions.size > 0;
   }
 
-  async fetchMarketplaceSkills(): Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> {
-    if (this.marketplaceCache) {
-      return this.marketplaceCache;
+  async fetchMarketplaceSkills(
+    options: { forceRefresh?: boolean } = {},
+  ): Promise<MarketplaceCatalog> {
+    if (options.forceRefresh) this.clearMarketplaceCache();
+    const [primary, clawHub] = await Promise.all([
+      this.loadPrimaryMarketplace(),
+      this.loadInitialClawHubMarketplace(),
+    ]);
+    const tags = [...primary.tags];
+    if (clawHub.skills.length > 0 && !tags.some(tag => tag.id === SkillMarketplaceSource.ClawHub)) {
+      tags.push(CLAWHUB_MARKET_TAG);
     }
-    if (this.marketplaceFetchPromise) {
-      return this.marketplaceFetchPromise;
-    }
+    const skills = mergeMarketplaceSkills(primary.skills, clawHub.skills);
+    this.rememberMarketplaceDescriptions(skills);
+    return {
+      skills,
+      tags,
+      clawHubNextCursor: clawHub.nextCursor,
+    };
+  }
 
-    this.marketplaceFetchPromise = this.loadMarketplaceSkills();
-    const result = await this.marketplaceFetchPromise;
-    this.marketplaceFetchPromise = null;
+  async loadMoreClawHubSkills(): Promise<ClawHubMarketplacePage> {
+    const current = await this.loadInitialClawHubMarketplace();
+    if (!current.nextCursor) return current;
+    const generation = this.marketplaceCacheGeneration;
+    const nextPage = await this.requestClawHubMarketplace({ cursor: current.nextCursor });
+    const mergedPage = {
+      skills: mergeMarketplaceSkills(current.skills, nextPage.skills),
+      nextCursor: nextPage.nextCursor,
+    };
+    if (generation === this.marketplaceCacheGeneration) {
+      this.clawHubBrowseCache = mergedPage;
+      this.rememberMarketplaceDescriptions(nextPage.skills);
+    }
+    return mergedPage;
+  }
+
+  async searchClawHubSkills(query: string): Promise<ClawHubMarketplacePage> {
+    const normalizedQuery = query.trim().replace(/\s+/g, ' ').toLowerCase();
+    if (!normalizedQuery) return this.loadInitialClawHubMarketplace();
+    const cached = this.clawHubSearchCache.get(normalizedQuery);
+    if (cached) return cached;
+    const generation = this.marketplaceCacheGeneration;
+    const page = await this.requestClawHubMarketplace({ query: normalizedQuery });
+    if (generation === this.marketplaceCacheGeneration) {
+      this.clawHubSearchCache.set(normalizedQuery, page);
+      this.rememberMarketplaceDescriptions(page.skills);
+    }
+    return page;
+  }
+
+  clearMarketplaceCache(): void {
+    this.marketplaceCacheGeneration += 1;
+    this.primaryMarketplaceCache = null;
+    this.primaryMarketplaceFetchPromise = null;
+    this.clawHubBrowseCache = null;
+    this.clawHubBrowseFetchPromise = null;
+    this.clawHubSearchCache.clear();
+  }
+
+  private async loadPrimaryMarketplace(): Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> {
+    if (this.primaryMarketplaceCache) return this.primaryMarketplaceCache;
+    if (this.primaryMarketplaceFetchPromise) return this.primaryMarketplaceFetchPromise;
+    const generation = this.marketplaceCacheGeneration;
+    this.primaryMarketplaceFetchPromise = this.requestPrimaryMarketplace();
+    const result = await this.primaryMarketplaceFetchPromise;
+    if (generation === this.marketplaceCacheGeneration) {
+      this.primaryMarketplaceCache = result;
+      this.primaryMarketplaceFetchPromise = null;
+    }
     return result;
   }
 
-  private async loadMarketplaceSkills(): Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> {
+  private async requestPrimaryMarketplace(): Promise<{ skills: MarketplaceSkill[]; tags: MarketTag[] }> {
     try {
       const result = await window.electron.skills.fetchMarketplace();
       if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to fetch');
       }
       const json = JSON.parse(result.data);
-      const value = json?.data?.value;
+      const rawValue = json?.data?.value;
+      const value = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
       // Store local skill descriptions for i18n lookup
       const localSkills: LocalSkillInfo[] = Array.isArray(value?.localSkill) ? value.localSkill : [];
       this.localSkillDescriptions.clear();
@@ -387,18 +474,47 @@ class SkillService {
       }
       const skills: MarketplaceSkill[] = Array.isArray(value?.marketplace) ? value.marketplace : [];
       const tags: MarketTag[] = Array.isArray(value?.marketTags) ? value.marketTags : [];
-      // Also store marketplace skill descriptions for i18n lookup (keyed by id)
-      this.marketplaceSkillDescriptions.clear();
-      for (const ms of skills) {
-        if (typeof ms.description === 'object') {
-          this.marketplaceSkillDescriptions.set(ms.id, ms.description);
-        }
-      }
-      this.marketplaceCache = { skills, tags };
-      return this.marketplaceCache;
+      return { skills, tags };
     } catch (error) {
-      console.error('Failed to fetch marketplace skills:', error);
+      console.warn('Failed to fetch primary marketplace skills:', error);
       return { skills: [], tags: [] };
+    }
+  }
+
+  private async loadInitialClawHubMarketplace(): Promise<ClawHubMarketplacePage> {
+    if (this.clawHubBrowseCache) return this.clawHubBrowseCache;
+    if (this.clawHubBrowseFetchPromise) return this.clawHubBrowseFetchPromise;
+    const generation = this.marketplaceCacheGeneration;
+    this.clawHubBrowseFetchPromise = this.requestClawHubMarketplace({}).catch((error) => {
+      console.warn('Failed to fetch ClawHub marketplace skills:', error);
+      return { skills: [], nextCursor: null };
+    });
+    const result = await this.clawHubBrowseFetchPromise;
+    if (generation === this.marketplaceCacheGeneration) {
+      this.clawHubBrowseCache = result;
+      this.clawHubBrowseFetchPromise = null;
+    }
+    return result;
+  }
+
+  private async requestClawHubMarketplace(
+    query: { cursor?: string; query?: string },
+  ): Promise<ClawHubMarketplacePage> {
+    const result = await window.electron.skills.fetchClawHub(query);
+    if (!result.success || !result.page) {
+      throw new Error(result.error || 'Failed to fetch ClawHub skills');
+    }
+    return {
+      skills: result.page.skills as MarketplaceSkill[],
+      nextCursor: result.page.nextCursor,
+    };
+  }
+
+  private rememberMarketplaceDescriptions(skills: MarketplaceSkill[]): void {
+    for (const skill of skills) {
+      if (typeof skill.description === 'object') {
+        this.marketplaceSkillDescriptions.set(skill.id, skill.description);
+      }
     }
   }
 

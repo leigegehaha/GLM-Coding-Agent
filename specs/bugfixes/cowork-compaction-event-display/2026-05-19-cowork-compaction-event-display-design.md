@@ -4,36 +4,36 @@
 
 ### 1.1 问题
 
-用户在 Cowork 任务执行过程中触发 OpenClaw 自动上下文压缩时，LobsterAI 当前会在最终回答后方展示一条 `Compaction` 或上下文压缩完成提示。
+用户在 Cowork 任务执行过程中触发 OpenClaw 自动上下文压缩时，智码 GLM Code 当前会在最终回答后方展示一条 `Compaction` 或上下文压缩完成提示。
 
 这个表现有三个问题：
 
 1. **时序不符合用户感知**：压缩实际发生在任务执行中，但 UI 在最终回答之后才补出提示，看起来像回答结束后又发生了一次无关事件。
 2. **展示样式不一致**：截图中的 `Compaction` 被渲染成普通 system 卡片，而不是已有的上下文压缩分隔线，说明该消息没有结构化 metadata。
-3. **生命周期判断不完整**：OpenClaw 可能在一次 `lifecycle end` / 空 `chat.final` 之后才触发 context overflow auto-compaction，并使用同一个 `runId` 继续 retry。LobsterAI 如果提前把该 `runId` 标记为 closed，后续 retry 的 assistant 文本会被当成 late event 丢弃，UI 停在中间态文本。
+3. **生命周期判断不完整**：OpenClaw 可能在一次 `lifecycle end` / 空 `chat.final` 之后才触发 context overflow auto-compaction，并使用同一个 `runId` 继续 retry。智码 GLM Code 如果提前把该 `runId` 标记为 closed，后续 retry 的 assistant 文本会被当成 late event 丢弃，UI 停在中间态文本。
 
 2026-05-20 复现日志中，OpenClaw 并没有卡死。实际时间线如下：
 
 | 时间 | 事实 | 影响 |
 |---|---|---|
-| 12:08:27 | 同一 `runId` 第一次 `lifecycle=end`，`chat.final` 文本为空 | LobsterAI 进入可完成路径 |
+| 12:08:27 | 同一 `runId` 第一次 `lifecycle=end`，`chat.final` 文本为空 | 智码 GLM Code 进入可完成路径 |
 | 12:08:28 | OpenClaw 检测到 context overflow，开始 auto-compaction | 说明前一个 end 不是整轮任务真正结束 |
 | 12:08:33 | compaction 后用同一个 `runId` retry | `runId` 不能被视为一次性完成标识 |
-| 12:09:14 | LobsterAI 从 history 同步到一句中间态文本并触发 complete | UI 显示“分析大致完成了...”并结束 turn |
+| 12:09:14 | 智码 GLM Code 从 history 同步到一句中间态文本并触发 complete | UI 显示“分析大致完成了...”并结束 turn |
 | 12:09:22 | OpenClaw 第二次 compaction 后再次用同一个 `runId` retry | 后续事件仍属于同一用户任务 |
-| 12:09:31-12:09:40 | OpenClaw 输出真正最终回答并成功结束 | LobsterAI 因 `recentlyClosedRunIds` 丢弃这些文本 |
+| 12:09:31-12:09:40 | OpenClaw 输出真正最终回答并成功结束 | 智码 GLM Code 因 `recentlyClosedRunIds` 丢弃这些文本 |
 
 因此，本修复不能只解决“Compaction 卡片展示位置”。必须同时修正 `chat.final`、`lifecycle=end`、auto-compaction retry 和 `recentlyClosedRunIds` 之间的状态机关系。
 
-2026-05-20 12:50 再次复现证明还存在另一条未覆盖路径：第一次 attempt 的 `chat.final` 已能被正确延迟，但第二次 attempt 没有发送 `chat.final`，只发送了 `lifecycle=end`。LobsterAI 的 lifecycle fallback 在约 800ms 后从 history 同步到一句短中间态 assistant 文本，随后直接 complete。约 11 秒后 OpenClaw 完成第二次 auto-compaction 并用同一个 `runId` retry 时，LobsterAI 已经把该 run 作为不可恢复 closed run 处理，导致新的 `lifecycle=start` 被丢弃。
+2026-05-20 12:50 再次复现证明还存在另一条未覆盖路径：第一次 attempt 的 `chat.final` 已能被正确延迟，但第二次 attempt 没有发送 `chat.final`，只发送了 `lifecycle=end`。智码 GLM Code 的 lifecycle fallback 在约 800ms 后从 history 同步到一句短中间态 assistant 文本，随后直接 complete。约 11 秒后 OpenClaw 完成第二次 auto-compaction 并用同一个 `runId` retry 时，智码 GLM Code 已经把该 run 作为不可恢复 closed run 处理，导致新的 `lifecycle=start` 被丢弃。
 
 | 时间 | 事实 | 影响 |
 |---|---|---|
-| 12:48:57 | 第一次 attempt 收到短 `chat.final`，tool result 约 210K 字符 | LobsterAI 正确延迟 final，等待 retry |
+| 12:48:57 | 第一次 attempt 收到短 `chat.final`，tool result 约 210K 字符 | 智码 GLM Code 正确延迟 final，等待 retry |
 | 12:49:03 | 第一次 auto-compaction 成功后同 `runId` retry | 证明 `chat.final` 路径修复有效 |
 | 12:49:52 | 第二次 attempt 只收到 `lifecycle=end`，没有后续 `chat.final` | 进入 lifecycle fallback 路径 |
 | 12:49:52 | OpenClaw 检测 context overflow，开始第 2 次 auto-compaction | `lifecycle=end` 仍只是 attempt end |
-| 12:49:53 | lifecycle fallback 从 history 同步到短中间态文本并 complete | LobsterAI 提前关闭 turn |
+| 12:49:53 | lifecycle fallback 从 history 同步到短中间态文本并 complete | 智码 GLM Code 提前关闭 turn |
 | 12:50:05 | 第 2 次 auto-compaction 成功，同 `runId` retry start | 事件被 `recentlyClosedRunIds` 丢弃，UI 停在中间态 |
 
 这说明 `handleChatFinal()` 的延迟判断不够，`completeChannelTurnFallback()` 也必须执行同一套 recoverable retry 风险判断。缺少 `chat.final` 不能降低判断标准；相反，缺少 `chat.final` 且当前 turn 有工具工作时，应视为更不确定的完成信号。
@@ -79,10 +79,10 @@
 
 - 没有一个稳定的消息 id 能承载 `running -> completed` 状态变化。
 - 完成提示只能事后追加，无法锚定到压缩实际开始的位置。
-- history 同步会把 OpenClaw 内部 UI 分隔符泄漏到 LobsterAI 聊天流。
+- history 同步会把 OpenClaw 内部 UI 分隔符泄漏到 智码 GLM Code 聊天流。
 - renderer 只能根据 `metadata.kind` 区分压缩消息；裸 `Compaction` 无法走专门样式。
 
-第二层是生命周期模型问题：**LobsterAI 把 `runId` 当成单次完成边界，但 OpenClaw auto-compaction retry 会复用同一个 `runId`**。
+第二层是生命周期模型问题：**智码 GLM Code 把 `runId` 当成单次完成边界，但 OpenClaw auto-compaction retry 会复用同一个 `runId`**。
 
 这导致：
 
@@ -119,7 +119,7 @@
 - 不展示 compacted summary 的具体内容。
 - 不新增 checkpoint 管理 UI。
 - 不修改模型上下文窗口计算。
-- 不要求第一版修改 OpenClaw/gateway 协议；如果协议没有结构化 compaction/retry 事件，LobsterAI 需要有保守兜底。
+- 不要求第一版修改 OpenClaw/gateway 协议；如果协议没有结构化 compaction/retry 事件，智码 GLM Code 需要有保守兜底。
 - 不改手动压缩入口的交互模式，除非为了复用同一套消息模型做小范围整理。
 - 不做数据库 migration；历史中的 legacy `Compaction` 可在渲染或同步层兼容处理。
 
@@ -127,83 +127,83 @@
 
 ### 场景 1: 自动压缩发生在任务执行中
 
-**Given** 用户发起 Cowork 任务  
-**And** 当前会话上下文触发 OpenClaw 自动压缩  
-**When** LobsterAI 收到 `stream=compaction phase=start`  
-**Then** 对话流当前位置展示一条 `上下文压缩中` 分隔线  
-**And** 输入区按 running/maintenance 状态阻止继续发送  
+**Given** 用户发起 Cowork 任务
+**And** 当前会话上下文触发 OpenClaw 自动压缩
+**When** 智码 GLM Code 收到 `stream=compaction phase=start`
+**Then** 对话流当前位置展示一条 `上下文压缩中` 分隔线
+**And** 输入区按 running/maintenance 状态阻止继续发送
 **And** 用户能明确看到任务正在整理上下文，而不是卡住。
 
 ### 场景 2: 自动压缩完成后继续任务
 
-**Given** 对话流中已经有一条 active 压缩分隔线  
-**When** LobsterAI 收到 `stream=compaction phase=end completed=true`  
-**Then** 同一条分隔线更新为 `上下文压缩已完成`  
-**And** 后续 retry 或 assistant 文本继续显示在该分隔线之后  
+**Given** 对话流中已经有一条 active 压缩分隔线
+**When** 智码 GLM Code 收到 `stream=compaction phase=end completed=true`
+**Then** 同一条分隔线更新为 `上下文压缩已完成`
+**And** 后续 retry 或 assistant 文本继续显示在该分隔线之后
 **And** 最终回答后不再额外追加 `Compaction` 或重复完成提示。
 
 ### 场景 3: 压缩完成后 OpenClaw retry
 
-**Given** OpenClaw 压缩结束事件包含 `willRetry=true`  
-**When** retry 尚未开始输出可见 assistant 文本  
-**Then** UI 可以继续保持 maintenance 状态  
-**And** 压缩分隔线可显示为 `上下文压缩已完成，正在继续任务` 或保持完成状态  
+**Given** OpenClaw 压缩结束事件包含 `willRetry=true`
+**When** retry 尚未开始输出可见 assistant 文本
+**Then** UI 可以继续保持 maintenance 状态
+**And** 压缩分隔线可显示为 `上下文压缩已完成，正在继续任务` 或保持完成状态
 **And** 不应把当前 turn 提前标记 completed。
 
 ### 场景 4: history 中出现裸 `Compaction`
 
-**Given** gateway history 中包含 `role=system, content=Compaction`  
-**When** LobsterAI 执行 `syncSystemMessagesFromHistory()`  
-**Then** 该内部 system 文本不应写入本地聊天消息  
+**Given** gateway history 中包含 `role=system, content=Compaction`
+**When** 智码 GLM Code 执行 `syncSystemMessagesFromHistory()`
+**Then** 该内部 system 文本不应写入本地聊天消息
 **And** 如果已经存在 legacy 裸 `Compaction` 消息，renderer 不应再以普通 system 卡片展示。
 
 ### 场景 5: final usage 刷新发现 compaction count 增加
 
-**Given** 本轮已经通过 compaction stream 展示并更新了结构化压缩消息  
-**When** final 后 context usage refresh 返回更大的 `compactionCount`  
-**Then** 只更新 context usage 指标和 notified count  
+**Given** 本轮已经通过 compaction stream 展示并更新了结构化压缩消息
+**When** final 后 context usage refresh 返回更大的 `compactionCount`
+**Then** 只更新 context usage 指标和 notified count
 **And** 不再追加新的聊天消息。
 
 ### 场景 6: 没有收到 compaction stream 的兜底
 
-**Given** 某些 OpenClaw 版本或边界情况没有发送 `stream=compaction`  
-**When** usage refresh 发现 `compactionCount` 增加  
-**Then** LobsterAI 可以更新 context usage 指标  
-**And** 默认不在最终回答后追加聊天消息  
+**Given** 某些 OpenClaw 版本或边界情况没有发送 `stream=compaction`
+**When** usage refresh 发现 `compactionCount` 增加
+**Then** 智码 GLM Code 可以更新 context usage 指标
+**And** 默认不在最终回答后追加聊天消息
 **And** 可记录 debug/warn 诊断，后续再评估是否需要非侵入式 toast 或 session meta。
 
 ### 场景 7: lifecycle end 后发生 context overflow auto-compaction
 
-**Given** LobsterAI 已收到某个 `runId` 的 `chat.final` 或 `lifecycle phase=end`  
-**And** final 文本为空，或 final/history 中只出现短中间态 assistant 文本  
-**When** OpenClaw 随后检测到 context overflow 并执行 auto-compaction  
-**Then** LobsterAI 不应立即把当前 turn 标记为 completed  
-**And** 不应把该 `runId` 写入不可恢复的 closed-run 集合  
+**Given** 智码 GLM Code 已收到某个 `runId` 的 `chat.final` 或 `lifecycle phase=end`
+**And** final 文本为空，或 final/history 中只出现短中间态 assistant 文本
+**When** OpenClaw 随后检测到 context overflow 并执行 auto-compaction
+**Then** 智码 GLM Code 不应立即把当前 turn 标记为 completed
+**And** 不应把该 `runId` 写入不可恢复的 closed-run 集合
 **And** 应继续等待 retry、assistant stream、chat final 或明确错误。
 
 ### 场景 8: auto-compaction 后同 runId retry
 
-**Given** 一个 `runId` 已经经历过 attempt 级别的 end/final  
-**When** LobsterAI 收到同一 `runId`、同一 `sessionKey` 的新 `lifecycle phase=start`  
-**Then** 该事件应被识别为可能的合法 retry，而不是无条件当作 late event 丢弃  
-**And** 如果 session 仍属于同一个用户 turn，应恢复或延续 active turn  
+**Given** 一个 `runId` 已经经历过 attempt 级别的 end/final
+**When** 智码 GLM Code 收到同一 `runId`、同一 `sessionKey` 的新 `lifecycle phase=start`
+**Then** 该事件应被识别为可能的合法 retry，而不是无条件当作 late event 丢弃
+**And** 如果 session 仍属于同一个用户 turn，应恢复或延续 active turn
 **And** 后续 assistant 文本应继续写入同一轮任务。
 
 ### 场景 9: 真正的 late event 仍然要被过滤
 
-**Given** 某个 run 已经明确完成、手动停止或报错  
-**And** 没有新的同 session retry 信号  
-**When** gateway 晚到重复 assistant chunk、tool event 或 lifecycle event  
-**Then** LobsterAI 仍应通过 closed-run / turn-token / session status 防重机制丢弃它们  
+**Given** 某个 run 已经明确完成、手动停止或报错
+**And** 没有新的同 session retry 信号
+**When** gateway 晚到重复 assistant chunk、tool event 或 lifecycle event
+**Then** 智码 GLM Code 仍应通过 closed-run / turn-token / session status 防重机制丢弃它们
 **And** 不应重新打开已完成会话。
 
 ### 场景 10: lifecycle fallback 同步到短中间态文本
 
-**Given** 当前 turn 已经产生工具调用和大量 tool result  
-**And** gateway 没有发送 `chat.final`  
-**When** LobsterAI 在 `lifecycle=end` fallback 中从 `chat.history` 同步到短 assistant 文本  
-**Then** 该文本只能作为中间态候选展示  
-**And** LobsterAI 必须进入 recoverable retry wait，而不是直接 complete  
+**Given** 当前 turn 已经产生工具调用和大量 tool result
+**And** gateway 没有发送 `chat.final`
+**When** 智码 GLM Code 在 `lifecycle=end` fallback 中从 `chat.history` 同步到短 assistant 文本
+**Then** 该文本只能作为中间态候选展示
+**And** 智码 GLM Code 必须进入 recoverable retry wait，而不是直接 complete
 **And** 如果同 `runId` 的 retry 在等待窗口内开始，后续 assistant 输出必须继续进入同一 turn。
 
 ## 3. 功能需求
@@ -214,7 +214,7 @@
 
 事件映射：
 
-| OpenClaw event | LobsterAI 行为 |
+| OpenClaw event | 智码 GLM Code 行为 |
 |---|---|
 | `phase=start` | 创建或激活一条结构化压缩消息，状态为 running |
 | `phase=end, completed=true, willRetry=false` | 更新同一条消息为 completed，结束 maintenance |
@@ -330,7 +330,7 @@ inline compaction divider 的职责是：
 
 1. `lifecycle phase=start` 是唯一可以触发 closed-run reopen 判断的 agent lifecycle 信号。
 2. 如果收到 recently closed run 的 `phase=start`，且满足以下条件，可以解除 closed 状态并恢复接收：
-   - `sessionKey` 能解析到同一个 LobsterAI session。
+   - `sessionKey` 能解析到同一个 智码 GLM Code session。
    - 该 session 没有处于手动停止 cooldown。
    - 该 session 最近一次完成时间仍在短窗口内，例如 2 分钟内。
    - event 没有命中 `terminatedRunIds`。
@@ -356,7 +356,7 @@ recoverable wait 的行为：
 4. `flushOnLifecycleEnd=false`，避免下一次 attempt 的 `lifecycle=end` 把等待提前刷掉。
 5. `allowLateContinuation=true`，如果最终仍完成，cleanup 不应把该 runId 立即写入不可恢复 closed 集合。
 
-这条规则不能只依赖 `turn.hasContextMaintenanceTool`。OpenClaw 内部 auto-compaction 可能不会表现为 LobsterAI 的显式 maintenance tool。
+这条规则不能只依赖 `turn.hasContextMaintenanceTool`。OpenClaw 内部 auto-compaction 可能不会表现为 智码 GLM Code 的显式 maintenance tool。
 
 ### FR-11: lifecycle end 只是 attempt end，不一定是 user turn end
 
@@ -632,7 +632,7 @@ reopenedFromClosedRun?: boolean;
 4. 如果 grace window 超时仍无 retry/output：
    - 可以完成 turn，但不要立刻把 runId 记为不可恢复 closed；至少对 recoverable wait 路径启用 `suppressRecentlyClosedRunIdsOnCleanup`。
 
-这部分是本 bug 的核心。只依靠 compaction stream 的方案不够，因为 2026-05-20 日志中的失败路径没有给 LobsterAI 足够明确的结构化 compaction event。
+这部分是本 bug 的核心。只依靠 compaction stream 的方案不够，因为 2026-05-20 日志中的失败路径没有给 智码 GLM Code 足够明确的结构化 compaction event。
 
 ### 4.11 明确完成条件
 
@@ -700,11 +700,11 @@ complete();
 如果后续可以修改 OpenClaw/gateway，推荐增加以下结构化字段或事件：
 
 - `attemptId` 或 `runAttempt`：区分同一 `runId` 下的多次 retry。
-- `stream=compaction phase=start/end`：确保 LobsterAI 不必从 stdout 或 usage count 推断。
+- `stream=compaction phase=start/end`：确保 智码 GLM Code 不必从 stdout 或 usage count 推断。
 - `willRetry=true`：在 `lifecycle=end` 或 `chat.final` 上明确告诉客户端这不是 user turn 结束。
 - `retryReason=context_overflow`：让 UI 和日志能解释等待原因。
 
-有了这些字段后，LobsterAI 可以从启发式 retry reopen 迁移到协议驱动状态机。
+有了这些字段后，智码 GLM Code 可以从启发式 retry reopen 迁移到协议驱动状态机。
 
 ## 5. 边界情况
 

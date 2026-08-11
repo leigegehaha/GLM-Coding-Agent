@@ -11,7 +11,7 @@ import {
 const AGENTS_MD_FILENAME = 'AGENTS.md';
 const LOBSTERAI_MIGRATIONS_DIR = path.join('.lobsterai', 'migrations');
 const LEGACY_IDENTITY_TITLE = '## Identity（必须遵守）';
-const MANAGED_MARKER = '<!-- LobsterAI managed: do not edit below this line -->';
+const MANAGED_MARKER = '<!-- 智码 GLM Code managed: do not edit below this line -->';
 const MAX_LEGACY_IDENTITY_BLOCK_CHARS = 20_000;
 
 const TEMPLATE_ANCHORS = [

@@ -1,21 +1,21 @@
-# LobsterAI Cowork 上下文压缩接入设计文档
+# 智码 GLM Code Cowork 上下文压缩接入设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenClaw 本身具备上下文自动压缩能力：当会话上下文接近或超过模型上下文窗口时，OpenClaw 可以压缩旧历史，保留摘要和最近消息，并继续重试原请求。
+智码 GLM Code Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenClaw 本身具备上下文自动压缩能力：当会话上下文接近或超过模型上下文窗口时，OpenClaw 可以压缩旧历史，保留摘要和最近消息，并继续重试原请求。
 
-但 LobsterAI 当前对这个能力的产品接入还不完整：
+但 智码 GLM Code 当前对这个能力的产品接入还不完整：
 
 - 对话界面没有直观展示当前上下文 token 使用量、上下文窗口大小和百分比。
-- 用户无法在 LobsterAI 中主动触发 OpenClaw 压缩。
-- OpenClaw 自动压缩发生后，LobsterAI 对话流中没有轻量提示，用户可能只感知到“等待变久”。
+- 用户无法在 智码 GLM Code 中主动触发 OpenClaw 压缩。
+- OpenClaw 自动压缩发生后，智码 GLM Code 对话流中没有轻量提示，用户可能只感知到“等待变久”。
 - 模型切换后，上下文窗口分母可能变化，顶部状态需要随当前模型重新计算。
 - 之前 `lifecycle phase=error` fallback 会在 2 秒后主动 `chat.abort`，可能打断 OpenClaw 的自动压缩、重试或 failover 流程。
-- OpenClaw 的 `Pre-compaction memory flush`、`NO_REPLY/no_reply`、memory daily file read/write 等内部维护消息可能通过 history 或 stream 暴露给 LobsterAI；这些内容不应作为正式聊天内容展示。
-- OpenClaw Web UI 中的 `COMPACTION` 分隔符、assembled context 中的 `compactionSummary`、session checkpoint 是三个不同层级，LobsterAI 不能混为一谈。
-- `reconcileWithHistory()` 可能替换 LobsterAI 本地 assistant message id，导致后续 usage/meta 回填写到旧 id，从而让 assistant 下方 token/meta 信息消失。
+- OpenClaw 的 `Pre-compaction memory flush`、`NO_REPLY/no_reply`、memory daily file read/write 等内部维护消息可能通过 history 或 stream 暴露给 智码 GLM Code；这些内容不应作为正式聊天内容展示。
+- OpenClaw Web UI 中的 `COMPACTION` 分隔符、assembled context 中的 `compactionSummary`、session checkpoint 是三个不同层级，智码 GLM Code 不能混为一谈。
+- `reconcileWithHistory()` 可能替换 智码 GLM Code 本地 assistant message id，导致后续 usage/meta 回填写到旧 id，从而让 assistant 下方 token/meta 信息消失。
 
 本分支已经先修复了最后一个问题：`lifecycle phase=error` fallback abort 从 2 秒延迟到 20 秒，并增加 runId guard，避免旧 run 的延迟 fallback 误伤新 run。
 
@@ -30,7 +30,7 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 5. 手动压缩完成后，在对话流中展示一条轻量系统提示。
 6. 模型切换后刷新上下文窗口和百分比展示。
 7. 保留 OpenClaw 默认 200k context window 兜底策略，不在本功能中调整未知模型默认窗口。
-8. 避免在 OpenClaw 自动压缩、重试或 failover 过程中被 LobsterAI 过早 abort。
+8. 避免在 OpenClaw 自动压缩、重试或 failover 过程中被 智码 GLM Code 过早 abort。
 9. 过滤 OpenClaw 内部 maintenance/silent 消息，避免 `Pre-compaction memory flush` 和 `NO_REPLY/no_reply` 出现在正式对话中。
 10. 在确认 OpenClaw 正在做 memory flush / context maintenance 时保持 session running，并展示友好状态 `正在整理上下文...`。
 11. 正确区分 checkpoint compaction 与 assembled context 中的 `compactionSummary`，避免误报“上下文已自动压缩”。
@@ -56,13 +56,13 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 ### 场景 1: 用户查看当前上下文使用量
 
-**Given** 用户正在 Cowork 会话中对话  
-**When** 会话存在 OpenClaw token usage 数据  
+**Given** 用户正在 Cowork 会话中对话
+**When** 会话存在 OpenClaw token usage 数据
 **Then** 输入框附近展示一个圆形上下文指示器
 
 **And** 指示器按百分比展示当前上下文占用
 
-**When** 用户悬停该指示器  
+**When** 用户悬停该指示器
 **Then** tooltip 展示类似 `上下文：43% 已用，已用 86k tokens，共 200k`
 
 **And** 指示器视觉颜色保持中性灰色，不因 warning/danger 阈值变色
@@ -73,9 +73,9 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 ### 场景 2: 用户主动压缩上下文
 
-**Given** 用户看到上下文指示器  
+**Given** 用户看到上下文指示器
 **When** 用户点击指示器
-**Then** LobsterAI 调用 OpenClaw 的压缩能力
+**Then** 智码 GLM Code 调用 OpenClaw 的压缩能力
 
 **And** 压缩期间指示器展示 loading 状态
 
@@ -85,36 +85,36 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 ### 场景 3: OpenClaw 自动压缩后展示提示
 
-**Given** 当前会话上下文接近或超过模型窗口  
-**When** OpenClaw 自动触发上下文压缩并成功完成  
-**Then** LobsterAI 在对话流中展示 `OpenClaw 已自动压缩上下文。`
+**Given** 当前会话上下文接近或超过模型窗口
+**When** OpenClaw 自动触发上下文压缩并成功完成
+**Then** 智码 GLM Code 在对话流中展示 `OpenClaw 已自动压缩上下文。`
 
 **And** 顶部上下文指示器刷新为压缩后的 token 使用量
 
 ### 场景 4: 模型切换后重新计算百分比
 
-**Given** 当前会话已用 86k tokens，当前模型窗口为 200k  
-**When** 用户切换到窗口为 256k 的模型  
+**Given** 当前会话已用 86k tokens，当前模型窗口为 200k
+**When** 用户切换到窗口为 256k 的模型
 **Then** 指示器应按 256k 重新计算百分比
 
-**When** 用户切换到窗口更小的模型  
+**When** 用户切换到窗口更小的模型
 **Then** 指示器应按新窗口展示更高百分比
 
 **And** 不应继续展示旧模型下缓存的百分比
 
 ### 场景 5: 自动压缩或重试期间不被提前 abort
 
-**Given** OpenClaw 收到 provider 的 context exceeded 或其他可恢复错误  
-**When** OpenClaw 进入自动压缩、重试或 failover 流程  
-**Then** LobsterAI 不应在 2 秒后立即 `chat.abort`
+**Given** OpenClaw 收到 provider 的 context exceeded 或其他可恢复错误
+**When** OpenClaw 进入自动压缩、重试或 failover 流程
+**Then** 智码 GLM Code 不应在 2 秒后立即 `chat.abort`
 
 **And** 只有当 20 秒后仍未收到正常 chat error/final/aborted 且当前 run 仍匹配时，才执行 lifecycle error fallback。
 
 ### 场景 6: 会话仍在运行时用户继续输入
 
-**Given** OpenClaw 正在执行工具调用、自动压缩、重试或继续生成  
-**When** 用户误以为任务已结束并再次发送消息  
-**Then** LobsterAI 应明确提示当前会话仍在运行
+**Given** OpenClaw 正在执行工具调用、自动压缩、重试或继续生成
+**When** 用户误以为任务已结束并再次发送消息
+**Then** 智码 GLM Code 应明确提示当前会话仍在运行
 
 **And** 不应把该消息静默丢失
 
@@ -124,29 +124,29 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 ### 场景 7: Pre-compaction memory flush 不污染聊天
 
-**Given** OpenClaw 在压缩前触发 memory flush  
+**Given** OpenClaw 在压缩前触发 memory flush
 **When** gateway history 或 stream 中出现内部 user prompt `Pre-compaction memory flush...`
-**Then** LobsterAI 不展示该 user prompt
+**Then** 智码 GLM Code 不展示该 user prompt
 
-**And** 如果 assistant 回复为纯 `NO_REPLY/no_reply`，LobsterAI 不展示该 assistant 消息
+**And** 如果 assistant 回复为纯 `NO_REPLY/no_reply`，智码 GLM Code 不展示该 assistant 消息
 
-**And** 如果本轮确认发生了 memory daily file read/write，LobsterAI 保持 session running 并展示 `正在整理上下文...`
+**And** 如果本轮确认发生了 memory daily file read/write，智码 GLM Code 保持 session running 并展示 `正在整理上下文...`
 
 ### 场景 8: OpenClaw 展示 COMPACTION 但没有 checkpoint
 
-**Given** OpenClaw Web UI 在聊天中展示 `COMPACTION` 分隔符  
+**Given** OpenClaw Web UI 在聊天中展示 `COMPACTION` 分隔符
 **When** `sessions.list` 的 `compactionCheckpointCount` 仍为空或为 0，Sessions 页面显示 `COMPACTION none`
-**Then** LobsterAI 不插入“上下文已自动压缩”的 checkpoint 提示
+**Then** 智码 GLM Code 不插入“上下文已自动压缩”的 checkpoint 提示
 
-**And** LobsterAI 可继续展示 context usage 已超出窗口的 danger 状态
+**And** 智码 GLM Code 可继续展示 context usage 已超出窗口的 danger 状态
 
 **And** 后续若出现真实 checkpoint count 增量，再插入自动压缩提示
 
 ### 场景 9: history reconcile 后 meta 仍可展示
 
-**Given** `reconcileWithHistory()` 替换了本地消息尾部  
-**When** `chat.final` usage 或 delayed `chat.history` usage 回填到达  
-**Then** LobsterAI 应校验 preferred assistant message id 是否仍存在
+**Given** `reconcileWithHistory()` 替换了本地消息尾部
+**When** `chat.final` usage 或 delayed `chat.history` usage 回填到达
+**Then** 智码 GLM Code 应校验 preferred assistant message id 是否仍存在
 
 **And** 如果该 id 已失效，应回退到当前会话最新 assistant message
 
@@ -156,11 +156,11 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 **Given** 用户从侧边栏或历史列表进入一个已有 Cowork 会话
 **When** 会话详情加载或 `sessionId` 切换
-**Then** LobsterAI 主动向 OpenClaw 同步一次 context usage
+**Then** 智码 GLM Code 主动向 OpenClaw 同步一次 context usage
 
 **And** 如果 OpenClaw 返回完整 token/percent 数据，输入框附近展示上下文圆环
 
-**And** 如果 OpenClaw 暂时无法返回完整 usage，LobsterAI 不展示圆环，也不展示“不可用”tooltip
+**And** 如果 OpenClaw 暂时无法返回完整 usage，智码 GLM Code 不展示圆环，也不展示“不可用”tooltip
 
 **And** 快速来回切换同一个会话时应做轻量 cooldown，避免频繁请求 OpenClaw
 
@@ -168,7 +168,7 @@ LobsterAI Cowork 当前已经基于 OpenClaw 运行对话与工具调用。OpenC
 
 ### FR-1: 上下文使用量数据模型
 
-LobsterAI 需要为 Cowork session 维护上下文使用量状态：
+智码 GLM Code 需要为 Cowork session 维护上下文使用量状态：
 
 ```ts
 type ContextUsageState = {
@@ -209,7 +209,7 @@ percent = contextTokens > 0 ? Math.round((usedTokens / contextTokens) * 100) : u
 
 1. OpenClaw `sessions.list` / session entry 中的 token 字段和 `contextTokens`。
 2. 当前 turn 的 `chat.final` usage metadata。
-3. LobsterAI 本地 `models.json` 中的 `contextWindow` 作为分母兜底。
+3. 智码 GLM Code 本地 `models.json` 中的 `contextWindow` 作为分母兜底。
 4. OpenClaw 默认 200k 作为最后兜底，由 OpenClaw 保持现有行为。
 
 当 `sessions.list` 能提供 session 级 `contextTokens` 时，以它为准。
@@ -257,7 +257,7 @@ tooltip 建议文案：
 
 ### FR-5: 自动压缩提示
 
-当 OpenClaw 自动压缩发生后，LobsterAI 应在对话流中插入轻量系统提示：
+当 OpenClaw 自动压缩发生后，智码 GLM Code 应在对话流中插入轻量系统提示：
 
 ```text
 OpenClaw 已自动压缩上下文。
@@ -298,7 +298,7 @@ OpenClaw 已自动压缩上下文。
 
 ### FR-7: 运行中状态与继续输入处理
 
-当 OpenClaw session 仍在 running 时，LobsterAI 需要避免用户误判任务结束。
+当 OpenClaw session 仍在 running 时，智码 GLM Code 需要避免用户误判任务结束。
 
 第一版建议：
 
@@ -321,10 +321,10 @@ OpenClaw 已自动压缩上下文。
 原因：
 
 - OpenClaw 默认 fallback 是 200k。
-- 用户可能配置大量自定义模型，LobsterAI 无法精确知道所有模型窗口。
+- 用户可能配置大量自定义模型，智码 GLM Code 无法精确知道所有模型窗口。
 - 贸然改小默认窗口会影响常规模型体验，导致过早压缩。
 
-后续如果服务端能提供 LobsterAI server 模型 metadata，可以优先让可控模型写准 `contextWindow`，但不属于本功能第一版。
+后续如果服务端能提供 智码 GLM Code server 模型 metadata，可以优先让可控模型写准 `contextWindow`，但不属于本功能第一版。
 
 ### FR-9: lifecycle error fallback 修复
 
@@ -345,7 +345,7 @@ OpenClaw 已自动压缩上下文。
 
 ### FR-10: OpenClaw silent / maintenance 消息过滤
 
-LobsterAI 需要过滤以下 OpenClaw 内部消息：
+智码 GLM Code 需要过滤以下 OpenClaw 内部消息：
 
 1. assistant/system 角色的纯 `HEARTBEAT_OK`。
 2. assistant/system 角色的纯 `NO_REPLY/no_reply`。
@@ -372,7 +372,7 @@ LobsterAI 需要过滤以下 OpenClaw 内部消息：
 
 ### FR-11: Pre-compaction memory maintenance 运行态
 
-当满足以下条件时，LobsterAI 应进入 context maintenance running state：
+当满足以下条件时，智码 GLM Code 应进入 context maintenance running state：
 
 1. 当前 active turn 收到 memory daily file read/write tool event。
 2. 后续 `chat.final` 文本为纯 `NO_REPLY/no_reply`。
@@ -551,7 +551,7 @@ metadata: {
 
 插入策略：
 
-- 只对当前 LobsterAI session 插入。
+- 只对当前 智码 GLM Code session 插入。
 - 同一个 checkpoint count 去重。
 - 如果压缩发生时用户正在等待回复，提示应出现在对应 turn 的消息流中，但不打断 assistant streaming。
 - 压缩提示属于 `context_compaction` system message，渲染时应拆成独立后续 turn，避免插入到 assistant 正文与文件/链接卡片之间。
@@ -596,7 +596,7 @@ client.request('sessions.compact', {
 }
 ```
 
-当前 LobsterAI 第一版使用专用 `sessions.compact` RPC，不通过发送 `/compact` 文本模拟用户消息，避免污染聊天历史。
+当前 智码 GLM Code 第一版使用专用 `sessions.compact` RPC，不通过发送 `/compact` 文本模拟用户消息，避免污染聊天历史。
 
 手动压缩流程：
 
@@ -606,7 +606,7 @@ client.request('sessions.compact', {
 4. `coworkService.compactContext(sessionId)` 设置 `compactingSessionIds`，并启动 watchdog 兜底清理。
 5. preload 调用 `cowork:session:compactContext`。
 6. main 调用 `CoworkEngineRouter.compactContext(sessionId)`。
-7. OpenClaw runtime adapter 解析 LobsterAI session 对应的 OpenClaw `sessionKey`。
+7. OpenClaw runtime adapter 解析 智码 GLM Code session 对应的 OpenClaw `sessionKey`。
 8. 调用 OpenClaw `sessions.compact`。
 9. 成功后刷新 `getContextUsage(sessionId)`。
 10. renderer 插入 `system` 消息：
@@ -619,7 +619,7 @@ client.request('sessions.compact', {
 - 不因为 `compactingSessionIds` 把发送按钮硬禁用，避免异常状态导致按钮永久不可用。
 - 用户在手动压缩期间提交消息时，`coworkService.continueSession()` 做软拦截，toast 提示 `coworkContextCompactingSendBlocked`，不创建用户消息、不切换成 error，且 `CoworkPromptInput` 必须保留当前输入内容与附件。
 - OpenClaw 源码中 `queueEmbeddedPiMessage()` 在 `handle.isCompacting()` 时会返回 false，因此不能假设 compacting 期间的用户消息一定会被 OpenClaw 排队。
-- OpenClaw `sessions.compact` 在 manual compact 且未传 `maxLines` 时会先调用 `interruptSessionRunIfActive(...)`，所以 LobsterAI 不允许在任务仍运行时主动压缩，避免打断正在执行的用户任务。
+- OpenClaw `sessions.compact` 在 manual compact 且未传 `maxLines` 时会先调用 `interruptSessionRunIfActive(...)`，所以 智码 GLM Code 不允许在任务仍运行时主动压缩，避免打断正在执行的用户任务。
 
 ### 4.7 OpenClaw 已确认 API 与事件
 
@@ -637,7 +637,7 @@ OpenClaw `sessions.list` 返回 session index，关键字段来自：
 - `src/gateway/session-utils.ts`
 - `src/gateway/server-methods/sessions.ts`
 
-LobsterAI 当前使用字段：
+智码 GLM Code 当前使用字段：
 
 ```ts
 {
@@ -664,7 +664,7 @@ LobsterAI 当前使用字段：
 
 - `sessions.list` 对 UI 可见的是 `compactionCheckpointCount`，不是 store 内部的 `compactionCount`。
 - store 内部的 `compactionCount` 会在 manual/auto compaction 后递增，但 first-version UI 以 `compactionCheckpointCount` 和 `latestCompactionCheckpoint` 作为更可展示的 checkpoint 依据。
-- 2026-05-09 实测确认：memory flush 或内部计数变化可能让 `compactionCount` 变化，但 OpenClaw Sessions 页面仍显示 `COMPACTION none`；因此 LobsterAI 已改为只使用 `compactionCheckpointCount` 触发自动压缩提示。
+- 2026-05-09 实测确认：memory flush 或内部计数变化可能让 `compactionCount` 变化，但 OpenClaw Sessions 页面仍显示 `COMPACTION none`；因此 智码 GLM Code 已改为只使用 `compactionCheckpointCount` 触发自动压缩提示。
 - `contextTokens` 是运行时估算/报告值，不能当作严格模型窗口保证；最终分母仍以 OpenClaw 返回值优先。
 
 #### 4.7.2 `sessions.compact`
@@ -713,7 +713,7 @@ OpenClaw 自动压缩会发明确 agent event，来源：
 }
 ```
 
-LobsterAI 处理策略：
+智码 GLM Code 处理策略：
 
 - `phase=start`: session 维持 `running`，向 renderer 推送 `cowork:stream:sessionStatus`。
 - `phase=end`: session 仍维持 `running`，因为 `willRetry=true` 时 OpenClaw 会继续同一任务。
@@ -756,7 +756,7 @@ assistant final: NO_REPLY
 seconds later: follow-up run continues the original user request
 ```
 
-LobsterAI 当前处理：
+智码 GLM Code 当前处理：
 
 1. `openclawHistory.ts` 过滤 history 中的内部 prompt 和 silent token。
 2. `openclawRuntimeAdapter.ts` 在 stream path 过滤 `NO_REPLY/no_reply`，避免短暂闪现。
@@ -785,14 +785,14 @@ OpenClaw 里至少存在三种容易混淆的“压缩”信号：
 2. **session checkpoint compaction**
    - `sessions.list` 返回 `compactionCheckpointCount` 和 `latestCompactionCheckpoint`。
    - Sessions 页面显示 checkpoint 数量和 `Show checkpoints`。
-   - LobsterAI 自动压缩提示只认这一层。
+   - 智码 GLM Code 自动压缩提示只认这一层。
 3. **memory flush / pre-compaction maintenance**
    - `Pre-compaction memory flush` 内部 user prompt。
    - memory daily file read/write。
    - assistant 可能回复 `NO_REPLY/no_reply`。
    - 这是压缩前维护动作，不等于 checkpoint 已完成。
 
-2026-05-09 实测中，OpenClaw Chat UI 显示 `COMPACTION` 分隔符，并且 context usage 达到约 `80.3k / 60k`；但 Sessions 页面 `COMPACTION none`，`compactionCheckpointCount` 仍为空。因此 LobsterAI 不应插入“上下文已自动压缩”提示。
+2026-05-09 实测中，OpenClaw Chat UI 显示 `COMPACTION` 分隔符，并且 context usage 达到约 `80.3k / 60k`；但 Sessions 页面 `COMPACTION none`，`compactionCheckpointCount` 仍为空。因此 智码 GLM Code 不应插入“上下文已自动压缩”提示。
 
 ### 4.11 Usage/meta 回填容错
 
@@ -977,7 +977,7 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 
 - `buildContextUsageFromSessionRow()` 不再把 OpenClaw 内部 `compactionCount` 当作 UI 可见 checkpoint count。
 - 自动压缩提示只依据 `compactionCheckpointCount`。
-- 如果 OpenClaw Chat UI 显示 `COMPACTION` 分隔符，但 Sessions 页面仍是 `COMPACTION none`，LobsterAI 不插入“上下文已自动压缩”提示。
+- 如果 OpenClaw Chat UI 显示 `COMPACTION` 分隔符，但 Sessions 页面仍是 `COMPACTION none`，智码 GLM Code 不插入“上下文已自动压缩”提示。
 
 已完成测试：
 
@@ -1060,7 +1060,7 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 - lifecycle error fallback 不会在 2 秒打断 OpenClaw 恢复流程。
 - `chat.final` 后 800ms grace 内出现 overflow retry stream 时，输入框和 loading 保持 running。
 - pre-compaction memory flush 后不展示内部 prompt、memory tool、`NO_REPLY`。
-- OpenClaw Chat UI 显示 `COMPACTION` 但 Sessions 页面 checkpoint 为 none 时，LobsterAI 不提示“已自动压缩”。
+- OpenClaw Chat UI 显示 `COMPACTION` 但 Sessions 页面 checkpoint 为 none 时，智码 GLM Code 不提示“已自动压缩”。
 - history reconcile 发生后，assistant 底部 token/meta 仍显示。
 
 ### 6.3 Manual QA
@@ -1099,13 +1099,13 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 
 - 保持 OpenClaw 默认 200k 兜底。
 - 不对未知模型强行改小窗口。
-- context exceeded 后依赖 OpenClaw overflow recovery 和 LobsterAI 延迟 abort 修复。
+- context exceeded 后依赖 OpenClaw overflow recovery 和 智码 GLM Code 延迟 abort 修复。
 
 开发测试策略：
 
-- 测试期间曾临时将 LobsterAI 同步给 OpenClaw `models.json` 的 `contextWindow` override 设为 `60_000`，用于更容易触发 memory flush / pre-compaction / overflow 相关路径。
+- 测试期间曾临时将 智码 GLM Code 同步给 OpenClaw `models.json` 的 `contextWindow` override 设为 `60_000`，用于更容易触发 memory flush / pre-compaction / overflow 相关路径。
 - 该测试 override 已在发布前移除，生产逻辑恢复为：仅当 provider 本身声明 `modelDefaults.contextWindow` 时同步该值；未知模型不强行写入窗口，继续由 OpenClaw 使用默认 `200k` 兜底。
-- 测试覆盖值仅影响 LobsterAI 同步给 OpenClaw 的模型配置；如果 OpenClaw provider catalog 对某模型有更高优先级，最终分母仍应以 OpenClaw `sessions.list` 返回的 `contextTokens` 为准。
+- 测试覆盖值仅影响 智码 GLM Code 同步给 OpenClaw 的模型配置；如果 OpenClaw provider catalog 对某模型有更高优先级，最终分母仍应以 OpenClaw `sessions.list` 返回的 `contextTokens` 为准。
 - 即使 OpenClaw 在测试期间按 `60_000` 计算 usage 和阈值，底层 provider/model 可能实际可接收超过 60k 的上下文；因此 `80k / 60k` 不必然意味着 provider 已拒绝，也不必然意味着 checkpoint compaction 已生成。
 
 ### 7.3 性能与内存
@@ -1148,9 +1148,9 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 3. 已确认：`sessions.list` 关键字段包括 `totalTokens`、`inputTokens`、`outputTokens`、`contextTokens`、`compactionCheckpointCount`、`latestCompactionCheckpoint`。
 4. 已确认：OpenClaw store 内部维护 `compactionCount`；gateway list 对 UI 暴露 `compactionCheckpointCount` 和 `latestCompactionCheckpoint`。第一版 UI 以 checkpoint count 去重。
 5. 已确认：OpenClaw gateway 暴露 `sessions.compaction.list` / `sessions.compaction.get`，可读取 checkpoint 列表和单个 checkpoint 的 `summary`、`tokensBefore`、`tokensAfter`、`preCompaction`、`postCompaction` 等 metadata。
-6. 已确认：OpenClaw gateway 还暴露 `sessions.compaction.branch` / `sessions.compaction.restore`，但它们操作 OpenClaw transcript/session store，不等同于 LobsterAI Cowork 会话分叉。
-7. 已确认：OpenClaw `compactionSummary` 是 assembled/model-visible context 的角色，不应与 UI `COMPACTION` 分隔符或 LobsterAI 的轻量系统提示混为一谈。
-8. 已处理：自动压缩期间可能与 `chat.final` / retry stream 交错，LobsterAI 通过 800ms deferred completion 和 stream cancel 处理。
+6. 已确认：OpenClaw gateway 还暴露 `sessions.compaction.branch` / `sessions.compaction.restore`，但它们操作 OpenClaw transcript/session store，不等同于 智码 GLM Code Cowork 会话分叉。
+7. 已确认：OpenClaw `compactionSummary` 是 assembled/model-visible context 的角色，不应与 UI `COMPACTION` 分隔符或 智码 GLM Code 的轻量系统提示混为一谈。
+8. 已处理：自动压缩期间可能与 `chat.final` / retry stream 交错，智码 GLM Code 通过 800ms deferred completion 和 stream cancel 处理。
 9. 仍需手测：OpenClaw 压缩失败时的错误形态是否稳定可识别。
 10. 第一版已定：上下文圈放在 `CoworkSessionDetail` 输入框发送按钮左侧，保持轻量。
 11. 第一版已定：会话 running 时不支持 pending queue；输入保持可见，发送按钮走 streaming/stop 状态，强行发送时给等待提示。
@@ -1170,7 +1170,7 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 4. 当时最新截图中 token 仍为约 `177k / 200k`、`89% context used`，因此在任务未结束阶段不能确认 OpenClaw 已完成实际压缩。
 5. 判断自动压缩完成应优先依赖明确 compaction event、`compactionCheckpointCount` 递增，或 token 占用显著下降，而不是只依赖 `Pre-compaction memory flush` 或 `COMPACTION` 标记。
 6. 日志显示同一 run 在较长时间内持续收到 OpenClaw 工具调用和 assistant stream 事件，说明任务仍在执行。
-7. LobsterAI 端在继续执行期间缺少稳定的 running/loading 表达，用户容易误以为任务已结束。
+7. 智码 GLM Code 端在继续执行期间缺少稳定的 running/loading 表达，用户容易误以为任务已结束。
 8. 用户在任务仍 running 时继续发送消息时出现 `Session ... is still running.` 是并发保护提示，不应直接移除。
 9. 关键问题是 running/loading 状态没有正确展示，导致输入框未能按预期禁用，用户才会触发该保护提示。
 10. 用户切换到其他会话后再切回，loading 状态恢复正常，说明持久化 session 状态大概率仍为 `running`，问题更可能发生在当前页面实时 stream 状态同步链路。
@@ -1179,12 +1179,12 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 13. `20:00:55` 和 `20:01:08` 的 `Session ... is still running.` 与用户在任务仍运行时继续发送相吻合，说明该提示来自并发保护，不是任务终止信号。
 14. 主进程日志持续出现 `CoworkForwarder forwarding message ... windowCount=1`，说明主进程仍在向 renderer 转发消息；如果 UI 当时没有及时展示，问题更可能在 renderer 状态应用、当前会话消息渲染或局部状态同步，而不是 OpenClaw 停止执行。
 15. 当时日志中没有看到该 run 的明确 compaction 完成信号，且 token 仍停留在 `177k / 200k` 量级，因此在任务运行中不能把这次现象直接归因于已完成自动压缩。
-16. 进一步代码排查显示，初始 loading 丢失发生在用户再次发送之前：`19:54:03` LobsterAI 收到 `chat.final` 并 emit `complete`，renderer 因此把当前会话置为 completed，`isStreaming` 变为 false。
+16. 进一步代码排查显示，初始 loading 丢失发生在用户再次发送之前：`19:54:03` 智码 GLM Code 收到 `chat.final` 并 emit `complete`，renderer 因此把当前会话置为 completed，`isStreaming` 变为 false。
 17. `19:54:05` OpenClaw 随后检测到 context overflow，并进入 auto-compaction/retry 流程；后续同一个 run 继续产生 tool/assistant stream。
 18. `19:58:35` main 侧通过 `ensureActiveTurn()` 重新创建 active turn，并把 main store 中的 session 状态更新为 `running`，但当前没有对应的 status IPC 事件同步给 renderer。
 19. renderer 的 `onStreamMessage` 目前只有收到 `user` 消息才 `updateSessionStatus(... running)`，普通 assistant/tool stream 不会把 UI 重新拉回 running；因此后续消息继续展示，但输入框和 loading 可能仍停留在 completed/idle 状态。
 20. `20:00:55` 和 `20:01:08` 的 `Session ... is still running.` 是 loading 丢失后的后续症状：用户看到可发送后再次发送，触发并发保护；该错误不应再把 UI 当作终止性 error 处理。
-21. 因此 loading 丢失的最可能根因是“OpenClaw 在 context overflow/auto-compaction/retry 前后出现 chat.final/后续 stream 的组合，LobsterAI 过早 complete 了 renderer 状态，而后续 active turn 重建没有同步 running 状态给 renderer”。
+21. 因此 loading 丢失的最可能根因是“OpenClaw 在 context overflow/auto-compaction/retry 前后出现 chat.final/后续 stream 的组合，智码 GLM Code 过早 complete 了 renderer 状态，而后续 active turn 重建没有同步 running 状态给 renderer”。
 
 因此第一版除上下文圈和压缩提示外，还需要处理 active turn/running session 的状态展示与重复发送提示，否则用户仍会在自动压缩或长工具调用阶段误操作。
 
@@ -1201,7 +1201,7 @@ npx eslint src/main/libs/agentEngine/openclawRuntimeAdapter.ts src/main/libs/age
 5. OpenClaw 生成了 checkpoint 文件：
 
 ```text
-/Users/zhiqiangliu/Library/Application Support/LobsterAI/openclaw/state/agents/main/sessions/b1a58bee-1aee-41fd-bfe1-490f3c186667.checkpoint.70b36695-0e4f-4567-a7e3-c29f0d8181bc.jsonl
+/Users/zhiqiangliu/Library/Application Support/智码 GLM Code/openclaw/state/agents/main/sessions/b1a58bee-1aee-41fd-bfe1-490f3c186667.checkpoint.70b36695-0e4f-4567-a7e3-c29f0d8181bc.jsonl
 ```
 
 6. 主 session 文件在 `2026-05-08 20:36` 更新完成，checkpoint 文件在 `2026-05-08 19:54` 生成，符合“压缩后继续执行同一任务”的时间线。
@@ -1217,15 +1217,15 @@ main session file: 1.0 MB, 297 lines, updated at 20:36
 
 - OpenClaw 的自动压缩能力在本次测试中生效。
 - 压缩不是以普通 user/assistant 聊天气泡展示，而是以 `type: "compaction"` 会话记录、checkpoint 文件、Sessions 页面 `checkpoint / overflow retry` 信息体现。
-- OpenClaw 对话 UI 中可能只展示轻量 `COMPACTION` 分隔符，或主要在 Sessions 列表和 `Show checkpoints` 中体现；LobsterAI 不能依赖普通聊天消息来判断压缩发生。
-- LobsterAI 需要主动对接 compaction metadata，才能在自身对话流中展示用户可理解的“已自动压缩上下文”提示。
+- OpenClaw 对话 UI 中可能只展示轻量 `COMPACTION` 分隔符，或主要在 Sessions 列表和 `Show checkpoints` 中体现；智码 GLM Code 不能依赖普通聊天消息来判断压缩发生。
+- 智码 GLM Code 需要主动对接 compaction metadata，才能在自身对话流中展示用户可理解的“已自动压缩上下文”提示。
 
 ### 9.3 本次压缩与运行状态异常的时间线
 
 测试 session 信息：
 
 ```text
-LobsterAI sessionId: eedbc56e-9d03-4281-a5b6-199c1513865d
+智码 GLM Code sessionId: eedbc56e-9d03-4281-a5b6-199c1513865d
 OpenClaw session file id: b1a58bee-1aee-41fd-bfe1-490f3c186667
 OpenClaw runId: b194e0b0-4fe9-4f9d-ac1f-6d02da348cfe
 Model: deepseek/deepseek-v4-pro
@@ -1235,17 +1235,17 @@ Model: deepseek/deepseek-v4-pro
 
 1. `19:41:51` OpenClaw 插入 `Pre-compaction memory flush` 内部消息，用于压缩前记忆刷新。
 2. `19:42:42` OpenClaw 开始 embedded run，进入正常工具调用和生成流程。
-3. `19:54:03` OpenClaw 对同一 run 发送 `chat.final`，LobsterAI 收到后 emit `complete`，renderer 将当前会话置为 completed，`isStreaming` 变为 false。
+3. `19:54:03` OpenClaw 对同一 run 发送 `chat.final`，智码 GLM Code 收到后 emit `complete`，renderer 将当前会话置为 completed，`isStreaming` 变为 false。
 4. `19:54:05` OpenClaw 随后检测到 context overflow，并进入自动压缩和 retry 流程。
 5. `19:54:35` OpenClaw 写入 `type: "compaction"` 记录，并生成 checkpoint；压缩前 token 为 `202172`。
-6. `19:58:35` LobsterAI main 侧在后续 OpenClaw stream 到来时重新创建 ActiveTurn，并将 main store 中 session 状态改回 `running`。
+6. `19:58:35` 智码 GLM Code main 侧在后续 OpenClaw stream 到来时重新创建 ActiveTurn，并将 main store 中 session 状态改回 `running`。
 7. `20:00:55` 和 `20:01:08` 用户因前端 input 已恢复可发送而再次发送消息，触发 `Session ... is still running.` 并发保护提示。
 8. `20:34 - 20:35` OpenClaw 仍持续发送 tool/assistant stream，说明任务一直在继续执行。
 9. `20:36:07` OpenClaw embedded run agent end，`isError=false`。
 10. `20:36:08` OpenClaw session state 从 `processing` 变为 `idle`，reason 为 `run_completed`。
 11. `20:36:10` OpenClaw embedded run done，`aborted=false`。
-12. `20:36:11` LobsterAI 通过 lifecycle end fallback 完成 missed `chat.final` 的最终同步。
-13. `20:36:12` LobsterAI usage sync 完成，日志显示 `in=361 out=302 ctx=0% cacheRead=138624 agent=main`。
+12. `20:36:11` 智码 GLM Code 通过 lifecycle end fallback 完成 missed `chat.final` 的最终同步。
+13. `20:36:12` 智码 GLM Code usage sync 完成，日志显示 `in=361 out=302 ctx=0% cacheRead=138624 agent=main`。
 
 关键日志摘录：
 
@@ -1266,12 +1266,12 @@ Model: deepseek/deepseek-v4-pro
 
 ### 9.4 根因判断
 
-本次用户感知到的“任务还在跑，但 LobsterAI loading 丢失、输入框恢复可发送”不是 OpenClaw 任务停止，也不是 `Session ... is still running.` 提示本身导致的。
+本次用户感知到的“任务还在跑，但 智码 GLM Code loading 丢失、输入框恢复可发送”不是 OpenClaw 任务停止，也不是 `Session ... is still running.` 提示本身导致的。
 
 更准确的根因是：
 
 1. OpenClaw 在 context overflow / auto-compaction / retry 前后出现了 `chat.final` 后继续同一 run stream 的组合。
-2. LobsterAI renderer 收到第一次 `complete` 后提前把 UI 状态改成 idle。
+2. 智码 GLM Code renderer 收到第一次 `complete` 后提前把 UI 状态改成 idle。
 3. 后续 main 侧虽然通过 `ensureActiveTurn()` 重新创建 ActiveTurn，并把 store 中 session 状态改回 running，但没有向 renderer 发送明确的 session status update。
 4. renderer 当前只有在收到 `user` 类型 stream message 时会主动 `updateSessionStatus(... running)`，assistant/tool stream 不会把 UI 重新拉回 running。
 5. 因此后续 assistant/tool 消息可以继续展示，但输入框和 loading 状态可能仍停留在 idle，导致用户可以点击发送。
@@ -1282,7 +1282,7 @@ Model: deepseek/deepseek-v4-pro
 
 本次测试也验证了本分支已完成的 20 秒 lifecycle error fallback 修复是必要的。
 
-如果仍保持旧逻辑：收到 `lifecycle phase=error` 后 2 秒就发送 `chat.abort`，那么在 OpenClaw 刚检测到 context overflow 并准备自动压缩/retry 时，LobsterAI 很可能会提前 abort gateway run。
+如果仍保持旧逻辑：收到 `lifecycle phase=error` 后 2 秒就发送 `chat.abort`，那么在 OpenClaw 刚检测到 context overflow 并准备自动压缩/retry 时，智码 GLM Code 很可能会提前 abort gateway run。
 
 可能后果：
 
@@ -1312,7 +1312,7 @@ Model: deepseek/deepseek-v4-pro
 
 测试背景：
 
-- 测试时本地曾将 LobsterAI 同步给 OpenClaw 的 context window override 设为 `60_000`，用于更快复现相关路径；该 override 已在发布前移除。
+- 测试时本地曾将 智码 GLM Code 同步给 OpenClaw 的 context window override 设为 `60_000`，用于更快复现相关路径；该 override 已在发布前移除。
 - 测试 session key：
 
 ```text
@@ -1343,7 +1343,7 @@ assistant final:
 - 超过 `threshold=36000` 后，OpenClaw 会先触发 pre-compaction memory flush。
 - memory flush 不等于 checkpoint compaction 已完成。
 - `NO_REPLY/no_reply` 是 OpenClaw silent token，不应展示为正式 assistant 消息。
-- LobsterAI 需要在 confirmed maintenance 期间保持 running，并显示“正在整理上下文...”，否则用户会误以为任务停止。
+- 智码 GLM Code 需要在 confirmed maintenance 期间保持 running，并显示“正在整理上下文...”，否则用户会误以为任务停止。
 
 #### 9.7.2 COMPACTION 分隔符但无 checkpoint
 
@@ -1373,15 +1373,15 @@ context-diag:
 - OpenClaw Chat UI 的 `COMPACTION` 分隔符可表示 assembled context 中存在 `compactionSummary`。
 - `compactionSummary:1` 表示 prompt/context 构造时使用了摘要段，不等于 session checkpoint。
 - Sessions 页面 `COMPACTION none` 和缺失 `compactionCheckpointCount` 说明没有生成可展示 checkpoint。
-- LobsterAI 不应在该情况下插入“上下文已自动压缩”提示。
+- 智码 GLM Code 不应在该情况下插入“上下文已自动压缩”提示。
 - 60k 是 OpenClaw 侧用于 usage/阈值计算的测试窗口；底层 qwen provider 可能仍可接收超过 60k 的实际上下文，因此 `80k / 60k` 不必然触发 provider hard error。
 
 #### 9.7.3 Assistant meta 消失
 
-测试发现 LobsterAI 端 assistant 回复下方 meta 信息不展示，而 OpenClaw 端可以看到类似：
+测试发现 智码 GLM Code 端 assistant 回复下方 meta 信息不展示，而 OpenClaw 端可以看到类似：
 
 ```text
-LobsterAI 13:47 ↑80.4k ↓391 100% ctx qwen3.6-plus
+智码 GLM Code 13:47 ↑80.4k ↓391 100% ctx qwen3.6-plus
 ```
 
 根因：
@@ -1400,7 +1400,7 @@ LobsterAI 13:47 ↑80.4k ↓391 100% ctx qwen3.6-plus
 
 #### 9.7.4 本轮确认的产品语义
 
-LobsterAI 侧应展示的内容：
+智码 GLM Code 侧应展示的内容：
 
 - 普通 user/assistant 聊天。
 - 普通 tool_use/tool_result。
@@ -1408,7 +1408,7 @@ LobsterAI 侧应展示的内容：
 - context maintenance 期间的运行态提示。
 - assistant message meta：agent、input/output/cache tokens、context percent、model。
 
-LobsterAI 侧不应展示的内容：
+智码 GLM Code 侧不应展示的内容：
 
 - `Pre-compaction memory flush` 内部 user prompt。
 - 纯 `NO_REPLY/no_reply` assistant/system 消息。

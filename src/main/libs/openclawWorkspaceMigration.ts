@@ -19,7 +19,7 @@ import {
 const TAG = '[OpenClaw Migration]';
 const MIGRATION_KEY = 'migration.mainAgentWorkspace.v3.completed';
 
-const AGENTS_MARKER = '<!-- LobsterAI managed: do not edit below this line -->';
+const AGENTS_MARKER = '<!-- 智码 GLM Code managed: do not edit below this line -->';
 const BOOTSTRAP_FILES = ['IDENTITY.md', 'USER.md', 'SOUL.md', 'TOOLS.md', 'BOOTSTRAP.md'];
 
 type CopyResult = {

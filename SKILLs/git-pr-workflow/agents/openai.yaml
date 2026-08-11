@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git and PR Workflow"
+  short_description: "Prepare scoped commits and evidence-backed pull requests."
+  default_prompt: "Use $git-pr-workflow to prepare a scoped commit or pull request from this worktree."

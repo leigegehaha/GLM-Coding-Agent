@@ -17,6 +17,13 @@ import {
 } from '../shared/auth/constants';
 import { BrowserIpc, type BrowserRuntimeProfile } from '../shared/browserWebAccess/constants';
 import { ClipboardIpc } from '../shared/clipboard/constants';
+import {
+  CodingPlanAccountIpc,
+  type CodingPlanAccountResult,
+  type CodingPlanAccountSnapshot,
+  type CodingPlanAccountUser,
+  type CodingPlanConfiguration,
+} from '../shared/codingPlanAccount/constants';
 import type { CoworkBrowserAnnotationMessageBatch } from '../shared/cowork/browserAnnotations';
 import type {
   CoworkBtwAbortRequest,
@@ -72,6 +79,10 @@ import {
   type SiteUpdateAccessStatusInput,
   type SiteUpdateTitleInput,
 } from '../shared/site/constants';
+import {
+  type ClawHubMarketplaceQuery,
+  SkillIpcChannel,
+} from '../shared/skills/constants';
 import { SkinIpc } from '../shared/skin/constants';
 import type {
   SkinApplyResponse,
@@ -81,6 +92,7 @@ import type {
   SkinGetActiveResponse,
   SkinListResponse,
 } from '../shared/skin/types';
+import { WebConsoleIpc } from '../shared/webConsole/constants';
 import { NimQrLoginIpc } from './ipcHandlers/nimQrLogin';
 import { OpenClawSessionIpc } from './openclawSession/constants';
 import { OpenClawSessionPolicyIpc } from './openclawSessionPolicy/constants';
@@ -117,7 +129,9 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke('skills:testEmailAccountConnectivity', skillId, account),
     testEmailConnectivity: (skillId: string, config: Record<string, string>) =>
       ipcRenderer.invoke('skills:testEmailConnectivity', skillId, config),
-    fetchMarketplace: () => ipcRenderer.invoke('skills:fetchMarketplace'),
+    fetchMarketplace: () => ipcRenderer.invoke(SkillIpcChannel.FetchMarketplace),
+    fetchClawHub: (query: ClawHubMarketplaceQuery) =>
+      ipcRenderer.invoke(SkillIpcChannel.FetchClawHub, query),
     detectFromOpenClaw: () => ipcRenderer.invoke('skills:detectFromOpenClaw'),
     syncFromOpenClaw: () => ipcRenderer.invoke('skills:syncFromOpenClaw'),
     refreshPluginSkillIds: () => ipcRenderer.invoke('skills:refreshPluginSkillIds'),
@@ -184,6 +198,18 @@ contextBridge.exposeInMainWorld('electron', {
   enterprise: {
     getConfig: () => ipcRenderer.invoke('enterprise:getConfig'),
   },
+  codingPlan: {
+    getAccount: (): Promise<CodingPlanAccountResult<CodingPlanAccountUser | null>> =>
+      ipcRenderer.invoke(CodingPlanAccountIpc.GetAccount),
+    login: (email: string, password: string): Promise<CodingPlanAccountResult<CodingPlanAccountUser>> =>
+      ipcRenderer.invoke(CodingPlanAccountIpc.Login, email, password),
+    getOverview: (): Promise<CodingPlanAccountResult<CodingPlanAccountSnapshot>> =>
+      ipcRenderer.invoke(CodingPlanAccountIpc.GetOverview),
+    configure: (tokenId: number): Promise<CodingPlanAccountResult<CodingPlanConfiguration>> =>
+      ipcRenderer.invoke(CodingPlanAccountIpc.Configure, tokenId),
+    logout: (): Promise<CodingPlanAccountResult<null>> =>
+      ipcRenderer.invoke(CodingPlanAccountIpc.Logout),
+  },
   api: {
     // 普通 API 请求（非流式）
     fetch: (options: {
@@ -191,6 +217,7 @@ contextBridge.exposeInMainWorld('electron', {
       method: string;
       headers: Record<string, string>;
       body?: string;
+      credentialRef?: string;
     }) => ipcRenderer.invoke('api:fetch', options),
 
     // 流式 API 请求
@@ -200,6 +227,7 @@ contextBridge.exposeInMainWorld('electron', {
       headers: Record<string, string>;
       body?: string;
       requestId: string;
+      credentialRef?: string;
     }) => ipcRenderer.invoke('api:stream', options),
 
     // 取消流式请求
@@ -410,6 +438,8 @@ contextBridge.exposeInMainWorld('electron', {
       browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
       agentId?: string;
       modelOverride?: string;
+      thinkingLevel?: string;
+      codingOptimized?: boolean;
       imageAttachments?: Array<{ name: string; mimeType: string; base64Data: string; sizeBytes?: number; localPath?: string; previewMimeType?: string; previewBase64Data?: string }>;
       mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string }; mediaReferences?: Array<{ token: string; mediaType: string; index: number; fileId: string; fileName: string; mimeType: string; localPath?: string; remoteUrl?: string; dataUrl?: string; role?: string }>;
     }) => ipcRenderer.invoke('cowork:session:start', options),
@@ -424,6 +454,7 @@ contextBridge.exposeInMainWorld('electron', {
       resolvedKitCapabilities?: ResolvedKitCapabilities;
       selectedTextSnippets?: Array<{ id: string; text: string; sourceMessageId?: string; sourceMessageType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceId?: string; sourceType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceTitle?: string; sourcePath?: string; artifactId?: string; createdAt: number; startOffset?: number; endOffset?: number }>;
       browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
+      codingOptimized?: boolean;
       imageAttachments?: Array<{ name: string; mimeType: string; base64Data: string; sizeBytes?: number; localPath?: string; previewMimeType?: string; previewBase64Data?: string }>;
       mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string };
       mediaReferences?: Array<{
@@ -448,6 +479,8 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke(CoworkIpcChannel.GoalCommand, options),
     stopSession: (sessionId: string) =>
       ipcRenderer.invoke(CoworkIpcChannel.StopSession, sessionId),
+    setSessionCodingOptimization: (options: { sessionId: string; enabled: boolean }) =>
+      ipcRenderer.invoke(CoworkIpcChannel.SetCodingOptimization, options),
     deleteSession: (sessionId: string) => ipcRenderer.invoke('cowork:session:delete', sessionId),
     deleteSessions: (sessionIds: string[]) =>
       ipcRenderer.invoke('cowork:session:deleteBatch', sessionIds),
@@ -523,6 +556,7 @@ contextBridge.exposeInMainWorld('electron', {
       workingDirectory?: string;
       executionMode?: 'auto' | 'local' | 'sandbox';
       agentEngine?: 'openclaw';
+      codingOptimizationEnabled?: boolean;
       memoryEnabled?: boolean;
       memoryImplicitUpdateEnabled?: boolean;
       memoryLlmJudgeEnabled?: boolean;
@@ -880,6 +914,11 @@ contextBridge.exposeInMainWorld('electron', {
     relaunch: () => ipcRenderer.invoke('app:relaunch'),
     openSystemNotificationSettings: () =>
       ipcRenderer.invoke(AppIpcChannel.OpenSystemNotificationSettings),
+  },
+  webConsole: {
+    getStatus: () => ipcRenderer.invoke(WebConsoleIpc.GetStatus),
+    open: () => ipcRenderer.invoke(WebConsoleIpc.Open),
+    stop: () => ipcRenderer.invoke(WebConsoleIpc.Stop),
   },
   appUpdate: {
     getState: () => ipcRenderer.invoke(AppUpdateIpc.GetState),

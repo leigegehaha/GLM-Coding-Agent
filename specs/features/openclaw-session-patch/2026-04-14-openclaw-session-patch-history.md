@@ -17,7 +17,7 @@ Cowork 区之前的模型切换逻辑并不是会话级能力。
 这带来两个问题：
 
 1. 用户在某个会话里切换模型，实际上污染了 `agent.model`
-2. OpenClaw 已经提供 `sessions.patch` 的会话级 override，但 LobsterAI 没有接这条能力
+2. OpenClaw 已经提供 `sessions.patch` 的会话级 override，但 智码 GLM Code 没有接这条能力
 
 同时，channel / IM 创建的 remote-managed 会话原本不显示模型选择器，导致这些会话无法在 UI 上改当前会话模型。
 

@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI 中把某个 IM 渠道绑定到指定 Agent 后，来自该 IM 的后续消息仍可能表现为主 Agent 或其他 Agent 的行为。例如微信已在 Agent 设置里绑定到一个具备特定身份/性格的 Agent，但在微信里询问“你是谁、你的助手身份/性格是什么”时，回复仍像主 Agent。
+用户在 智码 GLM Code 中把某个 IM 渠道绑定到指定 Agent 后，来自该 IM 的后续消息仍可能表现为主 Agent 或其他 Agent 的行为。例如微信已在 Agent 设置里绑定到一个具备特定身份/性格的 Agent，但在微信里询问“你是谁、你的助手身份/性格是什么”时，回复仍像主 Agent。
 
 这个问题的关键不在 UI 是否显示绑定成功，而在 OpenClaw 实际处理该 IM 消息时解析出的 `agentId` 是否等于绑定目标 Agent。
 
@@ -14,8 +14,8 @@
 
 1. **UI 绑定层**：`AgentSettingsPanel` / `AgentCreateModal` 将 IM 绑定写入 `IMSettings.platformAgentBindings`。
 2. **本地存储层**：`IMStore` 把 `settings.platformAgentBindings` 存进 SQLite 的 `im_config`。
-3. **OpenClaw 配置同步层**：`OpenClawConfigSync.buildBindings()` 将 LobsterAI 的绑定转换成 OpenClaw 顶层 `bindings`。
-4. **运行期 session 同步层**：OpenClaw channel plugin 收到 IM 消息后调用 `resolveAgentRoute()`，得到真实 `sessionKey`，LobsterAI 再通过 `OpenClawChannelSessionSync` 把该 channel session 映射成本地 Cowork session。
+3. **OpenClaw 配置同步层**：`OpenClawConfigSync.buildBindings()` 将 智码 GLM Code 的绑定转换成 OpenClaw 顶层 `bindings`。
+4. **运行期 session 同步层**：OpenClaw channel plugin 收到 IM 消息后调用 `resolveAgentRoute()`，得到真实 `sessionKey`，智码 GLM Code 再通过 `OpenClawChannelSessionSync` 把该 channel session 映射成本地 Cowork session。
 
 已有代码已经处理了一部分历史问题：
 
@@ -24,7 +24,7 @@
 - `OpenClawChannelSessionSync` 会在发现绑定变化时创建新的本地 Cowork session，避免把新 Agent 的消息混进旧 Agent 会话。
 - polling 会通过 `isCurrentBindingKey()` 过滤旧 Agent 的 channel session key。
 
-但这些机制都依赖一个前提：OpenClaw runtime 必须先把新 IM 消息路由到正确 Agent。如果 OpenClaw `bindings` 本身没有命中，后续 LobsterAI 的 session 映射只能看到一个已经路由错的 `sessionKey`。
+但这些机制都依赖一个前提：OpenClaw runtime 必须先把新 IM 消息路由到正确 Agent。如果 OpenClaw `bindings` 本身没有命中，后续 智码 GLM Code 的 session 映射只能看到一个已经路由错的 `sessionKey`。
 
 ### 1.3 根因
 
@@ -39,7 +39,7 @@
 }
 ```
 
-LobsterAI 侧的意图是“这个平台/渠道的所有账号都路由到 target-agent”。但 OpenClaw 当前路由语义不是这样：
+智码 GLM Code 侧的意图是“这个平台/渠道的所有账号都路由到 target-agent”。但 OpenClaw 当前路由语义不是这样：
 
 - `match.accountId` 省略：只匹配默认账号。
 - `match.accountId: "*"`：才匹配任意账号。
@@ -68,27 +68,27 @@ per-instance 绑定当前已经带 `accountId`，不属于同一个根因。
 
 ### 场景 A: 微信绑定到特定 Agent
 
-**Given** 用户把微信绑定到 Agent A，Agent A 有明确的身份/性格描述  
-**When** 用户在微信里问“你是谁？你的助手身份是什么？”  
+**Given** 用户把微信绑定到 Agent A，Agent A 有明确的身份/性格描述
+**When** 用户在微信里问“你是谁？你的助手身份是什么？”
 **Then** OpenClaw 解析出的 route 应该是 Agent A，回答应体现 Agent A 的身份/性格，而不是主 Agent。
 
 ### 场景 B: 修改绑定后继续从同一个微信联系人提问
 
-**Given** 微信原先由主 Agent 响应，后来被绑定到 Agent B  
-**When** 用户在同一个微信联系人里发送新问题  
+**Given** 微信原先由主 Agent 响应，后来被绑定到 Agent B
+**When** 用户在同一个微信联系人里发送新问题
 **Then** 新消息必须进入 `agent:agent-b:openclaw-weixin:<accountId>:direct:<peerId>` 这类 session key，而不是继续使用 `agent:main:...`。
 
 ### 场景 C: 多实例平台的全平台 fallback
 
-**Given** 某多实例平台存在平台级 legacy 绑定，没有精确实例绑定  
-**When** 任意启用账号收到新消息  
+**Given** 某多实例平台存在平台级 legacy 绑定，没有精确实例绑定
+**When** 任意启用账号收到新消息
 **Then** 平台级绑定应覆盖所有账号，而不是只覆盖默认账号。
 
 ## 3. 功能需求
 
 ### FR-1: 平台级绑定必须匹配任意账号
 
-凡是 LobsterAI 表达“平台级绑定”的 OpenClaw route binding，都必须显式写入：
+凡是 智码 GLM Code 表达“平台级绑定”的 OpenClaw route binding，都必须显式写入：
 
 ```json
 { "match": { "channel": "<channel>", "accountId": "*" } }
@@ -113,11 +113,11 @@ per-instance 绑定当前已经带 `accountId`，不属于同一个根因。
 可选辅助验证：
 
 - 检查 OpenClaw debug 日志中的 `resolveAgentRoute: agentId=... sessionKey=...`。
-- 检查 LobsterAI 本地 `im_session_mappings.openclaw_session_key` 是否包含目标 Agent ID。
+- 检查 智码 GLM Code 本地 `im_session_mappings.openclaw_session_key` 是否包含目标 Agent ID。
 
 ### FR-4: 旧 session 不应掩盖新路由
 
-如果绑定切换后 gateway 仍产生旧 Agent 的 `sessionKey`，LobsterAI 应把它识别为 stale route，而不是把它当作绑定已生效。这个需求用于暴露 OpenClaw route 未命中或 gateway 未重启问题。
+如果绑定切换后 gateway 仍产生旧 Agent 的 `sessionKey`，智码 GLM Code 应把它识别为 stale route，而不是把它当作绑定已生效。这个需求用于暴露 OpenClaw route 未命中或 gateway 未重启问题。
 
 ## 4. 实现方案
 

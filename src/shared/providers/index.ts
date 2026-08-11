@@ -30,4 +30,16 @@ export {
   parseModelRuntimeProfile,
   resolveModelRuntimeProfile,
 } from './modelRuntimeProfiles';
+export type {
+  ModelThinkingLevelOption,
+  ModelThinkingProfile,
+} from './modelThinkingProfiles';
+export {
+  isKnownThinkingModelId,
+  ModelThinkingFamily,
+  ModelThinkingLevel,
+  normalizeThinkingLevelForProfile,
+  resolveKnownModelThinkingFamily,
+  resolveModelThinkingProfile,
+} from './modelThinkingProfiles';
 export type { ProviderConfig } from './types';

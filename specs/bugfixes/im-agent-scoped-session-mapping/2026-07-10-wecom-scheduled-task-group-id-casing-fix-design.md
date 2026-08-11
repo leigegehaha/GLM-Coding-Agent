@@ -22,7 +22,7 @@ OpenClaw 为统一 session key，会把其中的会话标识规范成小写：
 agent:<agentId>:wecom:group:wrrqeudgaaelcve2wb3a39jxrlrsveya
 ```
 
-LobsterAI 的 `im_session_mappings` 来自该 session key。定时任务选择器在 #2306 后会正确选中企微账号和群聊，但保存到 `delivery.to` 的仍是小写群 ID。企微 Bot WebSocket 主动发送时把 `delivery.to` 直接作为 `chatid`，最终返回：
+智码 GLM Code 的 `im_session_mappings` 来自该 session key。定时任务选择器在 #2306 后会正确选中企微账号和群聊，但保存到 `delivery.to` 的仍是小写群 ID。企微 Bot WebSocket 主动发送时把 `delivery.to` 直接作为 `chatid`，最终返回：
 
 ```text
 93006 invalid chatid
@@ -65,7 +65,7 @@ QA 日志也验证了这一点：混合大小写群 ID 的入站消息对应小�
 
 企微插件的通用 outbound 最终会把调用方传入的 `to` 直接交给 `sendMessage(chatId, ...)`。因此，任何脱离入站 frame 的主动发送，只要其群目标来自小写 session key，都存在同类风险。
 
-当前 LobsterAI 的常规企微群聊回复不走该路径，`IMGatewayManager.sendNotification` 也尚未为企微实现主动通知。本次只处理已经确认的定时任务创建、更新、手动执行和历史任务迁移，不修改企微插件、普通 IM 回复或通用 message tool 行为。若后续为常规 IM 增加主动群发能力，应单独复用“保留通道原生目标”的原则并补充测试。
+当前 智码 GLM Code 的常规企微群聊回复不走该路径，`IMGatewayManager.sendNotification` 也尚未为企微实现主动通知。本次只处理已经确认的定时任务创建、更新、手动执行和历史任务迁移，不修改企微插件、普通 IM 回复或通用 message tool 行为。若后续为常规 IM 增加主动群发能力，应单独复用“保留通道原生目标”的原则并补充测试。
 
 ## 3. 修复目标与约束
 

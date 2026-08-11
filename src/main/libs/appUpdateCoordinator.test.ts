@@ -138,7 +138,7 @@ describe('AppUpdateCoordinator', () => {
           value: {
             version: READY_VERSION,
             windowsX64: {
-              url: 'http://downloads.example/LobsterAI.exe',
+              url: 'http://downloads.example/GLMCode.exe',
             },
           },
         },
@@ -158,7 +158,7 @@ describe('AppUpdateCoordinator', () => {
 
   test('accepts a changing HTTPS CDN without passing a fixed origin allowlist', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32' });
-    const installerUrl = `https://replacement-cdn.example.net/LobsterAI-${READY_VERSION}.exe`;
+    const installerUrl = `https://replacement-cdn.example.net/GLMCode-${READY_VERSION}.exe`;
     const downloadedFile = path.join(updatesDir, 'lobsterai-update-auto-1.exe');
     mocks.fetch.mockResolvedValue({
       ok: true,
@@ -230,7 +230,7 @@ describe('AppUpdateCoordinator', () => {
     if (!stored) {
       throw new Error('test fixture was not persisted');
     }
-    stored.info.url = 'http://downloads.example/LobsterAI.exe';
+    stored.info.url = 'http://downloads.example/GLMCode.exe';
     store.set(readyFileStoreKey(AppUpdateSource.Auto), stored);
 
     const coordinator = new AppUpdateCoordinator(store);
@@ -367,7 +367,7 @@ describe('AppUpdateCoordinator', () => {
     if (!internal.state.info) {
       throw new Error('test fixture did not restore ready state');
     }
-    internal.state.info.url = 'http://downloads.example/LobsterAI.exe';
+    internal.state.info.url = 'http://downloads.example/GLMCode.exe';
 
     const result = await coordinator.installReadyUpdate();
 
@@ -407,7 +407,7 @@ describe('AppUpdateCoordinator', () => {
           value: {
             version: READY_VERSION,
             windowsX64: {
-              url: `https://updates.example.com/LobsterAI-${READY_VERSION}.exe`,
+              url: `https://updates.example.com/GLMCode-${READY_VERSION}.exe`,
             },
           },
         },

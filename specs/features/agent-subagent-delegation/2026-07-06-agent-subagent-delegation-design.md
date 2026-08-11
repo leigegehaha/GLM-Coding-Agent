@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 基于 OpenClaw 运行 Agent。OpenClaw 已支持通过 `sessions_spawn.agentId` 将子任务委派给另一个已配置 Agent，但仅配置 `subagents.allowAgents` 不会让模型自动把 `taskName` 当成目标 Agent。
+智码 GLM Code 基于 OpenClaw 运行 Agent。OpenClaw 已支持通过 `sessions_spawn.agentId` 将子任务委派给另一个已配置 Agent，但仅配置 `subagents.allowAgents` 不会让模型自动把 `taskName` 当成目标 Agent。
 
 调研和实测中发现：
 
@@ -15,7 +15,7 @@ LobsterAI 基于 OpenClaw 运行 Agent。OpenClaw 已支持通过 `sessions_spaw
 
 ### 1.2 目标
 
-本功能目标是让用户在 Agent 页面配置“当前 Agent 可委派哪些其它 Agent”，并由 LobsterAI 生成符合 OpenClaw 语义的配置，使 main Agent 可以通过自然语言协调预配置的协作 Agent。
+本功能目标是让用户在 Agent 页面配置“当前 Agent 可委派哪些其它 Agent”，并由 智码 GLM Code 生成符合 OpenClaw 语义的配置，使 main Agent 可以通过自然语言协调预配置的协作 Agent。
 
 目标包括：
 
@@ -35,7 +35,7 @@ LobsterAI 基于 OpenClaw 运行 Agent。OpenClaw 已支持通过 `sessions_spaw
 
 **When** 用户在 main Agent 的“协作”设置中选择这些 Agent。
 
-**Then** LobsterAI 保存用户选择，并在 OpenClaw 配置中为 main 输出可委派目标。
+**Then** 智码 GLM Code 保存用户选择，并在 OpenClaw 配置中为 main 输出可委派目标。
 
 ### 场景 2: main Agent 通过自然语言协调协作 Agent
 
@@ -49,7 +49,7 @@ LobsterAI 基于 OpenClaw 运行 Agent。OpenClaw 已支持通过 `sessions_spaw
 
 **Given** 用户没有在“协作”设置中选择任何其它 Agent。
 
-**When** LobsterAI 同步 OpenClaw 配置。
+**When** 智码 GLM Code 同步 OpenClaw 配置。
 
 **Then** 不为该 Agent 输出 `subagents` 配置，保持 OpenClaw 默认普通 subagent 行为。
 
@@ -93,7 +93,7 @@ Agent 创建弹窗新增“协作”Tab，允许创建时预先选择已有 Agen
 
 ### FR-4: OpenClaw 配置生成规则
 
-同步 OpenClaw 配置时，LobsterAI 基于 Agent 的 `subagentAllowAgentIds` 生成 `agents.list[].subagents`。
+同步 OpenClaw 配置时，智码 GLM Code 基于 Agent 的 `subagentAllowAgentIds` 生成 `agents.list[].subagents`。
 
 当用户选择为空时：
 
@@ -177,7 +177,7 @@ Agent 创建页：
 
 ### 4.3 OpenClaw 配置同步层
 
-`openclawAgentModels.buildAgentEntry` 负责把 LobsterAI Agent 转成 OpenClaw Agent entry。
+`openclawAgentModels.buildAgentEntry` 负责把 智码 GLM Code Agent 转成 OpenClaw Agent entry。
 
 转换规则：
 
@@ -198,7 +198,7 @@ Agent 创建页：
 后续实现补充：
 
 1. OpenClaw transcript/trajectory 能正确记录多轮 yield 后的 `ts-engineer`、`qa-reviewer` subagent。
-2. LobsterAI final sync 会回填后续自动推进产生的 `sessions_spawn`、`sessions_yield` 工具结果，避免只记录第一段 spawn。
+2. 智码 GLM Code final sync 会回填后续自动推进产生的 `sessions_spawn`、`sessions_yield` 工具结果，避免只记录第一段 spawn。
 3. 协作 Agent 的 subagent run 会 materialize 为可继续对话的 Cowork child session，并通过 `childCoworkSessionId` 与父会话中的 subagent run 关联。
 4. self subagent 不 materialize 为独立 Cowork child session，避免在 sidebar 中出现不必要的“当前 Agent 调用当前 Agent”会话。
 5. `taskName` 作为展示别名写入 subagent run 的 `label`，但不改变 `agentId` 的身份语义；`agentId` 仍用于 OpenClaw 目标路由、session key 解析和 materialize 判断。

@@ -31,7 +31,7 @@ describe('OpenClaw extension manifests', () => {
     expect(readContractTools('ask-user-question')).toEqual(['AskUserQuestion']);
   });
 
-  test('declares LobsterAI media generation and skin agent tool contracts', () => {
+  test('declares 智码 GLM Code media generation and skin agent tool contracts', () => {
     expect(readContractTools('lobster-media-generation')).toEqual([
       'lobsterai_image_generate',
       'lobsterai_video_generate',
@@ -46,16 +46,19 @@ describe('OpenClaw extension manifests', () => {
     expect(readPackageOpenClawExtensions('lobsterai-model-compat')).toEqual(['./index.ts']);
   });
 
-  test('declares a strict allowlisted model-profile config for LobsterAI compatibility', () => {
+  test('declares a strict allowlisted model-profile config for 智码 GLM Code compatibility', () => {
     const manifest = readManifest('lobsterai-model-compat');
-    expect(manifest.providers).toEqual(['lobsterai-model-compat']);
+    expect(manifest.providers).toEqual([
+      'lobsterai-model-compat',
+      'zhima-coding',
+      'lobsterai-server',
+    ]);
     expect(manifest.configSchema).toEqual({
       type: 'object',
       additionalProperties: false,
       properties: {
         modelProfiles: {
           type: 'object',
-          minProperties: 1,
           propertyNames: {
             pattern: '^[^/\\s]+/[^\\s]+$',
           },

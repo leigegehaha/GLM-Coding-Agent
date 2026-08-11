@@ -9,6 +9,7 @@ import renderer from 'vite-plugin-electron-renderer';
 // PORT lets tooling (e.g. browser preview) assign a free port; electron:dev
 // pins 5175 via the --port CLI flag, which overrides server.port anyway.
 const devPort = Number(process.env.PORT ?? '') || 5175;
+const isWebConsoleBuild = process.env.GLM_CODE_TARGET === 'web';
 const katexVersion = process.env.npm_package_dependencies_katex?.replace(/^[~^]/, '') || '0.16.0';
 const pdfJsAssetRoot = path.resolve(__dirname, 'node_modules/pdfjs-dist');
 const pdfJsPublicPath = '/pdfjs/';
@@ -81,7 +82,7 @@ export default defineConfig({
   plugins: [
     react(),
     pdfJsStaticAssetsPlugin(),
-    electron([
+    ...(!isWebConsoleBuild ? [electron([
       {
         // 主进程入口文件
         entry: 'src/main/main.ts',
@@ -133,10 +134,9 @@ export default defineConfig({
         },
         onstart() {},
       },
-    ]),
-    renderer(),
+    ]), renderer()] : []),
   ],
-  base: process.env.NODE_ENV === 'development' ? '/' : './',
+  base: isWebConsoleBuild || process.env.NODE_ENV === 'development' ? '/' : './',
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, './src/shared'),
@@ -144,7 +144,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: isWebConsoleBuild ? 'dist-web' : 'dist',
     emptyOutDir: true,
     sourcemap: true,
     minify: false,

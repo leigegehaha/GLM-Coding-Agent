@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI 桌面端发起的会话（managed session）中，流式显示的文本会丢失重复字符。典型症状：
+用户在 智码 GLM Code 桌面端发起的会话（managed session）中，流式显示的文本会丢失重复字符。典型症状：
 
 | 期望文本 | 实际显示 |
 |---------|---------|
@@ -47,9 +47,9 @@ LLM 原始 delta → appendUniqueSuffix 累积到 buffer（此处损坏）
     chat.history API（正确）← 直接读取 JSONL 文件中的 LLM 原始响应
 ```
 
-**LobsterAI 侧的累积问题**：
+**智码 GLM Code 侧的累积问题**：
 
-LobsterAI 的 `mergeStreamingText` 曾有相同的 overlap 检测（commit d218d56b 已移除）。但由于接收的 `chat.delta` 数据本身已经被网关损坏，即使 LobsterAI 侧完美拼接也无法修复丢失的字符。
+智码 GLM Code 的 `mergeStreamingText` 曾有相同的 overlap 检测（commit d218d56b 已移除）。但由于接收的 `chat.delta` 数据本身已经被网关损坏，即使 智码 GLM Code 侧完美拼接也无法修复丢失的字符。
 
 **最终校正的缺陷**：
 

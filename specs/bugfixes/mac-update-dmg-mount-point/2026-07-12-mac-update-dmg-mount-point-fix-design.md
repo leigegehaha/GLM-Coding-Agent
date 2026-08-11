@@ -50,8 +50,8 @@ if (!mountMatch) {
 (退出码仍为 0),只是输出的设备表中挂载点列为空,于是文本解析抛错。输出形如:
 
 ```
-/dev/disk4          	GUID_partition_scheme          	
-/dev/disk4s1        	Apple_HFS                      	
+/dev/disk4          	GUID_partition_scheme
+/dev/disk4s1        	Apple_HFS
 ```
 
 **放大器(代码缺陷)**:解析失败时 `mountPoint` 仍为 `null`,`catch` 块只在
@@ -68,7 +68,7 @@ if (!mountMatch) {
 3. DMG 卷文件系统(HFS+)在用户系统上挂载失败。
 
 用户侧鉴别方法:在 Finder 中双击
-`~/Library/Application Support/LobsterAI/updates/` 下的 DMG,系统弹出的真实错误
+`~/Library/Application Support/智码 GLM Code/updates/` 下的 DMG,系统弹出的真实错误
 即根因;重启 Mac 可清除附加残留。
 
 ### 1.4 目标
@@ -154,7 +154,7 @@ hdiutil attach <dmg> -nobrowse -noautoopen -noverify -plist | plutil -convert js
 
 - `plutil` 是 macOS 系统自带工具(`/usr/bin/plutil`),不引入新的 npm 依赖;
 - 不再假设挂载点行的位置、分隔符和 `/Volumes` 前缀,天然兼容 HFS+(2 行)与
-  APFS(4 entity)两种 DMG 结构、卷名含空格/中文/重名(`LobsterAI 1`)等情况;
+  APFS(4 entity)两种 DMG 结构、卷名含空格/中文/重名(`智码 GLM Code 1`)等情况;
 - 解析逻辑抽成不依赖 Electron 的纯函数(如
   `parseHdiutilAttachOutput(json: string): { mountPoint?: string; devEntries: string[] }`),
   便于 Vitest 单测。
@@ -260,7 +260,7 @@ installMacDmg(dmgPath)
     { "dev-entry": "/dev/disk4", "content-hint": "GUID_partition_scheme" },
     { "dev-entry": "/dev/disk4s1", "content-hint": "Apple_APFS" },
     { "dev-entry": "/dev/disk5", "content-hint": "EF57347C-0000-11AA-AA11-00306543ECAC" },
-    { "dev-entry": "/dev/disk5s1", "mount-point": "/Volumes/LobsterAI" }
+    { "dev-entry": "/dev/disk5s1", "mount-point": "/Volumes/智码 GLM Code" }
   ]
 }
 ```
@@ -288,7 +288,7 @@ JSON.parse 即可消费;XML 转义(卷名含 `&` 等)由 plutil 正确处理,自
 | 场景 | 处理方式 |
 |---|---|
 | HFS+ DMG(2 行输出)/ APFS DMG(4 entity) | `-plist` 解析对 entity 数量无假设,取含 `mount-point` 的 entity |
-| 卷名含空格/中文/重名(`/Volumes/LobsterAI 1`) | plist 中是完整字符串,不受影响 |
+| 卷名含空格/中文/重名(`/Volumes/智码 GLM Code 1`) | plist 中是完整字符串,不受影响 |
 | 镜像已附加且卷已挂载(上次安装中断) | attach 直接返回现有 entities 含挂载点,常规路径继续 |
 | 镜像已附加但卷未挂载(本次用户案例) | attach 返回无 mount-point → FR-2 detach → FR-3 显式挂载重试 |
 | detach 残留失败(设备忙) | `-force` 后仍失败则 warn 并继续 FR-3;FR-3 也失败则走 FR-6 |

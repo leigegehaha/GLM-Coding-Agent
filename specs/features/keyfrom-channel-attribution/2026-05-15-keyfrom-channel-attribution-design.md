@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 需要支持渠道包投放统计。不同投放渠道在打包或开发启动时传入不同 `keyfrom`，应用安装并启动后需要把渠道来源稳定记录到本地，并在必要的服务端接口中附带该来源，为后续登录、模型、用户信息、支付、埋点和报表统计提供基础数据。
+智码 GLM Code 需要支持渠道包投放统计。不同投放渠道在打包或开发启动时传入不同 `keyfrom`，应用安装并启动后需要把渠道来源稳定记录到本地，并在必要的服务端接口中附带该来源，为后续登录、模型、用户信息、支付、埋点和报表统计提供基础数据。
 
 本设计分两步推进：
 
@@ -118,7 +118,7 @@ LobsterAI 需要支持渠道包投放统计。不同投放渠道在打包或开�
 
 ### 场景 7: 登录换 token 时携带归因参数
 
-**Given** 用户通过浏览器登录后回到 LobsterAI
+**Given** 用户通过浏览器登录后回到 智码 GLM Code
 **When** 应用调用 `/api/auth/exchange` 换取 token
 **Then** 请求 body 保留原有 `authCode`
 
@@ -368,21 +368,21 @@ KEYFROM=bilibili npm run dist:win
 
 ```text
 Mac Intel:
-LobsterAI-darwin-x64-<version>-<keyfrom>.dmg
+智码 GLM Code-darwin-x64-<version>-<keyfrom>.dmg
 
 Mac Apple Silicon:
-LobsterAI-darwin-arm64-<version>-<keyfrom>.dmg
+智码 GLM Code-darwin-arm64-<version>-<keyfrom>.dmg
 
 Windows x64:
-LobsterAI-Setup-x64-<version>-<keyfrom>.exe
+智码 GLM Code-Setup-x64-<version>-<keyfrom>.exe
 ```
 
 示例：
 
 ```text
-LobsterAI-darwin-x64-2026.5.14-bilibili.dmg
-LobsterAI-darwin-arm64-2026.5.14-bilibili.dmg
-LobsterAI-Setup-x64-2026.5.14-bilibili.exe
+智码 GLM Code-darwin-x64-2026.5.14-bilibili.dmg
+智码 GLM Code-darwin-arm64-2026.5.14-bilibili.dmg
+智码 GLM Code-Setup-x64-2026.5.14-bilibili.exe
 ```
 
 说明：
@@ -502,8 +502,8 @@ GET query 示例：
 
 | 环境   | Base URL                                    |
 | ------ | ------------------------------------------- |
-| 测试服 | `https://lobsterai-server.inner.youdao.com` |
-| 正式服 | `https://lobsterai-server.youdao.com`       |
+| 测试服 | `https://glmcoding.cn/api` |
+| 正式服 | `https://glmcoding.cn/api`       |
 
 要求：
 
@@ -915,9 +915,9 @@ params.set('latestKeyfrom', latestKeyfrom);
 示例：
 
 ```text
-LobsterAI-darwin-x64-2026.5.14-bilibili.dmg
-LobsterAI-darwin-arm64-2026.5.14-bilibili.dmg
-LobsterAI-Setup-x64-2026.5.14-bilibili.exe
+智码 GLM Code-darwin-x64-2026.5.14-bilibili.dmg
+智码 GLM Code-darwin-arm64-2026.5.14-bilibili.dmg
+智码 GLM Code-Setup-x64-2026.5.14-bilibili.exe
 ```
 
 如果未传 `KEYFROM`，文件名中的渠道应为 `official`。
@@ -927,8 +927,8 @@ LobsterAI-Setup-x64-2026.5.14-bilibili.exe
 macOS：
 
 1. 双击 `.dmg` 安装包。
-2. 在弹出的挂载窗口中找到 `LobsterAI.app`。
-3. 右键 `LobsterAI.app`，选择“显示包内容”。
+2. 在弹出的挂载窗口中找到 `智码 GLM Code.app`。
+3. 右键 `智码 GLM Code.app`，选择“显示包内容”。
 4. 进入 `Contents/Resources/keyfrom/`。
 5. 打开 `keyfrom.json`，确认 `keyfrom` 等于本次打包传入的渠道。
 
@@ -936,7 +936,7 @@ Windows：
 
 1. 双击 `.exe` 安装包完成安装。
 2. 打开资源管理器。
-3. 在地址栏输入 `%LOCALAPPDATA%\Programs\LobsterAI\resources\keyfrom`。
+3. 在地址栏输入 `%LOCALAPPDATA%\Programs\智码 GLM Code\resources\keyfrom`。
 4. 打开 `keyfrom.json`，确认 `keyfrom` 等于本次打包传入的渠道。
 
 示例内容：

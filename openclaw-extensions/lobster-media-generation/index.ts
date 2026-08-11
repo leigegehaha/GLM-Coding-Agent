@@ -316,8 +316,8 @@ const SkinManageSchema = Type.Union([
 
 const plugin = {
   id: 'lobster-media-generation',
-  name: 'LobsterMediaGeneration',
-  description: 'Image/video generation and AI skin management tools powered by LobsterAI.',
+  name: 'GLMCodeMediaGeneration',
+  description: 'Image/video generation and AI skin management tools powered by 智码 GLM Code.',
   configSchema: {
     parse(value: unknown): PluginConfig {
       return parsePluginConfig(value);
@@ -340,9 +340,9 @@ const plugin = {
         name: MediaToolName.ImageGenerate,
         label: 'Image Generation',
         description: [
-          'Generate images using LobsterAI server.',
+          'Generate images using 智码 GLM Code server.',
           'Supports text-to-image and image-to-image generation.',
-          'If the system prompt includes a LobsterAI media reference mapping, use mapped file paths or URLs in image/images arguments and never pass @ media tokens as tool argument values.',
+          'If the system prompt includes a 智码 GLM Code media reference mapping, use mapped file paths or URLs in image/images arguments and never pass @ media tokens as tool argument values.',
           'Use action="list" to see available models and their capabilities.',
           'Use action="status" with taskId once; that call adaptively polls until the task reaches a terminal state. Do not busy-poll status yourself.',
           'Requires an active subscription with available image generation quota.',
@@ -410,11 +410,11 @@ const plugin = {
         name: MediaToolName.VideoGenerate,
         label: 'Video Generation',
         description: [
-          'Generate videos using LobsterAI server.',
+          'Generate videos using 智码 GLM Code server.',
           'Supports text-to-video, image-to-video, and video editing.',
           'For HappyHorse-1.1, pass model "HappyHorse-1.1"; the server selects happyhorse-1.1-t2v when no image is provided, happyhorse-1.1-i2v for one input image, and happyhorse-1.1-r2v for multiple input images. Do not pass the HappyHorse-1.1 submodel IDs directly.',
           'IMPORTANT: Different models have different valid parameters and value ranges.',
-          'If the system prompt includes a LobsterAI media reference mapping, use mapped file paths or URLs in image/images/firstFrame/referenceImages/video/videos/media arguments and never pass @ media tokens as tool argument values.',
+          'If the system prompt includes a 智码 GLM Code media reference mapping, use mapped file paths or URLs in image/images/firstFrame/referenceImages/video/videos/media arguments and never pass @ media tokens as tool argument values.',
           'WORKFLOW: You MUST follow this three-step process:',
           'Step 1: Call with action="list" to see available models, their capabilities and supported parameters.',
           'Step 2: Call with action="generate" with chosen model and parameters. Returns a taskId.',
@@ -489,10 +489,10 @@ const plugin = {
         name: MediaToolName.SkinManage,
         label: 'AI Skin Management',
         description: [
-          'Create and manage a LobsterAI AI skin pack through the trusted desktop callback.',
+          'Create and manage a 智码 GLM Code AI skin pack through the trusted desktop callback.',
           'This tool manages drafts and assets; it does not generate images.',
           'For a new pack, call create_draft with a name and an optional validated immersive-shell presentation first.',
-          'LobsterAI deterministically infers a preferred light or dark appearance from presentation colors and applies it through the existing theme system; do not choose a color theme ID.',
+          '智码 GLM Code deterministically infers a preferred light or dark appearance from presentation colors and applies it through the existing theme system; do not choose a color theme ID.',
           'Only allow-listed application and conversation title bars may use presentation colors. Page layout, system icons, and arbitrary CSS are never skin-controlled.',
           'Register only generated local files returned by an image tool.',
           'The only supported asset slots are workspace.backdrop followed by home.emblem.',

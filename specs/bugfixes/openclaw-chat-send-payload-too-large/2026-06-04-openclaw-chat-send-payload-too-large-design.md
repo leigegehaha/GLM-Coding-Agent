@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI Cowork 中一次性提交多张图片附件时，界面提示：
+用户在 智码 GLM Code Cowork 中一次性提交多张图片附件时，界面提示：
 
 ```text
 AI 引擎连接中断，请重试。如果问题持续，请尝试重启应用。
@@ -18,7 +18,7 @@ gateway closed (1009):
 
 从用户视角看，这像是 OpenClaw 引擎不稳定或连接异常；但实际问题是本次 `chat.send` WebSocket 消息整体过大，OpenClaw 网关拒收后主动关闭连接。
 
-当前 LobsterAI 只校验了单张图片原始大小，不校验一次 `chat.send` 的总 payload 大小。多张图片各自没有超过单图限制，但合并为 base64 JSON payload 后超过 OpenClaw 网关 WebSocket 上限，最终触发 `1009`。
+当前 智码 GLM Code 只校验了单张图片原始大小，不校验一次 `chat.send` 的总 payload 大小。多张图片各自没有超过单图限制，但合并为 base64 JSON payload 后超过 OpenClaw 网关 WebSocket 上限，最终触发 `1009`。
 
 ### 1.2 现场证据
 
@@ -26,12 +26,12 @@ gateway closed (1009):
 
 | 文件　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　| 作用　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
 | -------------------------------------------------------------------| -----------------------------------------------------------------------------------------------|
-| `1780471049120lobsterai-logs-20260603-151636/main-2026-06-03.log` | LobsterAI 主进程日志，包含 OpenClaw stdout/stderr 透传、`chat.send` 附件诊断和网关 close code |
+| `1780471049120lobsterai-logs-20260603-151636/main-2026-06-03.log` | 智码 GLM Code 主进程日志，包含 OpenClaw stdout/stderr 透传、`chat.send` 附件诊断和网关 close code |
 
 关键失败链路 1：
 
 1. `15:09:44` 用户新建 Cowork session，prompt 长度 15，图片附件 8 张。
-2. LobsterAI 主进程收到 8 张图片，base64 长度分别为：
+2. 智码 GLM Code 主进程收到 8 张图片，base64 长度分别为：
 
 | 图片 | base64Length |
 |---|---:|
@@ -57,7 +57,7 @@ gateway closed (1009):
 [ws] error conn=... remote=127.0.0.1: Max payload size exceeded
 ```
 
-6. LobsterAI GatewayClient 收到：
+6. 智码 GLM Code GatewayClient 收到：
 
 ```text
 GatewayClient: onClose — code: 1009 reason:  settled: true
@@ -106,7 +106,7 @@ Error: gateway closed (1009):
 
 直接根因是 **OpenClaw 网关 WebSocket 服务端拒收超过最大 payload 的 `chat.send` 请求，并用 close code `1009` 关闭连接**。
 
-LobsterAI 当前存在两层校验：
+智码 GLM Code 当前存在两层校验：
 
 1. 前端提交前通过 `validateCoworkImageAttachmentSize()` 校验单张图片。
 2. 主进程 `cowork:session:start` / `cowork:session:continue` 再校验一次单张图片。
@@ -163,46 +163,46 @@ export const COWORK_IMAGE_ATTACHMENT_MAX_BYTES = 30 * 1000 * 1000;
 
 ### 场景 1: 多张图片合并后超过单次消息上限
 
-**Given** 用户选择一个支持图片输入的模型  
-**And** 用户一次性添加多张图片  
-**And** 每张图片都没有超过单张图片限制  
-**When** 本次 `chat.send` 完整 payload 估算超过安全上限  
-**Then** LobsterAI 应阻止发送  
+**Given** 用户选择一个支持图片输入的模型
+**And** 用户一次性添加多张图片
+**And** 每张图片都没有超过单张图片限制
+**When** 本次 `chat.send` 完整 payload 估算超过安全上限
+**Then** 智码 GLM Code 应阻止发送
 **And** 展示“本次消息过大，请减少附件数量、压缩图片或拆分为多次提交”
-**And** OpenClaw 网关不应出现 `Max payload size exceeded`  
+**And** OpenClaw 网关不应出现 `Max payload size exceeded`
 **And** Cowork session 不应因为该请求进入假性的引擎断连错误
 
 ### 场景 2: 单张大图但 payload 未超过上限
 
-**Given** 用户添加 1 张图片  
-**And** 图片没有超过单张图片限制  
-**And** 本次完整 payload 小于安全上限  
-**When** 用户发送消息  
-**Then** LobsterAI 应允许发送  
-**And** OpenClaw 网关应继续执行现有 large image intercept 逻辑  
+**Given** 用户添加 1 张图片
+**And** 图片没有超过单张图片限制
+**And** 本次完整 payload 小于安全上限
+**When** 用户发送消息
+**Then** 智码 GLM Code 应允许发送
+**And** OpenClaw 网关应继续执行现有 large image intercept 逻辑
 **And** 不应因为粗暴总量限制误拦截
 
 ### 场景 3: 文字很长且带图片
 
-**Given** 用户输入较长文本  
-**And** 用户添加图片附件  
-**When** 文本、system prompt、附件 base64、JSON/RPC 包装合计超过安全上限  
-**Then** LobsterAI 应提示本次消息过大  
+**Given** 用户输入较长文本
+**And** 用户添加图片附件
+**When** 文本、system prompt、附件 base64、JSON/RPC 包装合计超过安全上限
+**Then** 智码 GLM Code 应提示本次消息过大
 **And** 提示应使用“本次消息”，而不是只说“图片过大”
 
 ### 场景 4: 估算未覆盖真实 GatewayClient 包装
 
-**Given** 发送前估算未超过安全阈值  
-**And** GatewayClient 或 OpenClaw 内部额外包装导致真实 payload 超限  
-**When** OpenClaw 网关返回 `Max payload size exceeded` 或 close code `1009`  
-**Then** LobsterAI 应把错误分类为“本次消息过大”  
+**Given** 发送前估算未超过安全阈值
+**And** GatewayClient 或 OpenClaw 内部额外包装导致真实 payload 超限
+**When** OpenClaw 网关返回 `Max payload size exceeded` 或 close code `1009`
+**Then** 智码 GLM Code 应把错误分类为“本次消息过大”
 **And** UI 不应显示通用“AI 引擎连接中断”
 
 ### 场景 5: 普通网关断连
 
-**Given** OpenClaw 网关因为网络、服务重启或其他原因断开  
-**When** 错误不是 `1009`、`Max payload size exceeded`、`payload too large` 或同类消息  
-**Then** LobsterAI 应继续使用现有网关断连、服务重启或网络错误提示  
+**Given** OpenClaw 网关因为网络、服务重启或其他原因断开
+**When** 错误不是 `1009`、`Max payload size exceeded`、`payload too large` 或同类消息
+**Then** 智码 GLM Code 应继续使用现有网关断连、服务重启或网络错误提示
 **And** 不应误提示“本次消息过大”
 
 ## 3. 功能需求
@@ -240,7 +240,7 @@ const estimatedFrameBytes = Buffer.byteLength(JSON.stringify({
 
 ### FR-2: 安全阈值应接近 OpenClaw 上限但保留余量
 
-OpenClaw 网关日志表现出的上限约为 30 MB 级别。LobsterAI 应定义一个集中常量，例如：
+OpenClaw 网关日志表现出的上限约为 30 MB 级别。智码 GLM Code 应定义一个集中常量，例如：
 
 ```typescript
 const OPENCLAW_CHAT_SEND_PAYLOAD_LIMIT_BYTES = 30 * 1000 * 1000;
@@ -520,7 +520,7 @@ payload 校验发生在 `activeTurns.set()` 之后、`client.request()` 之前�
 2. 选择支持图片输入的模型。
 3. 添加 1 张约 12 MB base64 payload 的图片，确认可发送。
 4. 添加 2 张合计约 18 MB base64 payload 的图片，确认可发送。
-5. 添加多张合计超过约 30 MB payload 的图片，确认发送前被 LobsterAI 阻止。
+5. 添加多张合计超过约 30 MB payload 的图片，确认发送前被 智码 GLM Code 阻止。
 6. 确认 UI 显示：
 
 ```text
@@ -578,7 +578,7 @@ payload 校验发生在 `activeTurns.set()` 之后、`client.request()` 之前�
 
 本修复完成后应满足：
 
-1. 多图合并 payload 超过安全上限时，LobsterAI 不再把请求发给 OpenClaw 网关。
+1. 多图合并 payload 超过安全上限时，智码 GLM Code 不再把请求发给 OpenClaw 网关。
 2. UI 显示“本次消息过大”类提示，而不是“AI 引擎连接中断”。
 3. 主进程日志记录 payload 估算值、safe limit、附件数量和 base64 总长度。
 4. `gateway closed (1009)` 和 `Max payload size exceeded` 在兜底路径中也显示消息过大提示。

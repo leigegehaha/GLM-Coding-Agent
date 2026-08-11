@@ -12,15 +12,15 @@
 4. 服务端模型列表更新后，OpenClaw gateway 必须能拿到最新模型能力
 5. 修复不能把已知纯文本模型错误升级成视觉模型
 6. 即使 `openclaw.json` 已经写对，OpenClaw runtime 的 model catalog / 发图前能力预检也不能因为 provider alias 或 catalog miss 再把图片丢弃
-7. qwen3.6 Plus 任务已经完成后，迟到的 OpenClaw lifecycle 事件不能把 LobsterAI 会话重新置为 `running`
+7. qwen3.6 Plus 任务已经完成后，迟到的 OpenClaw lifecycle 事件不能把 智码 GLM Code 会话重新置为 `running`
 
 ## 核心结论
 
-**这不是 qwen3.6 Plus 模型本身不支持图片，而是 LobsterAI 写给 OpenClaw 的模型能力元数据不可靠。**
+**这不是 qwen3.6 Plus 模型本身不支持图片，而是 智码 GLM Code 写给 OpenClaw 的模型能力元数据不可靠。**
 
 OpenClaw gateway 依据 `openclaw.json` 中的 `models.providers[*].models[*].input` 判断模型是否支持图片。如果该字段是 `['text']`，gateway 会在请求进入 LLM 前丢弃图片。
 
-**2026-05-06 补充结论：第一次修复只覆盖了 LobsterAI 写配置的链路，还不够。** 最新日志显示，当前 `openclaw.json` 已经包含 `qwen3.6-plus` / `qwen3.6-plus-YoudaoInner` 的 `input: ['text', 'image']`，但 OpenClaw gateway 仍输出：
+**2026-05-06 补充结论：第一次修复只覆盖了 智码 GLM Code 写配置的链路，还不够。** 最新日志显示，当前 `openclaw.json` 已经包含 `qwen3.6-plus` / `qwen3.6-plus-YoudaoInner` 的 `input: ['text', 'image']`，但 OpenClaw gateway 仍输出：
 
 ```
 parseMessageWithAttachments: 1 attachment(s) dropped — model does not support images
@@ -28,9 +28,9 @@ provider=lobsterai-server model=qwen3.6-plus-YoudaoInner
 promptImages=0
 ```
 
-这说明图片不是在 LobsterAI 侧上传或配置写入阶段丢失，而是在 OpenClaw runtime 的 `resolveGatewayModelSupportsImages()` 预检阶段被判定为不支持图片。根因是 OpenClaw 当前版本的 model catalog 可能没有包含显式配置的 provider model，且 provider 比较使用精确字符串；`qwen-portal` 与 OpenClaw 原生 `qwen` 没有归一化到同一 provider，catalog miss 后函数直接返回 `false`。
+这说明图片不是在 智码 GLM Code 侧上传或配置写入阶段丢失，而是在 OpenClaw runtime 的 `resolveGatewayModelSupportsImages()` 预检阶段被判定为不支持图片。根因是 OpenClaw 当前版本的 model catalog 可能没有包含显式配置的 provider model，且 provider 比较使用精确字符串；`qwen-portal` 与 OpenClaw 原生 `qwen` 没有归一化到同一 provider，catalog miss 后函数直接返回 `false`。
 
-**2026-05-06 补充结论 B：qwen3.6 Plus 完成后 UI 仍 loading 不是图片传输问题本身。** 现场唯一 `running` 会话 `82d47ef0-dc99-4d04-99aa-967815af76cb` 的 assistant 消息已写入 `metadata: { isStreaming:false, isFinal:true }`，OpenClaw 日志也显示同一 run 已 `run_completed`。随后 gateway 又发出同一 run 的迟到 `stream=lifecycle, phase=fallback` 事件。LobsterAI 旧逻辑会在没有 active turn 时把任何非 error agent event 当作 follow-up turn 重新创建，且 `phase=fallback` 没有 handler，最终把本地 session 状态重新置为 `running`，但再也没有 final/end 事件来收尾。
+**2026-05-06 补充结论 B：qwen3.6 Plus 完成后 UI 仍 loading 不是图片传输问题本身。** 现场唯一 `running` 会话 `82d47ef0-dc99-4d04-99aa-967815af76cb` 的 assistant 消息已写入 `metadata: { isStreaming:false, isFinal:true }`，OpenClaw 日志也显示同一 run 已 `run_completed`。随后 gateway 又发出同一 run 的迟到 `stream=lifecycle, phase=fallback` 事件。智码 GLM Code 旧逻辑会在没有 active turn 时把任何非 error agent event 当作 follow-up turn 重新创建，且 `phase=fallback` 没有 handler，最终把本地 session 状态重新置为 `running`，但再也没有 final/end 事件来收尾。
 
 | 场景 | 错误表现 | 根因 |
 |---|---|---|
@@ -92,7 +92,7 @@ OpenClawRuntimeAdapter
 4. **已知纯文本模型不被误升级。** 如果 provider registry 明确某模型不支持图片，用户配置里的 `supportsImage:true` 也会被纠正。
 5. **未知模型尊重用户配置。** 对 registry 不认识的模型，用户勾选“支持图像输入”仍然有效。
 6. **OpenClaw runtime 不能只信 catalog。** 发图前能力预检必须使用 provider alias 归一化，并在 catalog miss 或 catalog 过期时回退到当前 `openclaw.json`。
-7. **迟到 lifecycle 事件不能改变已完成状态。** `phase=fallback` 只作为诊断/兼容事件处理，不能创建或重开 LobsterAI turn；刚关闭的 runId 在短时间内作为 tombstone 保留，防止迟到事件绑定到后续 turn。
+7. **迟到 lifecycle 事件不能改变已完成状态。** `phase=fallback` 只作为诊断/兼容事件处理，不能创建或重开 智码 GLM Code turn；刚关闭的 runId 在短时间内作为 tombstone 保留，防止迟到事件绑定到后续 turn。
 
 ---
 
@@ -146,7 +146,7 @@ chat.send
   → parseMessageWithAttachments({ supportsImages })
 ```
 
-OpenClaw 的 model catalog 缓存是 runtime 内部的模型目录快照，不等同于 LobsterAI 设置页的 provider 表。它由 Pi `ModelRegistry`、provider plugin 补充项和显式 `openclaw.json.models.providers` 合并而来，并会被 gateway 的 `models.list` 和 `resolveGatewayModelSupportsImages()` 使用。此前显式配置模型没有可靠进入 catalog，导致 `qwen3.6-plus` 即使已经在 `openclaw.json` 中声明支持图片，仍可能在预检阶段被当成不支持图片。
+OpenClaw 的 model catalog 缓存是 runtime 内部的模型目录快照，不等同于 智码 GLM Code 设置页的 provider 表。它由 Pi `ModelRegistry`、provider plugin 补充项和显式 `openclaw.json.models.providers` 合并而来，并会被 gateway 的 `models.list` 和 `resolveGatewayModelSupportsImages()` 使用。此前显式配置模型没有可靠进入 catalog，导致 `qwen3.6-plus` 即使已经在 `openclaw.json` 中声明支持图片，仍可能在预检阶段被当成不支持图片。
 
 ---
 
@@ -323,7 +323,7 @@ custom_0: {
 
 #### 现象
 
-2026-05-06 日志中，LobsterAI 侧已经确认：
+2026-05-06 日志中，智码 GLM Code 侧已经确认：
 
 ```
 chat.send imageAttachments diagnosis: { hasImageAttachments: true, imageAttachmentsCount: 1 }
@@ -422,7 +422,7 @@ runId not in terminatedRunIds
 
 #### 修复
 
-LobsterAI runtime 侧新增防护：
+智码 GLM Code runtime 侧新增防护：
 
 1. `stream=lifecycle, phase=fallback` 作为诊断事件处理，直接忽略，不能创建或重开 `ActiveTurn`
 2. `cleanupSessionTurn()` 清理 turn 时，把该 turn 的所有 `knownRunIds` 放入短 TTL tombstone
@@ -445,7 +445,7 @@ LobsterAI runtime 侧新增防护：
 | `src/renderer/components/Settings.tsx` | 设置页新增/编辑/导入/导出模型时修正模型能力 |
 | `scripts/patches/v2026.4.14/openclaw-qwen-vision-catalog-fallback.patch` | OpenClaw runtime 补丁：provider alias、catalog 合并显式配置模型、发图前能力预检回退当前 config |
 | `src/main/libs/agentEngine/constants.ts` | Agent lifecycle phase 常量定义 |
-| `src/main/libs/agentEngine/openclawRuntimeAdapter.ts` | LobsterAI runtime lifecycle 防护：忽略迟到 fallback，tombstone 已关闭 runId |
+| `src/main/libs/agentEngine/openclawRuntimeAdapter.ts` | 智码 GLM Code runtime lifecycle 防护：忽略迟到 fallback，tombstone 已关闭 runId |
 | `src/main/libs/agentEngine/openclawRuntimeAdapter.test.ts` | 回归测试已完成 session 不会被迟到 lifecycle event 重新置为 running |
 
 ---

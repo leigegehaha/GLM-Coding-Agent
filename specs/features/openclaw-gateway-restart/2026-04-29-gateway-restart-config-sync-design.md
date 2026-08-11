@@ -2,10 +2,10 @@
 
 ## 问题描述
 
-用户正常使用 LobsterAI Cowork 时，未主动修改配置，但 OpenClaw gateway 在后台突然收到 `SIGTERM` 并重启。日志中同时出现了插件配置 warning：
+用户正常使用 智码 GLM Code Cowork 时，未主动修改配置，但 OpenClaw gateway 在后台突然收到 `SIGTERM` 并重启。日志中同时出现了插件配置 warning：
 
 ```text
-[Auth:getModels] Fetching: https://lobsterai-server.youdao.com/api/models/available
+[Auth:getModels] Fetching: https://glmcoding.cn/api/models/available
 [Auth:getModels] Response status: 200
 [GW-RESTART-DIAG] syncOpenClawConfig START reason=server-models-updated
 [GW-RESTART-DIAG] needsHardRestart=true
@@ -33,7 +33,7 @@ plugins.entries.openclaw-nim-channel: plugin not found
 
 ## 核心结论
 
-**`package.json` 中的 OpenClaw plugin id 是 LobsterAI 用来安装/定位插件包的 package/directory id；OpenClaw runtime 校验 `plugins.entries` 时使用的是插件 `openclaw.plugin.json` 里的 manifest id。两者不能混用。**
+**`package.json` 中的 OpenClaw plugin id 是 智码 GLM Code 用来安装/定位插件包的 package/directory id；OpenClaw runtime 校验 `plugins.entries` 时使用的是插件 `openclaw.plugin.json` 里的 manifest id。两者不能混用。**
 
 | 插件包目录 / package id | manifest id | `plugins.entries` 应写入 |
 |---|---|---|
@@ -41,7 +41,7 @@ plugins.entries.openclaw-nim-channel: plugin not found
 | `openclaw-nim-channel` | `nimsuite-openclaw-nim-channel` | `nimsuite-openclaw-nim-channel` |
 | `qwen-portal-auth` | 当前 runtime 未安装 | 不写入 |
 
-因此，`package.json` 里有 `clawemail-email` 和 `openclaw-nim-channel` 只能说明 LobsterAI 会安装这两个插件包，不代表 `openclaw.json` 里可以使用同名 entry。
+因此，`package.json` 里有 `clawemail-email` 和 `openclaw-nim-channel` 只能说明 智码 GLM Code 会安装这两个插件包，不代表 `openclaw.json` 里可以使用同名 entry。
 
 ---
 
@@ -81,9 +81,9 @@ Renderer refreshes available models
 ## 设计原则
 
 1. **按语义变化同步配置。** 服务端模型元数据只有在 `modelId` 或 `supportsImage` 变化时才触发 OpenClaw config sync；返回顺序变化不视为内容变化。
-2. **config entry 使用 runtime id。** 所有 `plugins.entries` key 都必须是 OpenClaw manifest id，而不是 npm 包名、安装目录名或 LobsterAI package id。
+2. **config entry 使用 runtime id。** 所有 `plugins.entries` key 都必须是 OpenClaw manifest id，而不是 npm 包名、安装目录名或 智码 GLM Code package id。
 3. **插件不存在就不写入。** `qwen-portal-auth` 这类 runtime 未安装插件不能因为 provider URL 命中而无条件写入。
-4. **保留 runtime 注入字段。** 继续保留 gateway/runtime 自动注入的 `plugins` 和 `gateway` 字段，避免因为 LobsterAI 重写配置导致新的 diff loop。
+4. **保留 runtime 注入字段。** 继续保留 gateway/runtime 自动注入的 `plugins` 和 `gateway` 字段，避免因为 智码 GLM Code 重写配置导致新的 diff loop。
 5. **迁移历史配置。** 对旧版本写入的 package/directory id 做自动清理，不要求用户手动编辑 `openclaw.json`。
 
 ---
@@ -220,7 +220,7 @@ const qwenPortalAuthPluginId = resolveOpenClawExtensionPluginId('qwen-portal-aut
 用户本机配置文件：
 
 ```text
-~/Library/Application Support/LobsterAI/openclaw/state/openclaw.json
+~/Library/Application Support/智码 GLM Code/openclaw/state/openclaw.json
 ```
 
 已移除历史 stale entries：
@@ -234,7 +234,7 @@ clawemail-email
 迁移前已备份：
 
 ```text
-~/Library/Application Support/LobsterAI/openclaw/state/openclaw.json.bak-2026-04-28T15-46-16-321Z
+~/Library/Application Support/智码 GLM Code/openclaw/state/openclaw.json.bak-2026-04-28T15-46-16-321Z
 ```
 
 后续应用启动或配置同步时，代码会自动保持这种迁移结果，不会再写回这些无效 key。
@@ -263,7 +263,7 @@ clawemail-email
 4. **不破坏插件安装模型。** `package.json` 仍以 package id 管理插件安装，OpenClaw runtime 配置则使用 manifest id。
 5. **缺失插件不再写入。** `qwen-portal-auth` 只有真实存在时才进入 `plugins.entries`。
 
-剩余风险主要来自 OpenClaw 未来版本可能再次调整插件 manifest id。该风险由 manifest 扫描机制承接，只要插件包内 `openclaw.plugin.json` 正确，LobsterAI 不需要硬编码新 id。
+剩余风险主要来自 OpenClaw 未来版本可能再次调整插件 manifest id。该风险由 manifest 扫描机制承接，只要插件包内 `openclaw.plugin.json` 正确，智码 GLM Code 不需要硬编码新 id。
 
 ---
 
@@ -293,7 +293,7 @@ git diff --check
 
 ### 手工验证
 
-1. 启动 LobsterAI
+1. 启动 智码 GLM Code
 2. 正常进入 Cowork 使用
 3. 等待 renderer 刷新模型列表或手动触发模型列表请求
 4. 检查日志不应反复出现：

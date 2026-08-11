@@ -265,6 +265,7 @@ export class CoworkQueuedFollowUpCoordinator {
           queuedSteer.skillPrompt,
           this.dependencies.getState().cowork.config.systemPrompt,
         ),
+        codingOptimized: queuedSteer.codingOptimized,
         activeSkillIds: queuedSteer.activeSkillIds,
         runtimeSkillIds: queuedSteer.runtimeSkillIds,
         kitIds: queuedSteer.kitIds,

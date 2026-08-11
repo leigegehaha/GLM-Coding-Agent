@@ -184,7 +184,7 @@ describe('Windows installer hardening contracts', () => {
     const preflight = check.indexOf('!insertmacro DetectFreshOrPossibleExisting');
     const sourceProbe = check.indexOf('phase=legacy-skills-source-preflight');
     const resolver = check.indexOf('!insertmacro ResolveTrustedPowerShell');
-    const stop = check.indexOf('!insertmacro stopLobsterAIProcesses');
+    const stop = check.indexOf('!insertmacro stopGLMCodeProcesses');
     const backup = check.indexOf('phase=skill-backup-complete');
 
     expect(preflight).toBeGreaterThan(-1);
@@ -351,7 +351,7 @@ describe('Windows installer hardening contracts', () => {
     const restoreEnd = installerInclude.indexOf('SkipSkillRestore:', restoreStart);
     const restore = installerInclude.slice(restoreStart, restoreEnd);
     expect(restore).toContain(
-      'IfFileExists "$APPDATA\\LobsterAI\\skills-backup\\$lobsterInstallerAttemptId\\backup-manifest.json" SkillRestoreAttemptBackupReady',
+      'IfFileExists "$APPDATA\\GLMCode\\skills-backup\\$lobsterInstallerAttemptId\\backup-manifest.json" SkillRestoreAttemptBackupReady',
     );
     expect(restore).toContain('"legacy-restore-backup-missing"');
     expect(restore).toContain('Write-Output (\\"name-conflict:\\"');
@@ -396,7 +396,7 @@ describe('Windows installer hardening contracts', () => {
   test('re-checks the attempt manifest after a verified backup before replacing the old install', () => {
     const backupComplete = installerInclude.indexOf('phase=skill-backup-complete');
     const postcheck = installerInclude.indexOf(
-      'IfFileExists "$APPDATA\\LobsterAI\\skills-backup\\$lobsterInstallerAttemptId\\backup-manifest.json" SkillBackupValidated',
+      'IfFileExists "$APPDATA\\GLMCode\\skills-backup\\$lobsterInstallerAttemptId\\backup-manifest.json" SkillBackupValidated',
     );
     const postcheckLog = installerInclude.indexOf(
       'phase=skill-backup-manifest-postcheck-missing',
@@ -444,7 +444,7 @@ describe('Windows installer hardening contracts', () => {
     expect(degraded).toContain('action=continue-with-attempt-backup-preserved');
     expect(degraded).toContain('action=continue-no-backup-found');
     expect(degraded).toContain(
-      'The recovery backup was preserved at $APPDATA\\LobsterAI\\skills-backup\\$lobsterInstallerAttemptId',
+      'The recovery backup was preserved at $APPDATA\\GLMCode\\skills-backup\\$lobsterInstallerAttemptId',
     );
     expect(degraded).not.toContain('was not deleted');
   });
@@ -462,11 +462,11 @@ describe('Windows installer hardening contracts', () => {
       init.indexOf('FileOpen $9'),
     );
     expect(init).toContain(
-      'FileOpen $9 "$APPDATA\\LobsterAI\\install-timing.log" a',
+      'FileOpen $9 "$APPDATA\\GLMCode\\install-timing.log" a',
     );
     expect(init).toContain('FileSeek $9 0 END');
     expect(init).not.toContain(
-      'FileOpen $9 "$APPDATA\\LobsterAI\\install-timing.log" w',
+      'FileOpen $9 "$APPDATA\\GLMCode\\install-timing.log" w',
     );
     expect(init).toContain('StrCpy $lobsterInvocationSource "unknown"');
     expect(init).toContain('${If} ${isUpdated}');

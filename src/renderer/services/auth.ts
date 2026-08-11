@@ -25,7 +25,7 @@ import {
   setServerModels,
 } from '../store/slices/modelSlice';
 import { i18nService } from './i18n';
-import { LogReporterAction, reportYdAnalyzer } from './logReporter';
+import { LogReporterAction, reportAnalytics } from './logReporter';
 
 interface AuthStateRefreshResult {
   isLoggedIn: boolean;
@@ -108,7 +108,7 @@ const writeAuthRendererLog = (
 };
 
 const reportAuthLifecycleEvent = (event: AuthLifecycleEvent): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.AuthLifecycle,
     event_type: event.eventType,
     outcome: event.outcome,
@@ -131,7 +131,7 @@ export function mapPricingCatalogTextModelsToServerModels(
     const modelName = readString(model.modelName) || modelId;
     const provider = readString(model.providerLabel)
       || readString(model.provider)
-      || 'LobsterAI';
+      || '智码 GLM Code';
     const contextWindow = readPositiveNumber(model.contextWindow);
     const costMultiplier = readPositiveNumber(model.costMultiplier);
 

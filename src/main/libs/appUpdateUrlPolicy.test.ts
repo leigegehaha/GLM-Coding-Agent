@@ -10,8 +10,8 @@ import {
 
 describe('Windows installer URL policy', () => {
   test.each([
-    'https://downloads.example.com/releases/LobsterAI.EXE?channel=prod',
-    'https://replacement-cdn.example.net/releases/LobsterAI.exe',
+    'https://downloads.example.com/releases/GLMCode.EXE?channel=prod',
+    'https://replacement-cdn.example.net/releases/GLMCode.exe',
   ])('accepts a transport-safe HTTPS exe URL without pinning its origin: %s', url => {
     expect(validateWindowsInstallerUrl(url)).toMatchObject({ trusted: true });
   });

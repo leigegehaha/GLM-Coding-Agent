@@ -14,7 +14,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { i18nService } from '../../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { type EmailSkillAccountConfig, type EmailSkillAccountsConfig, skillService } from '../../services/skill';
 import Modal from '../common/Modal';
 
@@ -301,7 +301,7 @@ const EmailSkillConfig: React.FC = () => {
       const analyticsAccount = normalized.accounts.find(account => account.id === activeAccountId)
         ?? normalized.accounts.find(account => account.id === normalized.defaultAccountId)
         ?? null;
-      void reportYdAnalyzer({
+      void reportAnalytics({
         action: LogReporterAction.EmailSkillSettingsSaved,
         ...buildEmailSkillAnalyticsParams(normalized, analyticsAccount),
         changedKeys: analyticsChangedKeys,
@@ -434,7 +434,7 @@ const EmailSkillConfig: React.FC = () => {
         setConnectivityResults(prev => ({ ...prev, [activeAccount.id]: result }));
         const imapCheck = result.checks.find(check => check.code === 'imap_connection');
         const smtpCheck = result.checks.find(check => check.code === 'smtp_connection');
-        void reportYdAnalyzer({
+        void reportAnalytics({
           action: LogReporterAction.EmailSkillConnectionTested,
           ...buildEmailSkillAnalyticsParams(config, activeAccount),
           result: result.verdict,
@@ -447,7 +447,7 @@ const EmailSkillConfig: React.FC = () => {
         });
       } else {
         setConnectivityError(i18nService.t('connectionFailed'));
-        void reportYdAnalyzer({
+        void reportAnalytics({
           action: LogReporterAction.EmailSkillConnectionTested,
           ...buildEmailSkillAnalyticsParams(config, activeAccount),
           result: 'fail',
@@ -462,7 +462,7 @@ const EmailSkillConfig: React.FC = () => {
       console.error('[EmailSkillConfig] email account connectivity test failed:', error);
       if (!isMountedRef.current) return;
       setConnectivityError(i18nService.t('connectionFailed'));
-      void reportYdAnalyzer({
+      void reportAnalytics({
         action: LogReporterAction.EmailSkillConnectionTested,
         ...buildEmailSkillAnalyticsParams(config, activeAccount),
         result: 'fail',

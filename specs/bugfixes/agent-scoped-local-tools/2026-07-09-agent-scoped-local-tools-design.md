@@ -6,14 +6,14 @@
 
 PR #2285 引入指定 `agentId` 启用 subagent 后，QA 反馈 child session 中不支持调用 `AskUserQuestion`。进一步验证发现问题不只发生在 child session：
 
-- main agent 普通桌面会话可以正常调用 `AskUserQuestion` 并弹出 LobsterAI 桌面选择窗口。
-- 非 main agent 普通桌面会话无法看到 LobsterAI 的 `AskUserQuestion`，模型会误用飞书插件的 `feishu_ask_user_question`。
+- main agent 普通桌面会话可以正常调用 `AskUserQuestion` 并弹出 智码 GLM Code 桌面选择窗口。
+- 非 main agent 普通桌面会话无法看到 智码 GLM Code 的 `AskUserQuestion`，模型会误用飞书插件的 `feishu_ask_user_question`。
 - 非 main agent 的 child session 同样无法使用 `AskUserQuestion`。
-- LobsterAI 自注册的 `lobsterai_image_generate` / `lobsterai_video_generate` 已支持非 main 普通桌面会话，但不支持 child session。
+- 智码 GLM Code 自注册的 `lobsterai_image_generate` / `lobsterai_video_generate` 已支持非 main 普通桌面会话，但不支持 child session。
 
 用户期望是：
 
-1. 桌面端普通 agent 会话和桌面端 child session 都可以使用 LobsterAI 本地交互工具。
+1. 桌面端普通 agent 会话和桌面端 child session 都可以使用 智码 GLM Code 本地交互工具。
 2. IM 会话继续不出现桌面弹窗，保持原设计。
 3. 图片/视频生成在 child session 中也能继承父会话的媒体模型选择。
 
@@ -45,7 +45,7 @@ agent:<agentId>:subagent:<...>
 
 **When** 模型需要结构化询问用户，例如单选、多选或删除确认
 
-**Then** 工具列表中应包含 LobsterAI `AskUserQuestion`，并弹出桌面端交互窗口。
+**Then** 工具列表中应包含 智码 GLM Code `AskUserQuestion`，并弹出桌面端交互窗口。
 
 ### 场景 2：桌面 child session 询问用户
 
@@ -61,11 +61,11 @@ agent:<agentId>:subagent:<...>
 
 **When** 模型需要用户确认或选择
 
-**Then** 不应弹出 LobsterAI 桌面窗口。IM 会话仍按原设计走文本交互或平台插件自己的交互能力。
+**Then** 不应弹出 智码 GLM Code 桌面窗口。IM 会话仍按原设计走文本交互或平台插件自己的交互能力。
 
 ### 场景 4：child session 媒体生成
 
-**Given** 用户在父桌面会话中选择了 LobsterAI 图片或视频模型
+**Given** 用户在父桌面会话中选择了 智码 GLM Code 图片或视频模型
 
 **When** child session 调用 `lobsterai_image_generate` 或 `lobsterai_video_generate`
 
@@ -113,7 +113,7 @@ agent:<agentId>:subagent:<...>
 
 ### 3.5 不处理 Feishu AskUser 暴露问题
 
-`feishu_ask_user_question` 在桌面会话中仍可见是误用诱因之一，但不是本次修复范围。本次只确保 LobsterAI 桌面 AskUser 在正确会话中可见，并保留 IM 不弹桌面窗的约束。
+`feishu_ask_user_question` 在桌面会话中仍可见是误用诱因之一，但不是本次修复范围。本次只确保 智码 GLM Code 桌面 AskUser 在正确会话中可见，并保留 IM 不弹桌面窗的约束。
 
 ## 4. 实现方案
 
@@ -201,9 +201,9 @@ AskUser callback 使用 desktop resolver。无法解析或属于 IM 链路时返
 1. main agent 普通桌面会话继续可以调用 `AskUserQuestion` 并弹窗。
 2. 非 main agent 普通桌面会话可以调用 `AskUserQuestion`，不再误用飞书 AskUser。
 3. 桌面 child session 的 `AskUserQuestion` callback 能映射到 materialized child Cowork session。
-4. IM 会话及其 child 链路不会触发 LobsterAI 桌面弹窗。
+4. IM 会话及其 child 链路不会触发 智码 GLM Code 桌面弹窗。
 5. 普通非 main agent 继续可以使用 `lobsterai_image_generate` / `lobsterai_video_generate`。
-6. 桌面 child session 可以看到 LobsterAI 图片/视频生成工具。
+6. 桌面 child session 可以看到 智码 GLM Code 图片/视频生成工具。
 7. child session 媒体生成在没有独立选择时继承 parent 的媒体模型选择。
 8. 不修改 `vendor/openclaw-runtime/current` 作为最终状态。
 9. 相关 Vitest、touched-file ESLint 和 Electron 主进程编译通过。

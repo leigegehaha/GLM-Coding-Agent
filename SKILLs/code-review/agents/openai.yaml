@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Find concrete defects, regressions, and missing tests."
+  default_prompt: "Use $code-review to review these changes for concrete defects and missing tests."

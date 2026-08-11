@@ -8,10 +8,10 @@ import {
 
 describe('subagent child history sync', () => {
   test('normalizes outbound subagent prompts to the visible user request', () => {
-    const rawOutboundPrompt = `[LobsterAI system instructions]
+    const rawOutboundPrompt = `[智码 GLM Code system instructions]
 hidden setup
 
-[Context bridge from previous LobsterAI conversation]
+[Context bridge from previous 智码 GLM Code conversation]
 previous context
 
 [Current user request]
@@ -21,7 +21,7 @@ rewrite the intro`;
   });
 
   test('preserves visible local user text instead of raw outbound prompt', () => {
-    const rawOutboundPrompt = `[LobsterAI system instructions]
+    const rawOutboundPrompt = `[智码 GLM Code system instructions]
 hidden setup
 
 [Current user request]

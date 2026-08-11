@@ -14,7 +14,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Extracts the resolved delivery target from a cron event payload when the
  * run finished and its announce delivery actually went out. Cron deliveries
  * mirror into the target conversation's gateway transcript without bumping
- * the session's activity timestamp, so LobsterAI uses this signal to pull the
+ * the session's activity timestamp, so 智码 GLM Code uses this signal to pull the
  * mirrored message into the mapped IM conversation record.
  *
  * Returns null for non-finished events, undelivered runs, or payloads without

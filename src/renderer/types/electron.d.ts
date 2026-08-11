@@ -15,6 +15,12 @@ import type {
   BrowserRuntimeProfile,
 } from '../../shared/browserWebAccess/constants';
 import type {
+  CodingPlanAccountResult,
+  CodingPlanAccountSnapshot,
+  CodingPlanAccountUser,
+  CodingPlanConfiguration,
+} from '../../shared/codingPlanAccount/constants';
+import type {
   BrowserAnnotationRect,
   BrowserAnnotationScreenshotRef,
   CoworkBrowserAnnotationMessageBatch,
@@ -94,6 +100,10 @@ import type {
   SiteUpdateTitleInput,
 } from '../../shared/site/constants';
 import type {
+  ClawHubMarketplacePage,
+  ClawHubMarketplaceQuery,
+} from '../../shared/skills/constants';
+import type {
   SkinApplyResponse,
   SkinBindThemeResponse,
   SkinDeactivateResponse,
@@ -101,6 +111,7 @@ import type {
   SkinGetActiveResponse,
   SkinListResponse,
 } from '../../shared/skin/types';
+import type { WebConsoleStatus } from '../../shared/webConsole/constants';
 import type { CoworkTempDirPreview } from './cowork';
 interface ApiResponse {
   ok: boolean;
@@ -135,6 +146,7 @@ interface CoworkSession {
   cwd: string;
   systemPrompt: string;
   modelOverride: string;
+  codingOptimized?: boolean;
   executionMode: 'auto' | 'local' | 'sandbox';
   activeSkillIds: string[];
   agentId: string;
@@ -196,6 +208,7 @@ interface CoworkConfig {
   systemPrompt: string;
   executionMode: 'auto' | 'local' | 'sandbox';
   agentEngine: 'openclaw';
+  codingOptimizationEnabled?: boolean;
   memoryEnabled: boolean;
   memoryImplicitUpdateEnabled: boolean;
   memoryLlmJudgeEnabled: boolean;
@@ -219,6 +232,7 @@ type CoworkConfigUpdate = Partial<
     | 'workingDirectory'
     | 'executionMode'
     | 'agentEngine'
+    | 'codingOptimizationEnabled'
     | 'memoryEnabled'
     | 'memoryImplicitUpdateEnabled'
     | 'memoryLlmJudgeEnabled'
@@ -566,6 +580,16 @@ interface IElectronAPI {
     set: (key: string, value: any) => Promise<void>;
     remove: (key: string) => Promise<void>;
   };
+  codingPlan: {
+    getAccount: () => Promise<CodingPlanAccountResult<CodingPlanAccountUser | null>>;
+    login: (
+      email: string,
+      password: string,
+    ) => Promise<CodingPlanAccountResult<CodingPlanAccountUser>>;
+    getOverview: () => Promise<CodingPlanAccountResult<CodingPlanAccountSnapshot>>;
+    configure: (tokenId: number) => Promise<CodingPlanAccountResult<CodingPlanConfiguration>>;
+    logout: () => Promise<CodingPlanAccountResult<null>>;
+  };
   skills: {
     list: () => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
     setEnabled: (options: {
@@ -619,6 +643,9 @@ interface IElectronAPI {
       config: Record<string, string>,
     ) => Promise<{ success: boolean; result?: EmailConnectivityTestResult; error?: string }>;
     fetchMarketplace: () => Promise<{ success: boolean; data?: string; error?: string }>;
+    fetchClawHub: (
+      query: ClawHubMarketplaceQuery,
+    ) => Promise<{ success: boolean; page?: ClawHubMarketplacePage; error?: string }>;
     detectFromOpenClaw: () => Promise<{
       skills: Array<{ name: string; description: string; skillKey: string; baseDir: string }>;
       error?: string;
@@ -739,6 +766,7 @@ interface IElectronAPI {
       method: string;
       headers: Record<string, string>;
       body?: string;
+      credentialRef?: string;
     }) => Promise<ApiResponse>;
     stream: (options: {
       url: string;
@@ -746,6 +774,7 @@ interface IElectronAPI {
       headers: Record<string, string>;
       body?: string;
       requestId: string;
+      credentialRef?: string;
     }) => Promise<ApiStreamResponse>;
     cancelStream: (requestId: string) => Promise<boolean>;
     onStreamData: (requestId: string, callback: (chunk: string) => void) => () => void;
@@ -831,6 +860,9 @@ interface IElectronAPI {
       selectedTextSnippets?: Array<{ id: string; text: string; sourceMessageId?: string; sourceMessageType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceId?: string; sourceType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceTitle?: string; sourcePath?: string; artifactId?: string; createdAt: number; startOffset?: number; endOffset?: number }>;
       browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
       agentId?: string;
+      modelOverride?: string;
+      thinkingLevel?: string;
+      codingOptimized?: boolean;
       imageAttachments?: Array<{ name: string; mimeType: string; base64Data: string; sizeBytes?: number; localPath?: string; previewMimeType?: string; previewBase64Data?: string }>;
       mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string };
       mediaReferences?: Array<{ token: string; mediaType: string; index: number; fileId: string; fileName: string; mimeType: string; localPath?: string; remoteUrl?: string; dataUrl?: string; role?: string }>;
@@ -852,6 +884,7 @@ interface IElectronAPI {
       resolvedKitCapabilities?: ResolvedKitCapabilities;
       selectedTextSnippets?: Array<{ id: string; text: string; sourceMessageId?: string; sourceMessageType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceId?: string; sourceType?: 'assistant' | 'artifact_markdown' | 'artifact_text'; sourceTitle?: string; sourcePath?: string; artifactId?: string; createdAt: number; startOffset?: number; endOffset?: number }>;
       browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
+      codingOptimized?: boolean;
       imageAttachments?: Array<{ name: string; mimeType: string; base64Data: string; sizeBytes?: number; localPath?: string; previewMimeType?: string; previewBase64Data?: string }>;
       mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string };
       mediaReferences?: Array<{ token: string; mediaType: string; index: number; fileId: string; fileName: string; mimeType: string; localPath?: string; remoteUrl?: string; dataUrl?: string; role?: string }>;
@@ -886,6 +919,10 @@ interface IElectronAPI {
       engineStatus?: OpenClawEngineStatus;
     }>;
     stopSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+    setSessionCodingOptimization: (options: {
+      sessionId: string;
+      enabled: boolean;
+    }) => Promise<{ success: boolean; codingOptimized?: boolean; error?: string }>;
     deleteSession: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
     deleteSessions: (sessionIds: string[]) => Promise<{ success: boolean; error?: string }>;
     setSessionPinned: (options: {
@@ -1365,6 +1402,11 @@ interface IElectronAPI {
     }>;
     relaunch: () => Promise<void>;
     openSystemNotificationSettings: () => Promise<{ success: boolean; error?: string }>;
+  };
+  webConsole: {
+    getStatus: () => Promise<WebConsoleStatus>;
+    open: () => Promise<{ success: boolean; url?: string; error?: string }>;
+    stop: () => Promise<{ success: boolean }>;
   };
   appUpdate: {
     getState: () => Promise<AppUpdateRuntimeState>;

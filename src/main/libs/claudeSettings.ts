@@ -1,4 +1,11 @@
-import { type ApiFormat,type ProviderConfig, ProviderName, ProviderRegistry, resolveCodingPlanBaseUrl } from '../../shared/providers';
+import { CODING_PLAN_CREDENTIAL_REF } from '../../shared/codingPlanAccount/constants';
+import {
+  type ApiFormat,
+  type ProviderConfig,
+  ProviderName,
+  ProviderRegistry,
+  resolveCodingPlanBaseUrl,
+} from '../../shared/providers';
 import {
   applyModelRuntimeProfileMetadata,
   ModelRuntimeProfile,
@@ -142,6 +149,44 @@ let storeGetter: (() => SqliteStore | null) | null = null;
 export function setStoreGetter(getter: () => SqliteStore | null): void {
   storeGetter = getter;
 }
+
+let providerApiKeyResolver: ((credentialRef: string) => string | null) | null = null;
+
+export function setProviderApiKeyResolver(
+  resolver: ((credentialRef: string) => string | null) | null,
+): void {
+  providerApiKeyResolver = resolver;
+}
+
+const resolveStoredProviderApiKey = (
+  providerName: string,
+  providerConfig: LocalProviderConfig,
+): string => {
+  const credentialRef = providerConfig.credentialRef?.trim();
+  if (credentialRef) {
+    if (
+      providerName !== ProviderName.ZhimaCoding
+      || credentialRef !== CODING_PLAN_CREDENTIAL_REF
+    ) {
+      return '';
+    }
+    return providerApiKeyResolver?.(credentialRef)?.trim() ?? '';
+  }
+  return providerConfig.apiKey?.trim() ?? '';
+};
+
+const resolveStoredProviderBaseUrl = (
+  providerName: string,
+  providerConfig: LocalProviderConfig,
+): string => {
+  if (
+    providerName === ProviderName.ZhimaCoding
+    && providerConfig.credentialRef === CODING_PLAN_CREDENTIAL_REF
+  ) {
+    return ProviderRegistry.get(ProviderName.ZhimaCoding)?.defaultBaseUrl ?? '';
+  }
+  return providerConfig.baseUrl?.trim() ?? '';
+};
 
 // Auth token getter injected from main.ts for server model provider
 let authTokensGetter: (() => { accessToken: string; refreshToken: string } | null) | null = null;
@@ -608,7 +653,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   }
 
   let apiFormat = getEffectiveProviderApiFormat(providerName, providerConfig.apiFormat);
-  let baseURL = providerConfig.baseUrl?.trim();
+  let baseURL = resolveStoredProviderBaseUrl(providerName, providerConfig);
 
   if (providerConfig.codingPlanEnabled) {
     const resolved = resolveCodingPlanBaseUrl(providerName, true, apiFormat, baseURL ?? '');
@@ -623,12 +668,12 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   }
 
    // Check for API key or OAuth credentials
-  const hasApiKey = providerConfig.apiKey?.trim();
+  const hasApiKey = resolveStoredProviderApiKey(providerName, providerConfig);
   const hasOAuthCreds =
     (providerName === ProviderName.Minimax && (providerConfig as any).authType === 'oauth' && !!(providerConfig as any).oauthAccessToken?.trim())
     || shouldUseOpenAICodexOAuth(providerName, providerConfig)
     || (shouldUseXaiOAuth(providerName, providerConfig) && hasXaiOAuthCredential());
-  if (apiFormat === 'anthropic' && providerRequiresApiKey(providerName) && !providerConfig.apiKey?.trim() && !hasApiKey && !hasOAuthCreds) {
+  if (apiFormat === 'anthropic' && providerRequiresApiKey(providerName) && !hasApiKey && !hasOAuthCreds) {
     const serverFallback = tryLobsteraiServerFallback(modelId);
     if (serverFallback) return { matched: serverFallback };
     return { matched: null, error: `Provider ${providerName} requires API key for Anthropic-compatible mode.` };
@@ -682,7 +727,7 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   }
 
   const resolvedBaseURL = matched.baseURL;
-  let resolvedApiKey = matched.providerConfig.apiKey?.trim() || '';
+  let resolvedApiKey = resolveStoredProviderApiKey(matched.providerName, matched.providerConfig);
 
   // Providers that don't require auth (e.g. Ollama) still need a non-empty
   // placeholder so downstream components (OpenClaw gateway, compat proxy)
@@ -784,7 +829,7 @@ export function resolveRawApiConfig(): ApiConfigResolution {
     console.debug(`[ClaudeSettings] resolveRawApiConfig: no matched provider, error=${error}, providers=[${providerKeys.join(',')}], defaultModel=${defaultModel}, defaultProvider=${defaultProvider}`);
     return { config: null, error };
   }
-  let apiKey = matched.providerConfig.apiKey?.trim() || '';
+  let apiKey = resolveStoredProviderApiKey(matched.providerName, matched.providerConfig);
   let effectiveBaseURL = matched.baseURL;
   let effectiveApiFormat = matched.apiFormat;
 
@@ -877,7 +922,7 @@ export function resolveAllProviderApiKeys(): Record<string, string> {
       continue;
     }
     // For MiniMax OAuth, inject oauthAccessToken instead of apiKey
-    let apiKey = providerConfig.apiKey?.trim();
+    let apiKey = resolveStoredProviderApiKey(providerName, providerConfig);
     if (providerName === ProviderName.Minimax && (providerConfig as any).authType === 'oauth') {
       const oauthToken = (providerConfig as any).oauthAccessToken?.trim();
       if (!oauthToken) continue; // OAuth not completed, skip
@@ -1014,10 +1059,10 @@ export function resolveAllEnabledProviderConfigs(): ProviderRawConfig[] {
       continue;
     }
 
-    const apiKey = providerConfig.apiKey?.trim() || '';
+    const apiKey = resolveStoredProviderApiKey(providerName, providerConfig);
     if (!apiKey && providerRequiresApiKey(providerName)) continue;
 
-    const baseURL = providerConfig.baseUrl?.trim() || '';
+    const baseURL = resolveStoredProviderBaseUrl(providerName, providerConfig);
 
     let effectiveBaseURL = baseURL;
     let effectiveApiFormat = getEffectiveProviderApiFormat(providerName, providerConfig.apiFormat);

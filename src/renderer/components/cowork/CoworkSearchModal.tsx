@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 
 import { coworkService } from '../../services/cowork';
 import { i18nService } from '../../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { RootState } from '../../store';
 import { CoworkSessionStatusValue, type CoworkSessionSummary } from '../../types/cowork';
 import { getAgentDisplayNameById } from '../../utils/agentDisplay';
@@ -36,7 +36,7 @@ const reportTaskSearchAction = (
   } = {},
 ): void => {
   console.debug('[CoworkSearch] reporting task search analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.TaskSearchAction,
     source: TASK_SEARCH_ANALYTICS_SOURCE,
     actionType,

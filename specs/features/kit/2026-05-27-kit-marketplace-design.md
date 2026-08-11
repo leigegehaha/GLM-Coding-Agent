@@ -4,7 +4,7 @@
 
 ### 1.1 背景
 
-LobsterAI 已有 Skill（技能）体系，用户可以为 Agent 加载单个 Skill 来扩展能力。但在实际使用中，某些场景需要多个 Skill 协同工作才能完成较复杂的任务（如"翻译专家"需要术语库 + 翻译引擎 + 校对三个 Skill 配合）。单独安装和管理多个 Skill 的体验较碎片化，用户难以发现"哪些 Skill 组合在一起效果最好"。
+智码 GLM Code 已有 Skill（技能）体系，用户可以为 Agent 加载单个 Skill 来扩展能力。但在实际使用中，某些场景需要多个 Skill 协同工作才能完成较复杂的任务（如"翻译专家"需要术语库 + 翻译引擎 + 校对三个 Skill 配合）。单独安装和管理多个 Skill 的体验较碎片化，用户难以发现"哪些 Skill 组合在一起效果最好"。
 
 Kit（专家套件）是在 Skill 之上的一层打包概念：一个 Kit 包含一组预配置的 Skill，用户一键安装即可获得完整的专家能力集合。
 
@@ -20,32 +20,32 @@ Kit（专家套件）是在 Skill 之上的一层打包概念：一个 Kit 包�
 
 ### 场景 1: 浏览与安装 Kit
 
-**Given** 用户进入侧边栏的"专家套件"页面  
-**When** 用户浏览 Kit 列表或搜索特定 Kit  
+**Given** 用户进入侧边栏的"专家套件"页面
+**When** 用户浏览 Kit 列表或搜索特定 Kit
 **Then** 显示商店中所有可用 Kit 及其名称、描述、版本、包含的 Skill 数量等元信息；用户点击"安装"按钮后 Kit 被下载安装到本地
 
 ### 场景 2: 在对话中使用 Kit
 
-**Given** 用户已安装至少一个 Kit  
-**When** 在对话输入框点击 Kit 按钮并选择一个或多个 Kit  
+**Given** 用户已安装至少一个 Kit
+**When** 在对话输入框点击 Kit 按钮并选择一个或多个 Kit
 **Then** 输入框上方显示已选中 Kit 的标签（Badge），发送消息时 Kit 中包含的 Skill 被自动加载到上下文
 
 ### 场景 3: Kit 的 Try Asking 引导
 
-**Given** 用户在 Kit 详情页看到"试试问"列表  
-**When** 用户点击某个推荐问题  
+**Given** 用户在 Kit 详情页看到"试试问"列表
+**When** 用户点击某个推荐问题
 **Then** 若 Kit 已安装则自动填入输入框并跳转对话页面；若未安装则弹窗提示安装
 
 ### 场景 4: 卸载 Kit
 
-**Given** 用户在 Kit 列表或详情页  
-**When** 点击卸载按钮  
+**Given** 用户在 Kit 列表或详情页
+**When** 点击卸载按钮
 **Then** Kit 所包含的 Skill 文件被删除，安装记录被移除，Kit 从已安装列表消失
 
 ### 场景 5: Kit 选择跨会话持久化
 
-**Given** 用户在某个对话会话中选中了 Kit  
-**When** 切换到其他会话再切回  
+**Given** 用户在某个对话会话中选中了 Kit
+**When** 切换到其他会话再切回
 **Then** 之前选中的 Kit 状态仍保留（存储在 draftKitIds 中）
 
 ## 3. 功能需求
@@ -140,8 +140,8 @@ interface InstalledKit {
 | `kits:uninstall` | 删除 Skill 文件 → 清除记录 → 通知 |
 
 数据源 URL:
-- test: `https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/kit-store`
-- prod: `https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/kit-store`
+- test: `https://glmcoding.cn/openapi/get/luna/hardware/lobsterai/test/kit-store`
+- prod: `https://glmcoding.cn/openapi/get/luna/hardware/lobsterai/prod/kit-store`
 
 安装流程：下载 zip → 临时目录解压 → 扫描 `SKILL.md` 识别 Skill 目录 → 拷贝到 `{userData}/SKILLs/` → 写入 `skills_state` 和 `kits_installed` → 触发 `skills:changed` 事件 → 清理临时文件。
 

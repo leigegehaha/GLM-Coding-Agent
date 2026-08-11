@@ -1,10 +1,10 @@
-# LobsterAI 产品使用日志上报设计文档
+# 智码 GLM Code 产品使用日志上报设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI 需要增加产品使用日志上报能力，帮助项目维护者了解应用安装、核心功能入口和关键交互的使用情况，为功能优化、兼容性改进和开发优先级提供数据依据。
+智码 GLM Code 需要增加产品使用日志上报能力，帮助项目维护者了解应用安装、核心功能入口和关键交互的使用情况，为功能优化、兼容性改进和开发优先级提供数据依据。
 
 当前关注的数据包括用户选择和使用的技能、MCP、专家套件、模型来源与模型类型、设置项、Agent、定时任务、会话输入框、消息交互、artifact/浏览器预览以及其他核心功能的使用情况。具体事件名称、触发时机和业务参数已在本文 2.4 中维护，后续新增事件继续按同一规范补充。
 
@@ -55,11 +55,11 @@ src/renderer/services/logReporter.test.ts
 
 ```typescript
 export const LogReporterEndpoint = {
-  YoudaoAnalyzer: 'https://rlogs.youdao.com/rlog.php',
+  YoudaoAnalyzer: 'https://glmcoding.cn/api/analytics/events',
 } as const;
 
 export const LogReporterProduct = {
-  LobsterAI: 'wisdom',
+  智码 GLM Code: 'wisdom',
 } as const;
 
 export const LogReporterCategory = {
@@ -67,7 +67,7 @@ export const LogReporterCategory = {
 } as const;
 
 export const LogReporterActionPrefix = {
-  LobsterAI: 'lobsterai_',
+  智码 GLM Code: 'lobsterai_',
 } as const;
 ```
 
@@ -305,7 +305,7 @@ export const LogReporterActionPrefix = {
 #### 2.4.8 `lobsterai_usage_analytics_enabled`
 
 - 状态：已实现。
-- 触发时机：用户在「设置 -> 通用」中将「帮助改进 LobsterAI」从关闭重新开启，并成功保存后发送。
+- 触发时机：用户在「设置 -> 通用」中将「帮助改进 智码 GLM Code」从关闭重新开启，并成功保存后发送。
 - 事件含义：统计用户主动重新开启基础使用统计的情况。
 - 业务参数：
   - `source`：string，触发来源。当前固定为 `settings_general`。
@@ -1076,7 +1076,7 @@ Renderer 调试日志只记录事件 `action` 和请求结果，不记录完整�
 使用统计开关放在：
 
 ```text
-设置 -> 通用 -> 帮助改进 LobsterAI
+设置 -> 通用 -> 帮助改进 智码 GLM Code
 ```
 
 配置字段为 `usageAnalyticsEnabled`，存储在现有 `app_config` 中，默认值为 `true`。老用户本地配置中没有该字段时，按开启处理，不需要新增数据库表或迁移脚本。
@@ -1085,7 +1085,7 @@ Renderer 调试日志只记录事件 `action` 和请求结果，不记录完整�
 
 用户可见文案应避免使用“日志上报”，避免误解为上传本地日志文件。当前中文文案为：
 
-- 标题：`帮助改进 LobsterAI`
+- 标题：`帮助改进 智码 GLM Code`
 - 描述：`允许发送基础使用统计，帮助我们改进功能体验。不会上传对话内容、文件内容或 API Key。`
 
 ### 2.7 调用方式示例

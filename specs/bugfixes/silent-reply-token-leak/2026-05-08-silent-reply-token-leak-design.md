@@ -16,9 +16,9 @@ IM 会话窗口中会同步显示不相关的模型回复，例如 `"NO_REPLY"`�
 - 飞书文档评论场景，AI 已通过工具（如 `reply_comment`）完成回复，输出 `NO_REPLY` 防止重复发送
 - 子代理完成事件后的静默收尾
 
-**OpenClaw 侧已有的过滤**：在 `chat.history` API 响应和出站回复投递（IM 平台发送）中正确过滤了 `NO_REPLY`。但**实时流事件**（`chat.delta`、`chat.final`、agent `stream=assistant`）未过滤，原始文本直接传递到了 LobsterAI。
+**OpenClaw 侧已有的过滤**：在 `chat.history` API 响应和出站回复投递（IM 平台发送）中正确过滤了 `NO_REPLY`。但**实时流事件**（`chat.delta`、`chat.final`、agent `stream=assistant`）未过滤，原始文本直接传递到了 智码 GLM Code。
 
-**LobsterAI 侧遗漏**：适配器 `openclawRuntimeAdapter.ts` 已有对同类控制标记 `HEARTBEAT_OK` 的完整过滤，覆盖了所有流式入口和历史同步。但缺少对 `NO_REPLY` 的等效处理，导致其通过了两层防线：
+**智码 GLM Code 侧遗漏**：适配器 `openclawRuntimeAdapter.ts` 已有对同类控制标记 `HEARTBEAT_OK` 的完整过滤，覆盖了所有流式入口和历史同步。但缺少对 `NO_REPLY` 的等效处理，导致其通过了两层防线：
 
 | 防线 | HEARTBEAT_OK | NO_REPLY（修复前） |
 |---|---|---|
@@ -32,7 +32,7 @@ IM 会话窗口中会同步显示不相关的模型回复，例如 `"NO_REPLY"`�
 ```
 OpenClaw 流式输出: "N" → "NO" → "NO_" → "NO_R" → "NO_RE" → "NO_REPLY"
                         ↓
-LobsterAI processAssistant/handleChatDelta:
+智码 GLM Code processAssistant/handleChatDelta:
   "NO_" → isSilentReplyText("NO_") = false → 创建消息 → emit 到 UI
   "NO_REPLY" → isSilentReplyText("NO_REPLY") = true → 仅清空 segmentText
                 ❌ handleChatDelta 遗漏 deleteAssistantMessage 调用
@@ -47,7 +47,7 @@ LobsterAI processAssistant/handleChatDelta:
 
 ### 场景 A: 群聊未 @ 提及
 
-**Given** 用户在某个 IM 群聊中开启了 LobsterAI 机器人
+**Given** 用户在某个 IM 群聊中开启了 智码 GLM Code 机器人
 **When** 群内其他成员发送了一条未 @ 机器人的消息
 **Then** 会话窗口中不应出现任何 AI 回复（包括 "NO_REPLY" 或 "NO_"）
 

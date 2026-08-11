@@ -1,10 +1,10 @@
-# LobsterAI Artifact 文件预览选中文本添加到对话设计文档
+# 智码 GLM Code Artifact 文件预览选中文本添加到对话设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI 已支持在 Cowork assistant 消息正文中选中文本，并通过“添加到对话”把片段作为当前追问上下文发送给模型。
+智码 GLM Code 已支持在 Cowork assistant 消息正文中选中文本，并通过“添加到对话”把片段作为当前追问上下文发送给模型。
 
 用户在查看 artifact 文件预览时也存在同类需求，尤其是 Markdown 文档、纯文本日志、说明文件等内容：
 
@@ -14,7 +14,7 @@ LobsterAI 已支持在 Cowork assistant 消息正文中选中文本，并通过�
 
 目前 artifact 文件预览只能查看、复制或打开文件。用户如果想引用其中一小段内容，需要手动复制粘贴到输入框，和 assistant 消息选区体验不一致。
 
-Codex 的产品表现是：部分 Markdown 文件在应用内预览时也能选中并添加到对话，但 HTML 或代码类预览通常不展示“添加到对话”按钮。LobsterAI 应采用类似的白名单策略，避免把交互扩散到 iframe、CodeMirror、图形和复杂文档预览中。
+Codex 的产品表现是：部分 Markdown 文件在应用内预览时也能选中并添加到对话，但 HTML 或代码类预览通常不展示“添加到对话”按钮。智码 GLM Code 应采用类似的白名单策略，避免把交互扩散到 iframe、CodeMirror、图形和复杂文档预览中。
 
 ### 1.2 当前实现事实
 
@@ -85,7 +85,7 @@ Artifact 文件类型映射在：
 | `.mermaid`, `.mmd` | `mermaid` | 渲染后是 SVG 图形，不等同于源文本引用 |
 | 图片、视频 | `image`, `video` | 无文本选区 |
 | `.docx`, `.xlsx`, `.pptx`, `.pdf`, `.csv`, `.tsv`, `.xls` | `document` | 第三方预览、canvas、表格视图和分页模型差异大 |
-| `local-service` | `local-service` | 外部 Web 应用，不应注入 LobsterAI 选区交互 |
+| `local-service` | `local-service` | 外部 Web 应用，不应注入 智码 GLM Code 选区交互 |
 
 ### 2.3 用户体验
 

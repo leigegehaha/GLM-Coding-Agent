@@ -16,7 +16,7 @@
 
 发送框里的模型切换逻辑在：
 
-- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkPromptInput.tsx)
+- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkPromptInput.tsx)
 
 核心行为：
 
@@ -26,7 +26,7 @@
 
 页面头部也是同样逻辑：
 
-- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkView.tsx)
+- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkView.tsx)
 
 因此现在的“切换模型”本质是：
 
@@ -36,10 +36,10 @@
 
 ### 2. 当前 Cowork 本地状态没有 session-level model 字段
 
-LobsterAI 的会话结构目前没有会话 override 模型字段：
+智码 GLM Code 的会话结构目前没有会话 override 模型字段：
 
-- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/types/cowork.ts)
-- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/coworkStore.ts)
+- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/types/cowork.ts)
+- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/coworkStore.ts)
 
 `CoworkSession` / `CoworkSessionSummary` 里只有：
 
@@ -100,18 +100,18 @@ OpenClaw 会话模型解析优先级也已经明确：
 
 入口：
 
-- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkView.tsx)
-- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/services/cowork.ts)
-- [src/main/main.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/main.ts)
-- [src/main/libs/agentEngine/coworkEngineRouter.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/coworkEngineRouter.ts)
-- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
+- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkView.tsx)
+- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/services/cowork.ts)
+- [src/main/main.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/main.ts)
+- [src/main/libs/agentEngine/coworkEngineRouter.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/coworkEngineRouter.ts)
+- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
 
 OpenClaw runtime 在 `runTurn()` 里按 `sessionId + agentId` 生成 managed `sessionKey`：
 
 - `agentId = options.agentId || session.agentId || 'main'`
 - `sessionKey = this.toSessionKey(sessionId, agentId)`
 
-也就是说，LobsterAI 其实已经能稳定定位到对应的 OpenClaw session，只是没有暴露 “patch 当前 session” 这条能力。
+也就是说，智码 GLM Code 其实已经能稳定定位到对应的 OpenClaw session，只是没有暴露 “patch 当前 session” 这条能力。
 
 ### 继续会话
 
@@ -180,15 +180,15 @@ OpenClaw runtime 在 `runTurn()` 里按 `sessionId + agentId` 生成 managed `se
 
 ### A. 先补会话模型字段
 
-需要在 LobsterAI 本地会话模型里加字段：
+需要在 智码 GLM Code 本地会话模型里加字段：
 
 - `modelOverride?: string`
 - `effectiveModel?: string`
 
 建议 renderer/main 两侧类型同时补：
 
-- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/types/cowork.ts)
-- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/coworkStore.ts)
+- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/types/cowork.ts)
+- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/coworkStore.ts)
 
 推荐语义：
 
@@ -259,7 +259,7 @@ export interface OpenClawSessionPatchInput {
 1. 根据 `sessionId` 找到本地会话
 2. 用 `agentId` 推导 managed `sessionKey`
 3. 将 `sessionId + patch` 转成 OpenClaw `sessions.patch` 所需参数
-4. patch 成功后同步更新 LobsterAI 本地已持久化的 session 元数据
+4. patch 成功后同步更新 智码 GLM Code 本地已持久化的 session 元数据
 5. 返回给 renderer 最新 session 数据
 
 第一版即便只真正落地 `patch.model`，接口层也应设计成通用 patch，而不是 `setModel`/`clearModel` 风格的专用接口。
@@ -268,7 +268,7 @@ export interface OpenClawSessionPatchInput {
 
 建议在：
 
-- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
+- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
 
 新增类似能力：
 
@@ -336,7 +336,7 @@ patchSession?(
 
 在：
 
-- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/services/cowork.ts)
+- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/services/cowork.ts)
 
 新增：
 
@@ -353,8 +353,8 @@ patchSession?(
 
 需要修改：
 
-- [src/main/preload.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/preload.ts)
-- [src/renderer/types/electron.d.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/types/electron.d.ts)
+- [src/main/preload.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/preload.ts)
+- [src/renderer/types/electron.d.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/types/electron.d.ts)
 
 在 `window.electron.openclaw` 下新增：
 
@@ -367,8 +367,8 @@ patchSession?(
 
 适用位置：
 
-- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkPromptInput.tsx)
-- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkView.tsx)
+- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkPromptInput.tsx)
+- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkView.tsx)
 
 建议行为：
 
@@ -523,21 +523,21 @@ OpenClaw 会校验：
 
 高优先级：
 
-- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkPromptInput.tsx)
-- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/components/cowork/CoworkView.tsx)
-- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/services/cowork.ts)
-- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/types/cowork.ts)
-- [src/renderer/types/electron.d.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/renderer/types/electron.d.ts)
-- [src/main/preload.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/preload.ts)
-- [src/main/main.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/main.ts)
-- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/coworkStore.ts)
-- [src/main/libs/agentEngine/types.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/types.ts)
-- [src/main/libs/agentEngine/coworkEngineRouter.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/coworkEngineRouter.ts)
-- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
+- [src/renderer/components/cowork/CoworkPromptInput.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkPromptInput.tsx)
+- [src/renderer/components/cowork/CoworkView.tsx](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/components/cowork/CoworkView.tsx)
+- [src/renderer/services/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/services/cowork.ts)
+- [src/renderer/types/cowork.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/types/cowork.ts)
+- [src/renderer/types/electron.d.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/renderer/types/electron.d.ts)
+- [src/main/preload.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/preload.ts)
+- [src/main/main.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/main.ts)
+- [src/main/coworkStore.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/coworkStore.ts)
+- [src/main/libs/agentEngine/types.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/types.ts)
+- [src/main/libs/agentEngine/coworkEngineRouter.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/coworkEngineRouter.ts)
+- [src/main/libs/agentEngine/openclawRuntimeAdapter.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/libs/agentEngine/openclawRuntimeAdapter.ts)
 
 建议新增：
 
-- [src/main/openclawSession/constants.ts](/Users/yunxin/Documents/open-source/LobsterAI/src/main/openclawSession/constants.ts)
+- [src/main/openclawSession/constants.ts](/Users/yunxin/Documents/open-source/智码 GLM Code/src/main/openclawSession/constants.ts)
 
 可选优化：
 
@@ -546,7 +546,7 @@ OpenClaw 会校验：
 
 ## 结论
 
-当前实现确实是“改当前 agent 的模型”，不是“改当前会话的模型”。从 OpenClaw 的现有能力看，正确方向不是继续沿用 `agentService.updateAgent()`，而是让 LobsterAI 显式接入 `sessions.patch`，并在本地会话结构里持久化 `model_override`。
+当前实现确实是“改当前 agent 的模型”，不是“改当前会话的模型”。从 OpenClaw 的现有能力看，正确方向不是继续沿用 `agentService.updateAgent()`，而是让 智码 GLM Code 显式接入 `sessions.patch`，并在本地会话结构里持久化 `model_override`。
 
 最合理的目标架构是：
 

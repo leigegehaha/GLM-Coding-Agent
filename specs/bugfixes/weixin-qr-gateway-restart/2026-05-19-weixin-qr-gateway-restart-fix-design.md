@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 IM 设置中完成微信扫码后，界面提示“与微信连接成功”，但随后通过微信发消息没有进入 LobsterAI。用户再次打开钉钉配置测试时，发现钉钉配置完成后会重启 OpenClaw gateway，并且钉钉消息可以正常触发任务。
+用户在 IM 设置中完成微信扫码后，界面提示“与微信连接成功”，但随后通过微信发消息没有进入 智码 GLM Code。用户再次打开钉钉配置测试时，发现钉钉配置完成后会重启 OpenClaw gateway，并且钉钉消息可以正常触发任务。
 
 日志能复现这个差异：
 
@@ -110,7 +110,7 @@ window.electron.im.setConfig(config, { syncGateway: false });
 具体表现：
 
 1. `web.login.wait` 可以让 OpenClaw 插件保存新微信账号，并返回扫码成功。
-2. LobsterAI 的 UI 随后把 `weixin.enabled` 和 `accountId` 保存到本地配置。
+2. 智码 GLM Code 的 UI 随后把 `weixin.enabled` 和 `accountId` 保存到本地配置。
 3. 但是保存链路没有强制 OpenClaw gateway 重启。
 4. 普通 hot reload 不能保证 `openclaw-weixin` 重新启动账号监听，尤其在旧账号 channel 已经 `aborted` 或 `getUpdates` 连续失败时。
 5. 当前日志中的钉钉“能重启”不是因为 IM 保存天然会重启，而是因为钉钉配置引入了新的 secret env，刚好满足 hard restart 条件。
@@ -121,26 +121,26 @@ window.electron.im.setConfig(config, { syncGateway: false });
 
 ### 场景 A: 微信首次扫码后能立即收消息
 
-**Given** 用户此前没有可用微信连接  
-**When** 用户在 IM 设置中扫码微信，并看到连接成功  
-**Then** LobsterAI 必须保存微信账号配置，并重启或明确重启 `openclaw-weixin` channel，使用户随后从微信发消息能进入 Cowork。
+**Given** 用户此前没有可用微信连接
+**When** 用户在 IM 设置中扫码微信，并看到连接成功
+**Then** 智码 GLM Code 必须保存微信账号配置，并重启或明确重启 `openclaw-weixin` channel，使用户随后从微信发消息能进入 Cowork。
 
 ### 场景 B: 旧微信通道已经失败后重新扫码
 
-**Given** 旧微信账号通道出现 `getUpdates fetch failed` 或 `channel exited: aborted`  
-**When** 用户重新扫码并连接成功  
+**Given** 旧微信账号通道出现 `getUpdates fetch failed` 或 `channel exited: aborted`
+**When** 用户重新扫码并连接成功
 **Then** 系统必须抛弃旧通道状态，使用新账号启动 channel，不能只依赖 hot reload。
 
 ### 场景 C: 用户点击微信保存
 
-**Given** 用户修改微信 `enabled`、`dmPolicy`、`allowFrom` 或完成扫码后点击保存  
-**When** 点击保存  
+**Given** 用户修改微信 `enabled`、`dmPolicy`、`allowFrom` 或完成扫码后点击保存
+**When** 点击保存
 **Then** 如果 OpenClaw gateway 正在运行，应触发一次可诊断的 config sync，并在必要时 hard restart gateway。
 
 ### 场景 D: 钉钉行为不回退
 
-**Given** 用户配置钉钉并新增或修改钉钉 secret  
-**When** 保存钉钉配置  
+**Given** 用户配置钉钉并新增或修改钉钉 secret
+**When** 保存钉钉配置
 **Then** 仍应按现有逻辑触发 hard restart，并保持钉钉入站消息可处理。
 
 ## 3. 功能需求
@@ -501,7 +501,7 @@ NO RESTART, hot-reload only. reason=im-config-change
 
 ### 7.2 功能验收
 
-1. 首次扫码微信成功后，不重启应用，直接从微信给机器人发消息，LobsterAI 能收到并创建/更新对应 Cowork session。
+1. 首次扫码微信成功后，不重启应用，直接从微信给机器人发消息，智码 GLM Code 能收到并创建/更新对应 Cowork session。
 2. 旧微信通道出现 `getUpdates` 连续失败后，重新扫码成功，后续微信消息能恢复。
 3. 点击微信保存后，gateway 重启或 channel restart 可观察，微信 status 变为 connected/running。
 4. 钉钉配置保存和入站消息行为不回退。
@@ -525,6 +525,6 @@ npm run build
 2. 清理或停用旧微信连接。
 3. 扫码微信并等待成功。
 4. 检查日志中是否出现 `restartIfRunning=true` 与 gateway restart。
-5. 从微信发送一条文本消息，确认 LobsterAI 收到并回复。
+5. 从微信发送一条文本消息，确认 智码 GLM Code 收到并回复。
 6. 修改微信 allowFrom 或 dmPolicy 后点击保存，确认不会只静默落库。
 7. 配置钉钉并发送消息，确认钉钉不受影响。

@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI Cowork 中执行 OpenClaw 任务后，tool result 回填出现两类相反表现：
+用户在 智码 GLM Code Cowork 中执行 OpenClaw 任务后，tool result 回填出现两类相反表现：
 
 1. **该补的结果没有补**：任务已经完成，最终 assistant 回复也已经完整展示，但部分 `Read` 工具块仍显示蓝点和 `执行中`。
 2. **不该补的历史结果被补进来**：最终 assistant 回复之后，界面额外出现多个孤立的 `执行结果` 块，这些结果并不属于当前 turn 的工具调用。
@@ -19,12 +19,12 @@
 
 - `18:14:45.181` OpenClaw 发出 `stream=lifecycle phase=end`
 - `18:14:45.793` embedded run done，`aborted=false`
-- `18:14:45.988` LobsterAI 记录 `agent lifecycle end fallback completed a turn that missed chat final`
-- `18:14:46.021` LobsterAI 发出 session complete
+- `18:14:45.988` 智码 GLM Code 记录 `agent lifecycle end fallback completed a turn that missed chat final`
+- `18:14:46.021` 智码 GLM Code 发出 session complete
 
-因此问题不是 run 仍在执行，而是 LobsterAI 本地消息中缺少对应的 `tool_result`，导致 renderer 把未配对的 `tool_use` 继续渲染为运行中。
+因此问题不是 run 仍在执行，而是 智码 GLM Code 本地消息中缺少对应的 `tool_result`，导致 renderer 把未配对的 `tool_use` 继续渲染为运行中。
 
-第二个现场中，当前 turn 实际只执行了一个 `memory_search`，但 `chat.final` 后 LobsterAI 又从 `chat.history` 写入多个旧 `exec/read` 的 `tool_result`。这些结果没有本地配对的 `tool_use`，因此 renderer 走孤立结果分支，展示成多个 `执行结果` 块。
+第二个现场中，当前 turn 实际只执行了一个 `memory_search`，但 `chat.final` 后 智码 GLM Code 又从 `chat.history` 写入多个旧 `exec/read` 的 `tool_result`。这些结果没有本地配对的 `tool_use`，因此 renderer 走孤立结果分支，展示成多个 `执行结果` 块。
 
 ### 1.2 现场证据
 
@@ -34,7 +34,7 @@
 
 | 字段 | 值 |
 |---|---|
-| LobsterAI sessionId | `269ed742-76f0-457a-bb54-c0ebd7fedd11` |
+| 智码 GLM Code sessionId | `269ed742-76f0-457a-bb54-c0ebd7fedd11` |
 | OpenClaw sessionId | `8027de7b-5afb-41ae-b63f-7e982784fbad` |
 | runId | `5542c40d-0207-4892-8ff5-8f4ab1f112c4` |
 | 问题时间 | `2026-05-19 18:12:51` 至 `18:14:46` |
@@ -45,7 +45,7 @@
    - `call_00_MtKUqb1TzndQgo02F64w5571`
    - `call_01_Khyn5iRxDyQ8iECs35p07995`
 2. `18:12:52` 至 `18:12:53` OpenClaw 记录这两个工具都已经 `embedded run tool end`。
-3. 对这两个 tool call，gateway/main 日志中没有对应的 `stream=tool result:read` 事件，也没有 LobsterAI 的 `tool_result` 转发记录。
+3. 对这两个 tool call，gateway/main 日志中没有对应的 `stream=tool result:read` 事件，也没有 智码 GLM Code 的 `tool_result` 转发记录。
 4. `18:14:46` lifecycle fallback 触发 `syncFinalAssistantWithHistory()`，此时 `chat.history` 已经包含完整历史：
    - `[14] role=assistant` 内包含两个 `toolCall` block，id 分别是 `call_00_MtKU...` 和 `call_01_Khyn...`
    - `[15] role=toolResult content=blocks:[text]`
@@ -67,7 +67,7 @@
 
 | 字段 | 值 |
 |---|---|
-| LobsterAI sessionId | `269ed742-76f0-457a-bb54-c0ebd7fedd11` |
+| 智码 GLM Code sessionId | `269ed742-76f0-457a-bb54-c0ebd7fedd11` |
 | OpenClaw sessionId | `8027de7b-5afb-41ae-b63f-7e982784fbad` |
 | runId | `7fe4252c-b5ee-4281-91a4-a30b584a2408` |
 | 问题时间 | `2026-05-19 18:25:13` 至 `18:25:23` |
@@ -114,9 +114,9 @@
    - 不处理 history 中已有的 `toolResult`
    - 随后完成 session 并清理 active turn
 
-第一个现场正好走了第二条路径。OpenClaw 的最终 `chat.history` 是完整的，但 LobsterAI fallback 同步没有消费里面的 `toolResult`，导致本地消息缺口保留下来。
+第一个现场正好走了第二条路径。OpenClaw 的最终 `chat.history` 是完整的，但 智码 GLM Code fallback 同步没有消费里面的 `toolResult`，导致本地消息缺口保留下来。
 
-第二个现场走了第一条路径。当前 turn 的 `memory_search` 已经完整结束，但 `chat.history` 窗口里还包含更早 turn 的旧 `toolResult`。由于回填逻辑没有当前 turn 归属校验，这些旧结果被写入当前 LobsterAI 消息流，形成孤立 `执行结果`。
+第二个现场走了第一条路径。当前 turn 的 `memory_search` 已经完整结束，但 `chat.history` 窗口里还包含更早 turn 的旧 `toolResult`。由于回填逻辑没有当前 turn 归属校验，这些旧结果被写入当前 智码 GLM Code 消息流，形成孤立 `执行结果`。
 
 这和 `2026-05-19-openclaw-compaction-retry-empty-reply-design.md` 属于同一类兼容问题：最近的改动增强了 lifecycle fallback / history sync 对最终 assistant 文本的兜底能力，但没有把正常 final 路径已有的 tool result backfill 能力一起下沉复用。
 
@@ -124,8 +124,8 @@
 
 修复目标：
 
-1. 当 OpenClaw 漏发或延迟发送实时 `stream=tool result`，但最终 `chat.history` 中已有 `toolResult` 时，LobsterAI 应补齐本地 `tool_result` 消息。
-2. 当 `chat.history` 包含旧 turn 的 `toolResult` 时，LobsterAI 不应把未知 `toolCallId` 写入当前本地消息流。
+1. 当 OpenClaw 漏发或延迟发送实时 `stream=tool result`，但最终 `chat.history` 中已有 `toolResult` 时，智码 GLM Code 应补齐本地 `tool_result` 消息。
+2. 当 `chat.history` 包含旧 turn 的 `toolResult` 时，智码 GLM Code 不应把未知 `toolCallId` 写入当前本地消息流。
 3. 正常 `chat.final` 和 lifecycle fallback 收尾必须使用同一套带边界约束的 tool result 回填逻辑。
 4. UI 中已有 `tool_use` 能通过 `metadata.toolUseId` 配对到补齐的 `tool_result`，不再错误显示 `执行中`。
 5. 不把真实缺失结果的工具调用强行标记为完成，只以当前 turn 已知 tool call 在 `chat.history` 中的权威 `toolResult` 为依据。
@@ -147,43 +147,43 @@
 
 ### 场景 1: lifecycle fallback 收尾时补齐 Read 结果
 
-**Given** OpenClaw 某轮任务中存在 `Read` 工具调用  
-**And** LobsterAI 已创建本地 `tool_use` 消息  
-**And** gateway 没有发送对应的实时 `stream=tool result:read`  
-**When** 该轮任务通过 lifecycle fallback 完成  
-**And** `chat.history` 中存在匹配 `toolCallId` 的 `toolResult`  
-**Then** LobsterAI 应创建本地 `tool_result` 消息  
+**Given** OpenClaw 某轮任务中存在 `Read` 工具调用
+**And** 智码 GLM Code 已创建本地 `tool_use` 消息
+**And** gateway 没有发送对应的实时 `stream=tool result:read`
+**When** 该轮任务通过 lifecycle fallback 完成
+**And** `chat.history` 中存在匹配 `toolCallId` 的 `toolResult`
+**Then** 智码 GLM Code 应创建本地 `tool_result` 消息
 **And** UI 中该 `Read` 工具块应显示为完成态，而不是 `执行中`
 
 ### 场景 2: 正常 chat.final 路径行为不回退
 
-**Given** OpenClaw 正常发送 `chat.final`  
-**When** `handleChatFinal()` 请求 `chat.history`  
-**Then** 仍应回填缺失或更完整的 tool result 文本  
+**Given** OpenClaw 正常发送 `chat.final`
+**When** `handleChatFinal()` 请求 `chat.history`
+**Then** 仍应回填缺失或更完整的 tool result 文本
 **And** 不能因为抽取公共逻辑导致已有图片、文件或长文本 tool result 展示回退
 
 ### 场景 3: history 暂时不含 toolResult
 
-**Given** 本地存在未配对的 `tool_use`  
-**When** fallback 收尾请求 `chat.history`  
-**And** history 中没有对应 `toolCallId` 的 `toolResult`  
-**Then** 不应伪造完成态  
+**Given** 本地存在未配对的 `tool_use`
+**When** fallback 收尾请求 `chat.history`
+**And** history 中没有对应 `toolCallId` 的 `toolResult`
+**Then** 不应伪造完成态
 **And** 应保留现有消息状态，最多记录诊断日志
 
 ### 场景 4: 已存在短结果需要替换为完整结果
 
-**Given** 实时 tool event 已创建一个空或截断的 `tool_result`  
-**When** final / fallback history 中返回更长的权威文本  
-**Then** LobsterAI 应更新已有 `tool_result` 内容  
+**Given** 实时 tool event 已创建一个空或截断的 `tool_result`
+**When** final / fallback history 中返回更长的权威文本
+**Then** 智码 GLM Code 应更新已有 `tool_result` 内容
 **And** 发送 `messageUpdate` 让 renderer 展示完整结果
 
 ### 场景 5: chat.final 后 history 包含旧工具结果
 
-**Given** 当前 turn 只执行了一个 `memory_search` 工具  
-**And** `chat.history` 窗口中还包含更早 turn 的多个 `read/exec` toolResult  
-**When** `handleChatFinal()` 从 `chat.history` 回填工具结果  
-**Then** 只允许处理当前 turn 已知的 `memory_search` toolCallId  
-**And** 不应为旧 `read/exec` toolCallId 新增本地 `tool_result`  
+**Given** 当前 turn 只执行了一个 `memory_search` 工具
+**And** `chat.history` 窗口中还包含更早 turn 的多个 `read/exec` toolResult
+**When** `handleChatFinal()` 从 `chat.history` 回填工具结果
+**Then** 只允许处理当前 turn 已知的 `memory_search` toolCallId
+**And** 不应为旧 `read/exec` toolCallId 新增本地 `tool_result`
 **And** UI 不应额外出现孤立 `执行结果` 块
 
 ## 3. 功能需求

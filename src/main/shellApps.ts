@@ -265,7 +265,7 @@ async function ensureBrowserProbeFile(): Promise<void> {
   try {
     await fs.promises.writeFile(
       BROWSER_APPS_PROBE_FILE,
-      '<!doctype html><meta charset="utf-8"><title>LobsterAI browser probe</title>',
+      '<!doctype html><meta charset="utf-8"><title>智码 GLM Code browser probe</title>',
       'utf8',
     );
   } catch {

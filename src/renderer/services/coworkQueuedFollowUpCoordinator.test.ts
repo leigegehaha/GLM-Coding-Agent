@@ -219,6 +219,7 @@ describe('CoworkQueuedFollowUpCoordinator', () => {
     harness.enqueue({
       ...makeSteer('steer-1'),
       skillPrompt: 'selected skill routing',
+      codingOptimized: false,
       activeSkillIds: ['skill-a'],
       runtimeSkillIds: ['skill-a', 'skill-from-kit'],
       kitIds: ['kit-a'],
@@ -231,6 +232,7 @@ describe('CoworkQueuedFollowUpCoordinator', () => {
     expect(harness.continueSession).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: 'session-a',
       systemPrompt: expect.stringContaining('selected skill routing'),
+      codingOptimized: false,
       activeSkillIds: ['skill-a'],
       runtimeSkillIds: ['skill-a', 'skill-from-kit'],
       kitIds: ['kit-a'],

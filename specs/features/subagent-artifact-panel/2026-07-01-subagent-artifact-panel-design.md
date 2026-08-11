@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 已经通过 OpenClaw 子会话能力记录 subagent run，并在主会话中展示子智能体工具调用结果。此前 UI 同时存在两类入口：
+智码 GLM Code 已经通过 OpenClaw 子会话能力记录 subagent run，并在主会话中展示子智能体工具调用结果。此前 UI 同时存在两类入口：
 
 - sidebar 中把 subagent session 展示为主会话下的子行；
 - 会话内容中展示可点击的 subagent chip，并跳转到独立的 subagent 会话详情页。
@@ -22,14 +22,14 @@ LobsterAI 已经通过 OpenClaw 子会话能力记录 subagent run，并在主�
 - 会话正文里的 subagent chip 点击后，在右侧面板内打开详情，而不是替换主会话页面。
 - sidebar 不再展示 subagent session 子行，保持主会话列表简洁。
 - 不影响现有 artifact、文件列表、浏览器 tab 的打开、关闭、切换和预览逻辑。
-- 历史 subagent run 继续通过现有 OpenClaw/LobsterAI 本地数据读取，无需迁移。
+- 历史 subagent run 继续通过现有 OpenClaw/智码 GLM Code 本地数据读取，无需迁移。
 
 ## 2. 用户场景
 
 ### 场景 1: 从右上角打开子智能体面板
 
-**Given** 当前主会话存在或可能存在 subagent run  
-**When** 用户点击 artifact 区域右上角的加号菜单，并选择“子智能体”  
+**Given** 当前主会话存在或可能存在 subagent run
+**When** 用户点击 artifact 区域右上角的加号菜单，并选择“子智能体”
 **Then** 右侧 artifact 面板打开“子智能体”tab，展示当前会话的 subagent 列表。
 
 ### 场景 2: 从会话正文跳转子智能体详情
@@ -40,14 +40,14 @@ LobsterAI 已经通过 OpenClaw 子会话能力记录 subagent run，并在主�
 
 ### 场景 3: 查看完成或运行中的子智能体
 
-**Given** subagent run 状态为 running、done 或 error  
-**When** 用户打开子智能体列表或详情  
+**Given** subagent run 状态为 running、done 或 error
+**When** 用户打开子智能体列表或详情
 **Then** UI 展示对应状态；running 状态下继续轮询列表和详情历史，完成后停止不必要轮询。
 
 ### 场景 4: 使用 sidebar 切换主会话
 
-**Given** 用户正在查看主会话或右侧 subagent 详情  
-**When** 用户从 sidebar 切换到另一个主会话  
+**Given** 用户正在查看主会话或右侧 subagent 详情
+**When** 用户从 sidebar 切换到另一个主会话
 **Then** sidebar 只展示主会话；右侧子智能体选择态按会话重置，不出现空白整页 subagent 详情。
 
 ## 3. 功能需求
@@ -68,7 +68,7 @@ LobsterAI 已经通过 OpenClaw 子会话能力记录 subagent run，并在主�
 
 - 列表按 running、done、error 分组。
 - 每一项展示名称、任务摘要、状态点、运行中或耗时信息。
-- 名称优先使用 subagent run 的 `label`；当 OpenClaw 返回 `taskName` 时，LobsterAI 会把它写入 `label` 作为展示别名。`agentId` 只作为缺少 label 时的 fallback。
+- 名称优先使用 subagent run 的 `label`；当 OpenClaw 返回 `taskName` 时，智码 GLM Code 会把它写入 `label` 作为展示别名。`agentId` 只作为缺少 label 时的 fallback。
 - 点击列表项进入右侧详情态。
 
 ### FR-4: 子智能体详情
@@ -96,13 +96,13 @@ LobsterAI 已经通过 OpenClaw 子会话能力记录 subagent run，并在主�
 
 ### 4.1 数据来源
 
-继续复用 LobsterAI 已有 Cowork IPC：
+继续复用 智码 GLM Code 已有 Cowork IPC：
 
 - `listSubagentSessions(parentSessionId)`：读取父会话下的 subagent runs；
 - `getSubTaskHistory({ parentSessionId, agentId, sessionKey })`：读取某个 subagent 的历史消息；
 - `deleteSubagentSession(parentSessionId, runId)`：保留服务能力，但本轮 UI 不再从 sidebar 暴露删除入口。
 
-OpenClaw 侧仍是运行时和子会话数据来源；LobsterAI 侧维护的 `subagent_runs`、`subagent_messages` 继续作为 UI 查询和历史兼容层。
+OpenClaw 侧仍是运行时和子会话数据来源；智码 GLM Code 侧维护的 `subagent_runs`、`subagent_messages` 继续作为 UI 查询和历史兼容层。
 
 ### 4.2 Redux 和 panel 状态
 

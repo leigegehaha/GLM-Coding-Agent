@@ -1,4 +1,4 @@
-# 审计：LobsterAI Provider 配置 vs OpenClaw 官方文档
+# 审计：智码 GLM Code Provider 配置 vs OpenClaw 官方文档
 
 > 基于 https://docs.openclaw.ai/concepts/model-providers 对当前代码进行交叉审计
 
@@ -6,7 +6,7 @@
 
 ### 当前映射 vs OpenClaw 官方 Provider ID
 
-| LobsterAI ProviderName | 当前 OpenClawProviderId | OpenClaw 官方 Provider ID | 状态 |
+| 智码 GLM Code ProviderName | 当前 OpenClawProviderId | OpenClaw 官方 Provider ID | 状态 |
 |---|---|---|---|
 | `openai` | `openai` | `openai` | ✅ 正确 |
 | `anthropic` | `anthropic` | `anthropic` | ✅ 正确 |
@@ -30,7 +30,7 @@
 
 ### 问题 1：Zhipu Provider ID 不匹配（严重）
 
-**现状**：LobsterAI 使用 `OpenClawProviderId.Zhipu = 'zhipu'`
+**现状**：智码 GLM Code 使用 `OpenClawProviderId.Zhipu = 'zhipu'`
 **OpenClaw 官方**：使用 `zai` 作为 GLM/Zhipu 的 provider ID
 
 > 文档原文：
@@ -39,7 +39,7 @@
 > - Example model: `zai/glm-5`
 > - Aliases: `z.ai/*` and `z-ai/*` normalize to `zai/*`
 
-**实际影响**：由于 LobsterAI 使用 `models.mode: 'replace'` 注入完整 provider 配置（baseUrl + api + apiKey + models），`zhipu` 会被 OpenClaw 当作**自定义 provider** 处理，基本推理功能不受影响——请求会正确发送到我们指定的 `baseUrl`。
+**实际影响**：由于 智码 GLM Code 使用 `models.mode: 'replace'` 注入完整 provider 配置（baseUrl + api + apiKey + models），`zhipu` 会被 OpenClaw 当作**自定义 provider** 处理，基本推理功能不受影响——请求会正确发送到我们指定的 `baseUrl`。
 
 **但存在功能缺失**：OpenClaw 官方的 `zai` bundled plugin 包含 GLM 专属的 plugin-owned behavior（如 `isBinaryThinking`、`cache-TTL policy`、`usage auth + quota fetching`、`GLM-5 forward-compat fallback` 等）。使用 `zhipu` 而非 `zai` 时，这些 plugin 逻辑不会被触发。如果这些逻辑对 GLM 模型的正常工作不是必需的（基本推理只依赖 transport 层），则无实际影响。
 
@@ -47,7 +47,7 @@
 
 ### 问题 2：Volcengine Coding Plan 缺少独立 Provider ID
 
-**现状**：LobsterAI 将 volcengine 的 codingPlan 模式直接用 `volcengine` provider ID 处理，没有单独的 codingPlan 路由。
+**现状**：智码 GLM Code 将 volcengine 的 codingPlan 模式直接用 `volcengine` provider ID 处理，没有单独的 codingPlan 路由。
 
 **OpenClaw 官方**：Volcengine 有独立的 coding provider：
 
@@ -57,7 +57,7 @@
 >   - `volcengine-plan/doubao-seed-code`
 >   - `volcengine-plan/kimi-k2.5`
 
-**影响**：当用户在 LobsterAI 中启用 volcengine 的 codingPlan 模式时，生成的配置使用 `volcengine` 作为 provider ID，而 OpenClaw 期望的是 `volcengine-plan`。这可能导致 coding 模型无法被正确路由。
+**影响**：当用户在 智码 GLM Code 中启用 volcengine 的 codingPlan 模式时，生成的配置使用 `volcengine` 作为 provider ID，而 OpenClaw 期望的是 `volcengine-plan`。这可能导致 coding 模型无法被正确路由。
 
 **建议**：
 1. 在 `OpenClawProviderId` 中添加 `VolcenginePlan: 'volcengine-plan'`
@@ -65,7 +65,7 @@
 
 ### 问题 3：DeepSeek 未列为 OpenClaw 官方内置 Provider
 
-**现状**：LobsterAI 将 deepseek 映射到 `OpenClawProviderId.DeepSeek = 'deepseek'`
+**现状**：智码 GLM Code 将 deepseek 映射到 `OpenClawProviderId.DeepSeek = 'deepseek'`
 
 **OpenClaw 官方**：文档中未将 `deepseek` 列为内置 provider 或 bundled plugin。
 
@@ -79,10 +79,10 @@
 
 以下 provider 同样未在 OpenClaw 文档中列为官方 provider：
 - `qwen` — 可能对应 `modelstudio`（阿里云 Model Studio）
-- `youdaozhiyun` — LobsterAI 专有
+- `youdaozhiyun` — 智码 GLM Code 专有
 - `stepfun` — 未列出
 
-**注意**：由于 LobsterAI 使用 `models.mode: 'replace'` 模式注入完整 provider 配置（含 baseUrl、api、apiKey、models），这些自定义 provider ID 不需要与 OpenClaw 内置 provider 匹配。OpenClaw 会将它们作为自定义 provider 处理。但如果 OpenClaw 对某些 provider ID 有特殊的内部逻辑（如 plugin-owned behavior），使用不匹配的 ID 会导致这些特殊逻辑不被触发。
+**注意**：由于 智码 GLM Code 使用 `models.mode: 'replace'` 模式注入完整 provider 配置（含 baseUrl、api、apiKey、models），这些自定义 provider ID 不需要与 OpenClaw 内置 provider 匹配。OpenClaw 会将它们作为自定义 provider 处理。但如果 OpenClaw 对某些 provider ID 有特殊的内部逻辑（如 plugin-owned behavior），使用不匹配的 ID 会导致这些特殊逻辑不被触发。
 
 ### 问题 6：遗留的硬编码字符串
 
@@ -97,7 +97,7 @@
 
 ### 问题 7：缺少 OpenClaw 支持的 Provider
 
-OpenClaw 官方文档列出了以下 LobsterAI 目前不支持但 OpenClaw 已支持的 provider：
+OpenClaw 官方文档列出了以下 智码 GLM Code 目前不支持但 OpenClaw 已支持的 provider：
 
 | OpenClaw Provider ID | 描述 | 优先级 |
 |---|---|---|
@@ -120,7 +120,7 @@ OpenClaw 官方文档列出了以下 LobsterAI 目前不支持但 OpenClaw 已�
 | `qianfan` | 百度千帆 | 中 |
 | `modelstudio` | 阿里云 Model Studio | 中（可能对应 qwen） |
 
-这不是 bug，只是功能覆盖差距。但如果用户在 LobsterAI 中配置了这些 provider，当前的 fallback 逻辑会将其路由到 `lobster` provider ID，这可能不是用户预期的行为。
+这不是 bug，只是功能覆盖差距。但如果用户在 智码 GLM Code 中配置了这些 provider，当前的 fallback 逻辑会将其路由到 `lobster` provider ID，这可能不是用户预期的行为。
 
 ---
 

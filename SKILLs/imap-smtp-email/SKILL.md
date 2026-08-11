@@ -11,17 +11,17 @@ Read, search, and manage email via IMAP protocol. Send email via SMTP. Supports 
 
 ## Important: Configuration is Pre-configured
 
-The `accounts.json` configuration file is automatically managed by LobsterAI Settings (邮箱设置). Legacy `.env` configuration is still supported as a fallback for older users. **Do NOT ask the user to create or edit these files — just run the commands directly.** If credentials are wrong, the scripts will return a clear error message; only then should you inform the user to check their email settings.
+The `accounts.json` configuration file is automatically managed by 智码 GLM Code Settings (邮箱设置). Legacy `.env` configuration is still supported as a fallback for older users. **Do NOT ask the user to create or edit these files — just run the commands directly.** If credentials are wrong, the scripts will return a clear error message; only then should you inform the user to check their email settings.
 
 The configuration files are located in this skill's directory (same folder as this SKILL.md file). The scripts load them automatically via absolute paths, regardless of the current working directory.
 
-Use the provided scripts as the only email transport interface. Do not write temporary IMAP/SMTP scripts, do not use raw sockets, OpenSSL, `net`, `tls`, or alternate mail clients, and do not inspect `.env`, `accounts.json`, or script source unless the official command output explicitly reports missing configuration and the user asks you to diagnose it. If an official command fails or times out, report that command result and suggest checking LobsterAI Settings; do not implement a fallback protocol client.
+Use the provided scripts as the only email transport interface. Do not write temporary IMAP/SMTP scripts, do not use raw sockets, OpenSSL, `net`, `tls`, or alternate mail clients, and do not inspect `.env`, `accounts.json`, or script source unless the official command output explicitly reports missing configuration and the user asks you to diagnose it. If an official command fails or times out, report that command result and suggest checking 智码 GLM Code Settings; do not implement a fallback protocol client.
 
 Do not claim that `node-imap`, `nodemailer`, or another dependency is broken unless an official script or verified stack trace proves it. A successful command means the configured email account works; a timeout means the current command timed out, not that the dependency is defective.
 
 Command results intentionally redact account metadata. In user-facing replies, use the redacted account label/email from the JSON result and do not repeat full configured email addresses unless the user explicitly asks for the exact address. Email content fields such as sender, subject, and message body may still be shown when they are the requested result.
 
-Never ask the user to send an email authorization code, app password, account password, or other credential in chat. If an account is disabled, incomplete, or has invalid credentials, ask the user to enable or update it in LobsterAI Settings > Email Settings, then rerun the official command.
+Never ask the user to send an email authorization code, app password, account password, or other credential in chat. If an account is disabled, incomplete, or has invalid credentials, ask the user to enable or update it in 智码 GLM Code Settings > Email Settings, then rerun the official command.
 
 For multi-account setups:
 - Run `node scripts/imap.js accounts` or `node scripts/smtp.js accounts` to list configured account IDs without exposing secrets.

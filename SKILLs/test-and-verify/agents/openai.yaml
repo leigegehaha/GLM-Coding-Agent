@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test and Verify"
+  short_description: "Design focused tests and run the right quality gates."
+  default_prompt: "Use $test-and-verify to add focused coverage and run the relevant checks."

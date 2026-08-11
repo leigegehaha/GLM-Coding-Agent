@@ -19,7 +19,7 @@ Response `data` now includes:
 ```json
 {
   "shareId": "shr_xxx",
-  "url": "https://lobsterai-server.youdao.com/s/shr_xxx/",
+  "url": "https://glmcoding.cn/s/shr_xxx/",
   "accessMode": "public",
   "shareCode": null,
   "shareCodeUnavailable": false,

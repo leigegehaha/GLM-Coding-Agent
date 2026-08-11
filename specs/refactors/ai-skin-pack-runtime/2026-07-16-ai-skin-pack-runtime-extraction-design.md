@@ -39,7 +39,7 @@ AI 皮肤包 MVP 同时涉及可信 Kit 校验、会话事务、媒体工具路�
 
 1. Renderer 选择内置 `ai-skin-designer` Kit 并开始或继续 Turn。
 2. Controller 同时校验稳定 Kit ID 和已安装记录中的 `skin_pack` 标记，随后建立新的内存事务。
-3. 会员路线强制使用 LobsterAI 图片模式；非会员路线不启用 LobsterAI 媒体选择，由 OpenClaw 原生工具处理。
+3. 会员路线强制使用 智码 GLM Code 图片模式；非会员路线不启用 智码 GLM Code 媒体选择，由 OpenClaw 原生工具处理。
 4. `runtime complete` 保留事务，以支持原生后台生图完成后的同会话 wake。
 5. 成功 `apply`/`deactivate` 清理事务；显式不带 Kit 的新 Turn、runtime error、单个或批量会话删除也会清理。
 6. MVP 不跨进程重启恢复未完成事务，半成品 draft 仍可留作诊断但不会自动应用。

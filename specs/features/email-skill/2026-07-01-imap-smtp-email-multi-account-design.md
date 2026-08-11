@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-LobsterAI 设置页中的“邮箱”当前对应内置 Skill
+智码 GLM Code 设置页中的“邮箱”当前对应内置 Skill
 `imap-smtp-email`，不是 IM 设置里的第三方 `@clawemail/email` 通道。
 
 当前实现是单账号模型：
@@ -24,9 +24,9 @@ LobsterAI 设置页中的“邮箱”当前对应内置 Skill
 - `imap-smtp-email-skill` 不存在公开 npm 包。
 - 本地 `package.json` 没有 `repository` 或 `homepage`。
 - Git 历史显示它随 `Initial open-source release` 一次性进入仓库，后续修改为
-  LobsterAI 侧本地修复。
+  智码 GLM Code 侧本地修复。
 
-因此本需求不按“同步上游版本”处理，而是作为 LobsterAI 内置邮箱 Skill 的自主
+因此本需求不按“同步上游版本”处理，而是作为 智码 GLM Code 内置邮箱 Skill 的自主
 演进。
 
 ### 1.2 目标
@@ -170,7 +170,7 @@ node scripts/smtp.js send --account work --to a@example.com --subject "Hello" --
 
 更新 `SKILL.md`：
 
-- 说明配置由 LobsterAI 设置页管理，不要求用户编辑配置文件。
+- 说明配置由 智码 GLM Code 设置页管理，不要求用户编辑配置文件。
 - 说明多账号命令参数：`--account`、`--all-accounts`。
 - 说明默认账号规则。
 - 明确发信安全策略：除非用户明确要求并确认，否则不要静默发邮件。
@@ -296,12 +296,12 @@ node scripts/smtp.js send --account work --confirmed --to a@example.com --subjec
 
 ### 4.6 与 OpenClaw/Skill 路由关系
 
-OpenClaw 仍通过现有 Skill 机制读取 `SKILL.md` 和执行脚本。LobsterAI 不需要新增
+OpenClaw 仍通过现有 Skill 机制读取 `SKILL.md` 和执行脚本。智码 GLM Code 不需要新增
 OpenClaw channel 或 runtime gateway 配置。
 
 本需求只改变：
 
-- LobsterAI 设置页如何管理该 Skill 的配置。
+- 智码 GLM Code 设置页如何管理该 Skill 的配置。
 - Skill 脚本如何解析多账号配置。
 - `SKILL.md` 如何指导 Agent 使用账号参数。
 

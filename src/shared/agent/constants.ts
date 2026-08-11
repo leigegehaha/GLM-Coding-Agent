@@ -57,5 +57,5 @@ export const LegacyAgentName = {
 } as const;
 
 export const DefaultAgentProfile = {
-  Name: 'LobsterAI',
+  Name: '智码 GLM Code',
 } as const;

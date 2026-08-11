@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户只是在 Cowork 输入框里切换了一下模型，OpenClaw gateway 就被 LobsterAI 主进程主动重启。
+用户只是在 Cowork 输入框里切换了一下模型，OpenClaw gateway 就被 智码 GLM Code 主进程主动重启。
 
 日志中的关键时间线：
 
@@ -70,31 +70,31 @@
 
 ### 场景 A: 首页输入框切换 Agent 默认模型
 
-**Given** gateway 正在运行，当前没有正在编辑的 Cowork session  
-**When** 用户在输入框模型选择器里切换模型  
-**Then** Agent 默认模型被保存，OpenClaw 配置热更新 `agents.list`  
-**And** gateway 不应收到 `SIGTERM`  
+**Given** gateway 正在运行，当前没有正在编辑的 Cowork session
+**When** 用户在输入框模型选择器里切换模型
+**Then** Agent 默认模型被保存，OpenClaw 配置热更新 `agents.list`
+**And** gateway 不应收到 `SIGTERM`
 **And** 已连接的 IM/channel sidecar 不应因为切模型被中断
 
 ### 场景 B: 已有 session 中切换本次会话模型
 
-**Given** 用户打开已有 Cowork session  
-**When** 用户在输入框模型选择器里切换模型  
-**Then** 只调用 OpenClaw session patch 更新当前 session 的 `model`  
-**And** 不触发 `agents.update`  
+**Given** 用户打开已有 Cowork session
+**When** 用户在输入框模型选择器里切换模型
+**Then** 只调用 OpenClaw session patch 更新当前 session 的 `model`
+**And** 不触发 `agents.update`
 **And** 不触发 gateway hard restart
 
 ### 场景 C: lobsterai-server accessToken 刷新
 
-**Given** `lobsterai-server` 通过 token proxy 访问真实服务端  
-**When** 登录 accessToken 因主动刷新或 401 被动刷新发生变化  
-**Then** token proxy 使用最新 token 转发请求  
+**Given** `lobsterai-server` 通过 token proxy 访问真实服务端
+**When** 登录 accessToken 因主动刷新或 401 被动刷新发生变化
+**Then** token proxy 使用最新 token 转发请求
 **And** 不因为 `LOBSTER_APIKEY_SERVER` 变化重启 gateway
 
 ### 场景 D: 修改真实需要进程环境的 secret
 
-**Given** 用户修改自定义 provider 的 API key 或 IM channel secret  
-**When** 配置同步发现 OpenClaw 实际引用的 secret 发生变化  
+**Given** 用户修改自定义 provider 的 API key 或 IM channel secret
+**When** 配置同步发现 OpenClaw 实际引用的 secret 发生变化
 **Then** gateway 可以按现有规则 hard restart，以便新环境变量生效
 
 ## 3. 功能需求

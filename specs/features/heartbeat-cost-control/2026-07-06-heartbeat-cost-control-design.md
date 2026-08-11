@@ -4,7 +4,7 @@
 
 ### 1.1 问题/背景
 
-有用户反馈"什么也没做,积分也在持续消耗"。排查确认消耗来自 OpenClaw 心跳机制:LobsterAI 在
+有用户反馈"什么也没做,积分也在持续消耗"。排查确认消耗来自 OpenClaw 心跳机制:智码 GLM Code 在
 `src/main/libs/openclawConfigSync.ts` 的 `agents.defaults` 中固定写入:
 
 ```ts
@@ -26,9 +26,9 @@ input tokens),但没有降到零。
 1. **旧版模板缺陷**:老版本 runtime 初始化 workspace 时写入的 `HEARTBEAT.md` 模板含普通正文
    (如 `Keep this file empty unless you want a tiny checklist. Keep it small.`),不满足
    "有效为空"判定,导致每小时真实调用一次模型,模型读完只回 `HEARTBEAT_OK`,纯粹空烧。
-   OpenClaw 自带 `doctor-heartbeat-template-repair` 就是修这个的,但 LobsterAI 从未替用户
+   OpenClaw 自带 `doctor-heartbeat-template-repair` 就是修这个的,但 智码 GLM Code 从未替用户
    执行过。
-2. **agent 自发写入**:LobsterAI 托管的 AGENTS.md 段落明确鼓励
+2. **agent 自发写入**:智码 GLM Code 托管的 AGENTS.md 段落明确鼓励
    `Use HEARTBEAT.md for proactive background checks and reminders.`,agent 一旦写入待办
    且不清理,此后每小时持续消耗,且心跳会话被 UI 过滤(`heartbeatSessionKeys`),用户完全
    看不到钱花在哪。
@@ -47,7 +47,7 @@ input tokens),但没有降到零。
   本来就零消耗,对绝大多数用户"默认修好"即等价于"关闭",额外的开关和概念解释反而增加
   理解成本。若后续出现真实需求(如重度巡检用户要求换便宜模型),另立新日期的迭代 spec。
 - 不做 per-agent 粒度的心跳策略。
-- 不修改 OpenClaw runtime、不新增版本补丁(全部用现有配置字段与 LobsterAI 侧文件操作实现)。
+- 不修改 OpenClaw runtime、不新增版本补丁(全部用现有配置字段与 智码 GLM Code 侧文件操作实现)。
 - 不调整 `every` 间隔与 `target`/`lightContext`/`isolatedSession` 现有取值。
 
 ## 2. 现状与根因分析(runtime 行为核实)
@@ -97,7 +97,7 @@ runtime doctor 定义了 5 种历史模板变体(prose 版、heading+fenced 版�
 # Add tasks below when you want the agent to check something periodically.
 ```
 
-LobsterAI 侧修复采用同一算法与同一目标模板,保证与 runtime 未来行为一致。
+智码 GLM Code 侧修复采用同一算法与同一目标模板,保证与 runtime 未来行为一致。
 
 ## 3. 用户场景
 
@@ -143,7 +143,7 @@ LobsterAI 侧修复采用同一算法与同一目标模板,保证与 runtime 未
 
 实现中核实:workspace 的 AGENTS.md 由两部分拼装——marker 之上为"用户区"(首次 seed 自
 bundled runtime 模板 `docs/reference/templates/AGENTS.md`,此后永不重写),marker 之下为
-LobsterAI 托管区(每次同步重写)。runtime 模板含 `## 💓 Heartbeats - Be Proactive!` 段,
+智码 GLM Code 托管区(每次同步重写)。runtime 模板含 `## 💓 Heartbeats - Be Proactive!` 段,
 主动教模型"不要只回 HEARTBEAT_OK"、自发把邮箱/日历/天气轮询写入 `HEARTBEAT.md`——这是
 agent 自发写入的主要教唆源。收敛需三处齐动:
 

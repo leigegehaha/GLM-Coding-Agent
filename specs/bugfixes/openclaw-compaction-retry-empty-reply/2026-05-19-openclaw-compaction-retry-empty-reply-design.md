@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 Cowork 会话中发起一次较长任务后，LobsterAI 界面展示系统提示：
+用户在 Cowork 会话中发起一次较长任务后，智码 GLM Code 界面展示系统提示：
 
 ```text
 [模型未输出内容] 模型已完成思考但未生成可见回复。你可以继续对话，让模型重新输出结果。
@@ -13,10 +13,10 @@
 但 OpenClaw 实际上已经在自动上下文压缩后继续重试，并最终生成了可见 assistant 回复。问题表现为：
 
 - UI 误以为模型已经空回复结束。
-- 后续真实 assistant 文本没有进入 LobsterAI 会话。
+- 后续真实 assistant 文本没有进入 智码 GLM Code 会话。
 - OpenClaw session jsonl 中可以看到完整最终回复。
 
-本问题不是模型 API 的真实空输出，而是 LobsterAI 对 OpenClaw `chat.final`、上下文压缩重试和 run 生命周期的衔接判断过早。
+本问题不是模型 API 的真实空输出，而是 智码 GLM Code 对 OpenClaw `chat.final`、上下文压缩重试和 run 生命周期的衔接判断过早。
 
 ### 1.2 现场证据
 
@@ -26,7 +26,7 @@
 2. `syncFinalAssistantWithHistory()` 记录 `no canonical assistant text found in history`。
 3. `handleChatFinal()` 判断当前 turn `hadToolCall=true` 且 `turn.currentText=""`，触发 `thinking-only response detected`，并向 UI 插入 `[模型未输出内容]` 系统消息。
 4. 随后 OpenClaw 日志出现 context overflow 后的自动压缩：`outcome=compacted`，并对同一个 prompt 发起 retry。
-5. LobsterAI 已经把当前 run 标记为 completed 并清理 active turn。
+5. 智码 GLM Code 已经把当前 run 标记为 completed 并清理 active turn。
 6. 后续同一个 `runId` 的 assistant 流式文本被 `recentlyClosedRunIds` 守卫识别为已关闭 run 的 late event，日志连续出现 `dropped late assistant text for a closed run`。
 7. OpenClaw session jsonl 中最终存在正常 assistant 回复，说明模型并未真的空回复。
 
@@ -34,7 +34,7 @@
 
 | 字段 | 值 |
 |---|---|
-| LobsterAI sessionId | `63592da9-09d9-40e9-8927-daf0b94e46e1` |
+| 智码 GLM Code sessionId | `63592da9-09d9-40e9-8927-daf0b94e46e1` |
 | OpenClaw sessionKey | `c2b25fbb-46e5-48ee-b44d-f56f0bee5529` |
 | runId | `666ea222-9a9b-4fe8-8a21-2b3edefce367` |
 | 现象时间 | `2026-05-18 22:53:23` 后 |
@@ -45,14 +45,14 @@
 
 1. OpenClaw 在一次工具调用密集的长会话中触发 context overflow。
 2. OpenClaw 自动进行上下文压缩，并准备 retry 原 prompt。
-3. LobsterAI 在 retry 生成可见文本前收到了 `chat.final` 或 final history 同步结果。
+3. 智码 GLM Code 在 retry 生成可见文本前收到了 `chat.final` 或 final history 同步结果。
 4. 此时 `chat.history` 尾部暂时还没有当前轮可见 assistant 文本，`turn.currentText` 也为空。
 5. `handleChatFinal()` 将该状态误判为 thinking-only response，插入 `[模型未输出内容]`。
 6. `deferChatFinalCompletion()` 默认只等待 `CHAT_FINAL_COMPLETION_GRACE_MS = 800ms`。
 7. 800ms 后 `completeDeferredChatFinalNow()` 将 session 标记 completed，并调用 `cleanupSessionTurn()`。
 8. `cleanupSessionTurn()` 把当前 `knownRunIds` 写入 `recentlyClosedRunIds`，默认保留 120 秒。
 9. OpenClaw 自动压缩 retry 后继续用同一个 `runId` 输出 assistant 文本。
-10. LobsterAI 因 run 已进入 recently closed 集合，丢弃这些后续文本。
+10. 智码 GLM Code 因 run 已进入 recently closed 集合，丢弃这些后续文本。
 
 这与此前 `phase=fallback` 晚到事件导致已完成 turn 被重新打开的问题不同。本问题方向相反：当前 turn 被过早关闭，导致压缩 retry 后的真实输出被误判为 late event。
 
@@ -80,41 +80,41 @@
 
 ### 场景 1: 自动压缩后继续输出
 
-**Given** 用户发起的 Cowork 任务触发 OpenClaw context overflow  
-**When** OpenClaw 自动压缩上下文并 retry 原 prompt  
-**Then** LobsterAI 应保持当前会话 running 或 maintenance 状态  
-**And** 不应提前展示 `[模型未输出内容]`  
+**Given** 用户发起的 Cowork 任务触发 OpenClaw context overflow
+**When** OpenClaw 自动压缩上下文并 retry 原 prompt
+**Then** 智码 GLM Code 应保持当前会话 running 或 maintenance 状态
+**And** 不应提前展示 `[模型未输出内容]`
 **And** retry 后的 assistant 文本应显示在同一轮回复中
 
 ### 场景 2: 自动压缩期间展示 loading
 
-**Given** OpenClaw 已经触发自动上下文压缩、memory flush 或压缩后的 prompt retry  
-**When** LobsterAI 收到 context maintenance / compaction 相关事件  
-**Then** 对话区域应展示压缩或整理上下文的 loading 状态  
-**And** 上下文指示器可进入 spinning/loading 状态  
-**And** 输入区应阻止继续发送，或明确提示当前正在压缩上下文  
+**Given** OpenClaw 已经触发自动上下文压缩、memory flush 或压缩后的 prompt retry
+**When** 智码 GLM Code 收到 context maintenance / compaction 相关事件
+**Then** 对话区域应展示压缩或整理上下文的 loading 状态
+**And** 上下文指示器可进入 spinning/loading 状态
+**And** 输入区应阻止继续发送，或明确提示当前正在压缩上下文
 **And** loading 应在 assistant 可见文本开始输出、run 正常完成、run 报错或用户停止任务后结束
 
 ### 场景 3: 压缩 retry 使用同一个 runId
 
-**Given** OpenClaw retry 后继续使用原 runId 输出文本  
-**When** LobsterAI 收到该 runId 的 assistant stream 或 final  
-**Then** 如果该 run 正处于允许 late continuation 的压缩 retry 窗口内，应继续绑定到当前 turn  
+**Given** OpenClaw retry 后继续使用原 runId 输出文本
+**When** 智码 GLM Code 收到该 runId 的 assistant stream 或 final
+**Then** 如果该 run 正处于允许 late continuation 的压缩 retry 窗口内，应继续绑定到当前 turn
 **And** 不应被 `recentlyClosedRunIds` 丢弃
 
 ### 场景 4: 真实 thinking-only 回复
 
-**Given** 当前 turn 没有上下文压缩、maintenance 或 retry 信号  
-**And** final history 重试同步后仍没有可见 assistant 文本  
-**And** 当前 turn 存在工具调用或模型完成思考但没有回复的明确证据  
-**When** run 真实结束  
-**Then** LobsterAI 可以展示 `[模型未输出内容]`
+**Given** 当前 turn 没有上下文压缩、maintenance 或 retry 信号
+**And** final history 重试同步后仍没有可见 assistant 文本
+**And** 当前 turn 存在工具调用或模型完成思考但没有回复的明确证据
+**When** run 真实结束
+**Then** 智码 GLM Code 可以展示 `[模型未输出内容]`
 
 ### 场景 5: 真实 late event
 
-**Given** 某个 run 已正常完成且没有压缩 retry 延续标记  
-**When** 后续收到旧 run 的过期 assistant 事件  
-**Then** LobsterAI 仍应丢弃该事件，避免污染新的会话状态
+**Given** 某个 run 已正常完成且没有压缩 retry 延续标记
+**When** 后续收到旧 run 的过期 assistant 事件
+**Then** 智码 GLM Code 仍应丢弃该事件，避免污染新的会话状态
 
 ## 3. 功能需求
 
@@ -147,7 +147,7 @@
 
 ### FR-3: 自动压缩期间展示 loading 状态
 
-当 OpenClaw 进入上下文压缩、memory flush、silent maintenance 或压缩 retry 时，LobsterAI 应向 renderer 发出明确的 maintenance active 状态。
+当 OpenClaw 进入上下文压缩、memory flush、silent maintenance 或压缩 retry 时，智码 GLM Code 应向 renderer 发出明确的 maintenance active 状态。
 
 UI 表现要求：
 

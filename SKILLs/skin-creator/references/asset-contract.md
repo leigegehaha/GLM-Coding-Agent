@@ -28,7 +28,7 @@ Create a polished desktop application atmosphere backdrop in the shared art dire
 - No words, letters, captions, or imitated product names.
 - Use a full-bleed square composition whose background reaches all four canvas edges.
 - Transparency is optional, not required. An opaque thematic background is valid.
-- Do not bake in rounded corners, an inset card, white or neutral outer canvas, a border, a frame, or padding. LobsterAI owns the displayed corner radius.
+- Do not bake in rounded corners, an inset card, white or neutral outer canvas, a border, a frame, or padding. 智码 GLM Code owns the displayed corner radius.
 - It is a Cowork home skin emblem, not a replacement for the operating-system app icon, startup branding, export watermark, user avatar, or agent avatar.
 
 Prompt suffix template:

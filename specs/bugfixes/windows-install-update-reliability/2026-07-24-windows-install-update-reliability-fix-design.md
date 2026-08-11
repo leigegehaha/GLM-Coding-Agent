@@ -62,7 +62,7 @@ P0 不内置固定域名清单；客户端校验输入和最终 URL 的 HTTPS、
 
 ### 1.1 问题
 
-LobsterAI 2026.7.23 的 Windows 安装器在部分用户机器上无法完成安装。
+智码 GLM Code 2026.7.23 的 Windows 安装器在部分用户机器上无法完成安装。
 问题同时出现在以下两类场景：
 
 1. 已安装旧版本，通过应用内更新安装 2026.7.23；
@@ -71,7 +71,7 @@ LobsterAI 2026.7.23 的 Windows 安装器在部分用户机器上无法完成安
 安装器统一显示：
 
 ```text
-The LobsterAI update stopped because user skills could not be backed up.
+The 智码 GLM Code update stopped because user skills could not be backed up.
 The previous installation was not replaced.
 Please retry the update.
 ```
@@ -148,7 +148,7 @@ fail-closed 的数据保护目标是正确的，问题在于：
 AppUpdateCoordinator
   -> AppUpdateInstaller 启动 Windows NSIS 安装器
   -> customCheckAppRunning
-     -> 停止 LobsterAI / Node 进程
+     -> 停止 智码 GLM Code / Node 进程
      -> 备份旧安装目录中的 legacy Skills
      -> 判断是否允许继续
      -> 判断安装场景并处理旧安装目录
@@ -184,7 +184,7 @@ AppUpdateCoordinator
 - 全用户安装把诊断日志写入 `C:\ProgramData`，但应用日志导出只查找
   当前用户目录，导致支持侧拿不到真正的安装日志；
 - 用户按支持建议卸载时，因为 `deleteAppDataOnUninstall: true` 删除
-  `%APPDATA%\LobsterAI` 中的用户数据。
+  `%APPDATA%\智码 GLM Code` 中的用户数据。
 
 另有用户反馈安装目录中的自建文件夹会在升级后消失。该问题与本事故共用
 旧安装替换路径，但属于独立的文件归属和危险删除问题，详见
@@ -221,7 +221,7 @@ P0 紧急修复目标：
 P0.5 兼容性加固目标：
 
 1. 用启动方式、注册拓扑和目标目录内容三个正交维度选择安装动作。
-2. 已验证的单一 LobsterAI 残留可 repair-in-place；合法换目录可
+2. 已验证的单一 智码 GLM Code 残留可 repair-in-place；合法换目录可
    relocate-reinstall；双注册同路径可在确认 scope 后 reconcile。
 3. `/S` 和 `--updated` 在无法唯一确定 source、target 或 scope 时使用
    稳定非零退出码，且 mutation 尚未开始。
@@ -278,7 +278,7 @@ P1 完整可靠性目标：
 
 | 数据 | 当前权威位置 | 安装器处理原则 |
 |---|---|---|
-| 用户 Skills | `%APPDATA%\LobsterAI\SKILLs` | 安装和更新不得覆盖或删除 |
+| 用户 Skills | `%APPDATA%\智码 GLM Code\SKILLs` | 安装和更新不得覆盖或删除 |
 | 内置 Skills | `$INSTDIR\resources\SKILLs` | 可随版本替换 |
 | legacy 自定义 Skills | 旧版本安装目录中的非内置 Skill 目录 | 仅作为兼容迁移来源 |
 | SQLite / 配置 | Electron `userData` | 安装更新不得触碰 |
@@ -368,7 +368,7 @@ Windows CI 当前会构建安装包，但没有执行“安装 7.17 -> 升级候
 ### 3.1 正交输入与动作枚举
 
 不能用一个六分类枚举同时表达启动来源、注册表拓扑、目录内容和处理动作。
-否则“注册异常但可验证的 LobsterAI 安装”会被统一归入 orphaned/cross-scope
+否则“注册异常但可验证的 智码 GLM Code 安装”会被统一归入 orphaned/cross-scope
 并中止，破坏当前仍可成功的 stock installer fallback。
 
 安装器必须分别记录以下稳定输入：
@@ -466,14 +466,14 @@ P0.5 推荐判定顺序：
 |---|---|
 | 无注册、目标为空 | `fresh-install` |
 | 单注册与目标一致，旧应用 footprint 有效 | `update-in-place` |
-| 无注册，但目标是唯一、可验证的 LobsterAI footprint | `repair-in-place` |
+| 无注册，但目标是唯一、可验证的 智码 GLM Code footprint | `repair-in-place` |
 | 手动安装或显式 `/D`，注册/UninstallString 旧路径有效且新目标为空/安全 | `relocate-reinstall` |
 | HKCU/HKLM 指向同一物理路径，scope 已明确 | `reconcile-dual-registration` |
 | 双注册指向不同物理路径，无法确认权威 source | `blocked-conflict` |
 | 目录只有未知内容、扫描不完整或未保护内容 | `blocked-conflict` |
 | `--updated` 的 source/target/scope 无法唯一确定 | `blocked-conflict` |
 
-“注册项不存在但目标目录非空”不得归类为 fresh。可验证且唯一的 LobsterAI
+“注册项不存在但目标目录非空”不得归类为 fresh。可验证且唯一的 智码 GLM Code
 残留是 repair 候选，不应一律中止；只有归属不明、内容未保护、存在多份
 物理安装或无法唯一定位旧树时才 fail closed。
 
@@ -572,7 +572,7 @@ foreign 内容都进入 `FailedBeforeMutation`。
 
 ### 场景 1：PowerShell 不在 PATH 的全新安装
 
-**Given** 用户没有已安装的 LobsterAI，Windows PowerShell 系统文件存在，
+**Given** 用户没有已安装的 智码 GLM Code，Windows PowerShell 系统文件存在，
 但 `where powershell.exe` 找不到
 **When** 用户运行修复版安装包
 **Then** 安装器识别为 `fresh-install`
@@ -661,23 +661,23 @@ roots 边界内的进程
 **Then** `.onInit` bootstrap 事件具有可关联的 bootstrap ID
 **And** 最终 scope 确定后补记到 ProgramData 的 canonical attempt log
 **And** 后续事件只写 canonical 日志
-**And** trusted handoff 已绑定 original SID 时，LobsterAI 可同时导出用户
+**And** trusted handoff 已绑定 original SID 时，智码 GLM Code 可同时导出用户
 目录和其有权只读的公共日志；无绑定时提示需提权收集
 **And** 不把公共 `%APPDATA%` 当作当前用户的正式 Skills 根目录。
 
 ### 场景 10：用户卸载但保留数据
 
-**Given** 用户因安装故障卸载 LobsterAI
+**Given** 用户因安装故障卸载 智码 GLM Code
 **When** 用户没有明确选择删除数据
-**Then** `%APPDATA%\LobsterAI` 中的 Skills、SQLite 和 OpenClaw state 保留
+**Then** `%APPDATA%\智码 GLM Code` 中的 Skills、SQLite 和 OpenClaw state 保留
 **And** 修复版重新安装后可继续使用原数据。
 
 ### 场景 11（P0.5）：卸载后目标目录仍有残留
 
-**Given** 注册项已经不存在，但目标目录仍包含 LobsterAI 文件或未知内容
+**Given** 注册项已经不存在，但目标目录仍包含 智码 GLM Code 文件或未知内容
 **When** 用户重新运行修复版安装包
 **Then** 安装器不得把它识别为 `fresh-install`
-**And** 唯一、可验证且 content guard 允许的 LobsterAI 残留进入
+**And** 唯一、可验证且 content guard 允许的 智码 GLM Code 残留进入
 `repair-in-place`
 **And** 未知、扫描不完整或未保护内容进入 `blocked-conflict`
 **And** 安装器不得自动删除或覆盖归属不明的文件。
@@ -735,13 +735,13 @@ fallback 行为。P0.5 再根据启动来源、`--updated`、`/S`、当前 scope
 HKCU/HKLM INSTALL/UNINSTALL key、`InstallLocation`、`UninstallString`、
 source/target footprint、路径一致性和 content guard 结果选择 3.1 的
 完整动作。该判断必须位于当前
-`stopLobsterAIProcesses` 和 Skills PowerShell 调用之前。
+`stopGLMCodeProcesses` 和 Skills PowerShell 调用之前。
 
 ### FR-2：全新安装不得执行旧数据保护流程
 
 `fresh-install` 必须满足：
 
-- 不调用停止旧 LobsterAI 的外部命令；
+- 不调用停止旧 智码 GLM Code 的外部命令；
 - 不启动 legacy Skills 备份程序；
 - 不创建 `skills-backup`；
 - 不出现“previous installation”类提示；
@@ -915,7 +915,7 @@ P0 的 fresh 路径完全跳过进程停止，不扩大现有停止范围。P0.5
 - 从最终 action plan 取得所有 `destructiveSourceRoots`；换目录重装至少
   包含旧 source，非空且将被覆盖的 target 也必须单独纳入检查；
 - 枚举 executable path 位于上述规范化根边界内的所有进程，不使用
-  `LobsterAI`、`node`、`python` 名单；
+  `智码 GLM Code`、`node`、`python` 名单；
 - 路径比较大小写不敏感且带目录分隔符边界；
 - 排除当前 installer 和受信任 helper PID；
 - 不得仅按进程名杀掉其他安装目录中的进程；
@@ -1076,7 +1076,7 @@ fallback，不扩大 destructive 行为，也不对 stock fallback 新增其本�
 P0.5 进入事务替换前必须按 action 证明 source eligibility：
 
 - `update-in-place`：同 scope 注册 source 与 target 匹配；
-- `repair-in-place`：无注册，但 target 是唯一可验证 LobsterAI footprint；
+- `repair-in-place`：无注册，但 target 是唯一可验证 智码 GLM Code footprint；
 - `relocate-reinstall`：旧 source 与新 target 都唯一且分别验证；
 - `reconcile-dual-registration`：两个注册项指向同一物理 source，scope 明确。
 
@@ -1312,12 +1312,12 @@ P0.5 registration repair-only 入口必须：
 - 按 hive 分成两个执行入口，不能让始终 `requireAdministrator` 的 NSIS
   同时写原用户 HKCU；
 - HKCU repair 由原始用户上下文中的非提权 app/asInvoker helper 执行，只
-  写固定 LobsterAI 用户级 key；不得经过可能切换账户的 UAC worker；
+  写固定 智码 GLM Code 用户级 key；不得经过可能切换账户的 UAC worker；
 - HKLM repair 才使用用户明确触发的提权 NSIS/worker，只写固定机器级 key，
   且禁止顺手修改当前提权账户的 HKCU；
 - 两个入口都只接受固定 repair operation、严格格式的 `attemptId` 和
   scope，不接受任意注册路径或安装路径；
-- 从当前已验证的 LobsterAI payload、固定产品 ID 和 canonical 安装根
+- 从当前已验证的 智码 GLM Code payload、固定产品 ID 和 canonical 安装根
   自行推导注册值；
 - 只修注册，不执行 payload、旧树清理、Skills 迁移或 content mutation；
 - 成功后收敛状态，失败保持 deferred 并给出人工处理入口。
@@ -1390,10 +1390,10 @@ elapsed_ms
 
 P0.5+ 目标路径规则：
 
-- 当前用户安装：固定 `%APPDATA%\LobsterAI\Installer`；
-- 全用户安装：固定 `%ProgramData%\LobsterAI\Installer`；
+- 当前用户安装：固定 `%APPDATA%\智码 GLM Code\Installer`；
+- 全用户安装：固定 `%ProgramData%\智码 GLM Code\Installer`；
 - 不论最终 scope，任何驱动提权 commit/rollback 的 watchdog/control 状态
-  都固定写 `%ProgramData%\LobsterAI\Installer\control\<attemptId>`，
+  都固定写 `%ProgramData%\智码 GLM Code\Installer\control\<attemptId>`，
   绝不写普通用户可修改的 `%APPDATA%`；
 - 应用内更新 attempt 结果：由非提权的用户态 launcher 写入当前用户
   `userData/updates/attempts`；
@@ -1414,8 +1414,8 @@ P0.5+ 目标路径规则：
 ProgramData 下必须分离控制状态与可导出日志：
 
 ```text
-%ProgramData%\LobsterAI\Installer\control\<attemptId>\
-%ProgramData%\LobsterAI\Installer\logs\<attemptId>\
+%ProgramData%\智码 GLM Code\Installer\control\<attemptId>\
+%ProgramData%\智码 GLM Code\Installer\logs\<attemptId>\
 ```
 
 两条路径都由提权安装器创建并验证，路径链不得包含 reparse point，owner
@@ -1463,7 +1463,7 @@ Renderer 文案必须加入中文和英文。NSIS 自身文案也必须根据安
 
 由于正式用户 Skills、SQLite 和 OpenClaw state 都位于 userData：
 
-- 普通卸载默认保留 `%APPDATA%\LobsterAI`；
+- 普通卸载默认保留 `%APPDATA%\智码 GLM Code`；
 - “删除应用”和“删除全部用户数据”必须是不同动作；
 - 完全删除数据必须有明确确认；
 - 应用内更新和修复安装不得要求用户先卸载。
@@ -1529,7 +1529,7 @@ P0-hotfix 必须把“文件状态恢复”和“恢复启动旧应用”分成�
    `unknown` 或用户双击安装包不得推断；
 2. 失败发生在 mutation 前且旧树未变化，或 rollback 已验证成功；
 3. 旧主程序位于 action plan 的 canonical old source，普通文件、非
-   reparse point，且旧 LobsterAI footprint 验证通过；
+   reparse point，且旧 智码 GLM Code footprint 验证通过；
 4. outcome 不是 `recovery-required`、`process-state-unknown`、
    `process-termination-failed` 或 `rollback-failed`；
 5. 恢复启动时不得继续传 `--updated`，避免旧版把失败的更新误认为成功。
@@ -1724,7 +1724,7 @@ helper 安全要求：
 
 - 发布构建必须签名；
 - 只接受受支持的子命令；
-- 删除/停止操作只允许作用于规范化后的 LobsterAI 安装根；
+- 删除/停止操作只允许作用于规范化后的 智码 GLM Code 安装根；
 - 拒绝空路径、盘符根、用户 profile 根和包含不受信任重解析点的目标；
 - 枚举和迁移时不得跟随 junction、symlink、mount point 等 reparse point；
 - 跨卷迁移使用 copy + verify，不能把 copy 返回成功当作完整迁移；
@@ -1742,10 +1742,10 @@ helper 安全要求：
 P1 中推荐由非提权 helper 负责：
 
 ```text
-LobsterAI
+智码 GLM Code
   -> 写 userData attempt record
   -> 启动非提权 launcher helper
-  -> LobsterAI 退出
+  -> 智码 GLM Code 退出
   -> helper 使用 ShellExecuteEx(runas) 启动 NSIS
   -> helper 等待 NSIS 退出
   -> helper 写 userData attempt 终态
@@ -1815,7 +1815,7 @@ all-users 模式不得把 `$APPDATA` 解释为某个用户的正式 Skills 根�
 legacy 数据先进入：
 
 ```text
-%ProgramData%\LobsterAI\Installer\legacy-skills\<attemptId>\<rootId>
+%ProgramData%\智码 GLM Code\Installer\legacy-skills\<attemptId>\<rootId>
 ```
 
 并携带已验证 manifest。新应用随后在实际登录用户身份下导入
@@ -2192,7 +2192,7 @@ post-stop rescan / final revalidate 顺序；这些断言不得伪装成 P0 已�
 | 2026.7.17 | 正常 | 有额外目录 | app-update / interactive | UAC 使用另一管理员凭据 | ProgramData staging，不当作管理员 Skills |
 | 双注册同路径、HKCU repair deferred | 正常 | 无 | app-update / interactive | UAC 使用另一管理员凭据 | HKCU 由原用户非提权入口修复，不写管理员 HKCU |
 | all-users standalone | 正常 | 无 | standalone / interactive | 无 trusted original SID handoff | control 仅管理员；logs 不放宽 ACL，应用提示需提权收集 |
-| 另一目录有运行中 LobsterAI | 正常 | 无 | standalone / interactive | 覆盖目标目录 | 不误停另一目录进程 |
+| 另一目录有运行中 智码 GLM Code | 正常 | 无 | standalone / interactive | 覆盖目标目录 | 不误停另一目录进程 |
 | 2026.7.17 | 正常 | 无 | app-update / interactive | UAC 拒绝 | 旧版可运行，不计确定性失败 |
 | 已验证旧安装 | 正常 | 任意 | explicit `--updated --force-run` / interactive | pre-mutation fail 或 rollback success | 以原用户身份拉起旧版，不传 `--updated` |
 | 已验证旧安装 | 正常 | 任意 | standalone `/S` / silent | 无 trusted relaunch intent | 旧树保留/恢复，但不弹应用窗口 |
@@ -2310,7 +2310,7 @@ npm run dist:win
    ```bat
    set "PATH=%SystemRoot%\System32\WindowsPowerShell\v1.0;%PATH%"
    where powershell.exe
-   "D:\Download\LobsterAI Setup 2026.7.23.exe"
+   "D:\Download\智码 GLM Code Setup 2026.7.23.exe"
    ```
 
    最后一行只作为路径示例，必须替换为用户实际安装包路径。若不能确认

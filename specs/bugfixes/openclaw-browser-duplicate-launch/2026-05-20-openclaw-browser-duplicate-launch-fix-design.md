@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户在 Cowork 任务中调用 browser 工具时，LobsterAI 已经启动了一个独立的托管 Chrome profile：`openclaw`。这个托管浏览器启动后会先显示一个空白 tab，随后 browser 工具通过 CDP 打开真实目标页面。
+用户在 Cowork 任务中调用 browser 工具时，智码 GLM Code 已经启动了一个独立的托管 Chrome profile：`openclaw`。这个托管浏览器启动后会先显示一个空白 tab，随后 browser 工具通过 CDP 打开真实目标页面。
 
 实际观察到的异常是：同一次任务过程中，已经存在 `openclaw` 托管 Chrome 后，又额外出现一个新的空白 Chrome tab/window。用户主观上容易感觉它发生在任务结束后，或者像是另一个 `dev` / `user` Chrome 被单独打开。
 
@@ -118,26 +118,26 @@ current logic => launch a second managed Chrome
 
 ### 场景 A: 第一次 browser 调用启动托管 Chrome
 
-**Given** OpenClaw gateway 正在运行，`openclaw` managed Chrome 未启动  
-**When** Agent 第一次调用 browser 工具  
-**Then** LobsterAI 可以启动一个 `openclaw` managed Chrome，并通过 CDP 打开目标页面。
+**Given** OpenClaw gateway 正在运行，`openclaw` managed Chrome 未启动
+**When** Agent 第一次调用 browser 工具
+**Then** 智码 GLM Code 可以启动一个 `openclaw` managed Chrome，并通过 CDP 打开目标页面。
 
 ### 场景 B: 托管 Chrome 已启动但 CDP 短暂不可达
 
-**Given** `openclaw` managed Chrome 已启动，且 CDP endpoint 在本机 loopback 端口  
-**When** 一次 `300ms` CDP HTTP 探测失败，但长超时 HTTP + websocket 复查成功  
+**Given** `openclaw` managed Chrome 已启动，且 CDP endpoint 在本机 loopback 端口
+**When** 一次 `300ms` CDP HTTP 探测失败，但长超时 HTTP + websocket 复查成功
 **Then** 系统必须复用现有浏览器，不能再次启动 managed Chrome。
 
 ### 场景 C: Chrome 启动器进程退出但 CDP 仍可达
 
-**Given** macOS 上 Chrome 子进程 `exit code=0`，但 `127.0.0.1:<cdpPort>` 仍可达  
-**When** 后续 browser 工具继续执行  
+**Given** macOS 上 Chrome 子进程 `exit code=0`，但 `127.0.0.1:<cdpPort>` 仍可达
+**When** 后续 browser 工具继续执行
 **Then** 可用性判断应以 CDP 可达为准，不能因为 `runningPid` 丢失而重复启动 Chrome。
 
 ### 场景 D: CDP 真实不可达
 
-**Given** managed Chrome 未运行，或 CDP 端口在长超时复查后仍不可达  
-**When** Agent 调用 browser 工具  
+**Given** managed Chrome 未运行，或 CDP 端口在长超时复查后仍不可达
+**When** Agent 调用 browser 工具
 **Then** 系统可以启动或重启 managed Chrome，并记录一次明确的 launch reason。
 
 ## 3. 功能需求
@@ -208,7 +208,7 @@ current logic => launch a second managed Chrome
 涉及位置：
 
 - OpenClaw 源码：`extensions/browser/src/browser/server-context.availability.ts`
-- LobsterAI 补丁：`scripts/patches/v2026.4.14/openclaw-browser-duplicate-launch.patch`
+- 智码 GLM Code 补丁：`scripts/patches/v2026.4.14/openclaw-browser-duplicate-launch.patch`
 - 打包后验证：`vendor/openclaw-runtime/<target>/dist/server-context-*.js`
 
 当前逻辑可以抽象为：
@@ -333,7 +333,7 @@ running.proc.on('exit', async (code, signal) => {
 
 ### 4.5 补丁落点
 
-由于 LobsterAI 通过 `scripts/apply-openclaw-patches.cjs` 对 pinned OpenClaw 版本应用补丁，修复不应只修改 `vendor/openclaw-runtime/*/dist`。
+由于 智码 GLM Code 通过 `scripts/apply-openclaw-patches.cjs` 对 pinned OpenClaw 版本应用补丁，修复不应只修改 `vendor/openclaw-runtime/*/dist`。
 
 推荐实施顺序：
 
@@ -404,4 +404,4 @@ running.proc.on('exit', async (code, signal) => {
 
 1. 将 browser availability 的关键诊断整理为开发者诊断入口，而不是长期散落在 info 日志中。
 2. 评估是否关闭启动后遗留的未使用 `about:blank` tab。
-3. 将 OpenClaw browser 侧修复向上游同步，减少 LobsterAI 长期维护补丁的成本。
+3. 将 OpenClaw browser 侧修复向上游同步，减少 智码 GLM Code 长期维护补丁的成本。

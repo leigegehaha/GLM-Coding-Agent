@@ -4,8 +4,8 @@ import { parseUserMessageForDisplay } from './userMessageDisplay';
 
 // ─── Helpers ────────────────────────────────────────────────
 
-const WIN_INBOUND = String.raw`C:\Users\zhangsan\AppData\Roaming\LobsterAI\openclaw\state\media\inbound`;
-const MAC_INBOUND = '/Users/zhangsan/Library/Application Support/LobsterAI/openclaw/state/media/inbound';
+const WIN_INBOUND = String.raw`C:\Users\zhangsan\AppData\Roaming\智码 GLM Code\openclaw\state\media\inbound`;
+const MAC_INBOUND = '/Users/zhangsan/Library/Application Support/智码 GLM Code/openclaw/state/media/inbound';
 
 const fileImg = (dir: string, name: string) => `${dir}${dir.includes('\\') ? '\\' : '/'}${name}`;
 
@@ -44,9 +44,9 @@ describe('passthrough (no transformation)', () => {
   });
 });
 
-// ─── LobsterAI goal mode ────────────────────────────────────
+// ─── 智码 GLM Code goal mode ────────────────────────────────────
 
-describe('LobsterAI goal mode command display', () => {
+describe('智码 GLM Code goal mode command display', () => {
   test('strips /goal start prefix from displayed user text', () => {
     const input = '/goal start 帮我做一个烘焙工作室的展示网页';
     expect(parseUserMessageForDisplay(input)).toBe('帮我做一个烘焙工作室的展示网页');

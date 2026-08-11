@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineering Retrospective"
+  short_description: "Turn engineering outcomes into evaluated improvements."
+  default_prompt: "Use $engineering-retrospective to derive safe workflow improvements from this completed work."

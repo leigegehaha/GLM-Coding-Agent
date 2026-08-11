@@ -177,13 +177,13 @@ test('getSkillScriptRuntimeCandidates delegates to shared node runtime resolutio
 
 test('getSkillScriptRuntimeCandidates preserves Electron-as-node fallback env', () => {
   nodeRuntimeMocks.resolveNodeRuntimeForSpawn.mockReturnValue({
-    command: 'C:\\LobsterAI\\LobsterAI.exe',
+    command: 'C:\\智码 GLM Code\\GLMCode.exe',
     args: [],
     env: { ELECTRON_RUN_AS_NODE: '1' },
   });
 
   expect(getSkillScriptRuntimeCandidates({ PATH: 'ignored' })).toEqual([{
-    command: 'C:\\LobsterAI\\LobsterAI.exe',
+    command: 'C:\\智码 GLM Code\\GLMCode.exe',
     args: [],
     extraEnv: { ELECTRON_RUN_AS_NODE: '1' },
   }]);
@@ -268,11 +268,15 @@ const parseClawhubUrl = (source: string): { name: string } | null => {
     const segments = url.pathname.split('/').filter(Boolean);
     // Format: /skills/{owner}/{name}
     if (segments.length >= 3 && segments[0] === 'skills') {
-      return { name: segments[2] };
+      return { name: `${segments[1]}/${segments[2]}` };
     }
     // Format: /skills/{name}
     if (segments.length >= 2 && segments[0] === 'skills') {
       return { name: segments[1] };
+    }
+    // Canonical format: /{owner}/skills/{name}
+    if (segments.length >= 3 && segments[1] === 'skills') {
+      return { name: `${segments[0]}/${segments[2]}` };
     }
     // Format: /{owner}/{name} (no /skills/ prefix)
     if (segments.length >= 2) {
@@ -305,11 +309,17 @@ test('clawhub: /{owner}/{name} with trailing slash', () => {
 // ---------------------------------------------------------------------------
 
 test('clawhub: /skills/{owner}/{name} extracts skill name', () => {
-  expect(parseClawhubUrl('https://clawhub.ai/skills/steipete/slack')).toEqual({ name: 'slack' });
+  expect(parseClawhubUrl('https://clawhub.ai/skills/steipete/slack')).toEqual({ name: 'steipete/slack' });
 });
 
 test('clawhub: /skills/{owner}/{name} with trailing slash', () => {
-  expect(parseClawhubUrl('https://clawhub.ai/skills/anthropic/web-search/')).toEqual({ name: 'web-search' });
+  expect(parseClawhubUrl('https://clawhub.ai/skills/anthropic/web-search/')).toEqual({ name: 'anthropic/web-search' });
+});
+
+test('clawhub: canonical /{owner}/skills/{name} extracts publisher and skill name', () => {
+  expect(parseClawhubUrl('https://clawhub.ai/steipete/skills/github')).toEqual({
+    name: 'steipete/github',
+  });
 });
 
 // ---------------------------------------------------------------------------

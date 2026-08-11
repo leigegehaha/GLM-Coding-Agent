@@ -179,7 +179,7 @@ const EngineStartupOverlay: React.FC<EngineStartupOverlayProps> = ({ bootstrappi
           <div className="absolute -inset-2 rounded-3xl bg-primary/20 blur-xl animate-pulse" aria-hidden="true" />
           <img
             src="logo.png"
-            alt="LobsterAI"
+            alt="智码 GLM Code"
             width={72}
             height={72}
             className="relative rounded-2xl select-none"

@@ -51,7 +51,7 @@ function resolveWebPackageUrl(keyfrom) {
   if (!raw) {
     throw new Error(
       `[WebInstaller] either ${WEB_PKG_URL_ENV} (exact package URL from object storage) or ` +
-        `${WEB_PKG_BASE_URL_ENV} (CDN base directory, e.g. https://cdn.example.com/lobsterai/win) ` +
+          `${WEB_PKG_BASE_URL_ENV} (CDN base directory, e.g. https://cdn.example.com/glmcode/win) ` +
         `is required when ${WEB_INSTALLER_ENV}=1.`,
     );
   }
@@ -95,11 +95,9 @@ for (const platformName of ['mac', 'win', 'linux']) {
   mergeExtraResources(platformName);
 }
 
-// Sign every Windows binary electron-builder produces (LobsterAI.exe, the
-// uninstaller, the installer) through the internal Youdao signing service,
-// not just the final Setup.exe: the unsigned inner exe is what security
-// software freezes on first execution. The hook skips with a warning when
-// YD_SIGN_* credentials are absent, so local packaging still works.
+// Sign every Windows binary electron-builder produces when a signing hook is
+// configured. The hook skips with a warning when signing credentials are
+// absent, so local packaging still works.
 config.win = {
   ...config.win,
   sign: path.join(__dirname, 'win-sign.cjs'),
@@ -109,12 +107,12 @@ delete config.extraResources;
 
 config.dmg = {
   ...(config.dmg || {}),
-  artifactName: `LobsterAI-darwin-\${arch}-\${version}-${keyfrom}.\${ext}`,
+  artifactName: `GLMCode-darwin-\${arch}-\${version}-${keyfrom}.\${ext}`,
 };
 
 config.nsis = {
   ...(config.nsis || {}),
-  artifactName: `LobsterAI-Setup-\${arch}-\${version}-${keyfrom}.\${ext}`,
+  artifactName: `GLMCode-Setup-\${arch}-\${version}-${keyfrom}.\${ext}`,
 };
 
 if (isWebInstallerEnabled()) {
@@ -127,7 +125,7 @@ if (isWebInstallerEnabled()) {
   };
   config.nsisWeb = {
     appPackageUrl: resolveWebPackageUrl(keyfrom),
-    artifactName: `LobsterAI-WebSetup-\${arch}-\${version}-${keyfrom}.\${ext}`,
+    artifactName: `GLMCode-WebSetup-\${arch}-\${version}-${keyfrom}.\${ext}`,
   };
   console.log(`[WebInstaller] nsis-web target enabled, app package url: ${config.nsisWeb.appPackageUrl}`);
 }

@@ -22,7 +22,7 @@ index b7f4752..e11b58f 100644
 @@ -43,6 +43,18 @@
      !insertmacro customPageAfterChangeDir
    !endif
- 
+
 +  # In-app update (--updated): the previous install directory may already be
 +  # renamed away by customCheckAppRunning, so a mid-install cancel would leave
 +  # the user with no working app at all. Disable the Cancel button for the
@@ -54,7 +54,7 @@ index f5470bf..c9ebc07 100644
 +++ b/node_modules/app-builder-lib/templates/nsis/include/extractAppPackage.nsh
 @@ -66,24 +66,46 @@
  !macroend
- 
+
  !macro arm64_app_files
 +  !ifmacrodef customAppPackageMaterializeStart
 +    !insertmacro customAppPackageMaterializeStart
@@ -64,7 +64,7 @@ index f5470bf..c9ebc07 100644
 +    !insertmacro customAppPackageMaterializeEnd
 +  !endif
  !macroend
- 
+
  !macro x64_app_files
 +  !ifmacrodef customAppPackageMaterializeStart
 +    !insertmacro customAppPackageMaterializeStart
@@ -74,7 +74,7 @@ index f5470bf..c9ebc07 100644
 +    !insertmacro customAppPackageMaterializeEnd
 +  !endif
  !macroend
- 
+
  !macro ia32_app_files
 +  !ifmacrodef customAppPackageMaterializeStart
 +    !insertmacro customAppPackageMaterializeStart
@@ -84,7 +84,7 @@ index f5470bf..c9ebc07 100644
 +    !insertmacro customAppPackageMaterializeEnd
 +  !endif
  !macroend
- 
+
  !macro decompress
    !ifdef ZIP_COMPRESSION
      nsisunz::Unzip "$PLUGINSDIR\app-$packageArch.zip" "$INSTDIR"
@@ -114,11 +114,11 @@ index f5470bf..c9ebc07 100644
 +    !insertmacro customAppPackageExtractEnd "staging" "unchecked"
 +  !endif
    SetOutPath $R0
- 
+
    # Retry counter
 @@ -105,8 +134,23 @@
      IntOp $R1 $R1 + 1
- 
+
      # Attempt to copy files in atomic way
 +    !ifmacrodef customAppPackageCopyStart
 +      !insertmacro customAppPackageCopyStart
@@ -138,13 +138,13 @@ index f5470bf..c9ebc07 100644
 +    !ifmacrodef customAppPackageCopyEnd
 +      !insertmacro customAppPackageCopyEnd "error"
 +    !endif
- 
+
      DetailPrint `Can't modify "${PRODUCT_NAME}"'s files.`
      ${if} $R1 < 5
 @@ -124,10 +168,19 @@
      # much disk space.
      RMDir /r "$PLUGINSDIR\7z-out"
- 
+
 +    !ifmacrodef customAppPackageExtractStart
 +      !insertmacro customAppPackageExtractStart "fallback-direct" "${FILE}"
 +    !endif
@@ -153,13 +153,13 @@ index f5470bf..c9ebc07 100644
 +      !insertmacro customAppPackageExtractEnd "fallback-direct" "unchecked"
 +    !endif
      Goto DoneExtract7za
- 
+
    AbortExtract7za:
 +    !ifmacrodef customBeforeInstallerQuit
 +      !insertmacro customBeforeInstallerQuit "payload-copy-aborted"
 +    !endif
      Quit
- 
+
    RetryExtract7za:
 diff --git a/node_modules/app-builder-lib/templates/nsis/include/installer.nsh b/node_modules/app-builder-lib/templates/nsis/include/installer.nsh
 index 34e91df..702be81 100644
@@ -168,7 +168,7 @@ index 34e91df..702be81 100644
 @@ -79,7 +79,13 @@
            SetShellVarContext current
          ${endif}
- 
+
 +        !ifmacrodef customInstallerCacheCopyStart
 +          !insertmacro customInstallerCacheCopyStart "package"
 +        !endif
@@ -176,7 +176,7 @@ index 34e91df..702be81 100644
 +        !ifmacrodef customInstallerCacheCopyEnd
 +          !insertmacro customInstallerCacheCopyEnd "package" "completed"
 +        !endif
- 
+
          ${if} $installMode == "all"
            SetShellVarContext all
 @@ -90,7 +96,18 @@
@@ -199,7 +199,7 @@ index 34e91df..702be81 100644
          SetShellVarContext all
        ${endif}
 @@ -138,9 +155,18 @@
- 
+
    # allow user to define ESTIMATED_SIZE to avoid GetSize call
    !ifdef ESTIMATED_SIZE
 +    !ifmacrodef customEstimatedSizeKnown
@@ -216,7 +216,7 @@ index 34e91df..702be81 100644
 +    !endif
      IntFmt $0 "0x%08X" $0
    !endif
- 
+
 diff --git a/node_modules/app-builder-lib/templates/nsis/include/webPackage.nsh b/node_modules/app-builder-lib/templates/nsis/include/webPackage.nsh
 index 8ec0be3..253545c 100644
 --- a/node_modules/app-builder-lib/templates/nsis/include/webPackage.nsh
@@ -224,7 +224,7 @@ index 8ec0be3..253545c 100644
 @@ -39,26 +39,44 @@
      StrCpy $packageArch "32"
    ${endif}
- 
+
 +  # The page's own progress bar (IDC_PROGRESS = 1004) stays frozen during the
 +  # plugin call, so hide it while downloading: the inetc panel is then the only
 +  # progress bar on the page. Restored after the transfer for the install phase.
@@ -234,23 +234,23 @@ index 8ec0be3..253545c 100644
 +
    download:
 -  inetc::get /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /RESUME "" "$packageUrl" "$PLUGINSDIR\package.7z" /END
-+  inetc::get /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /CANCELTEXT "${U+53D6}${U+6D88}" /QUESTION "${U+786E}${U+5B9A}${U+8981}${U+53D6}${U+6D88}${U+4E0B}${U+8F7D}${U+5417}${U+FF1F}" /RESUME "${U+7F51}${U+7EDC}${U+8FDE}${U+63A5}${U+4E2D}${U+65AD}${U+FF0C}${U+8BF7}${U+68C0}${U+67E5}${U+7F51}${U+7EDC}${U+540E}${U+70B9}${U+51FB}${U+201C}${U+91CD}${U+8BD5}${U+201D}${U+7EE7}${U+7EED}${U+4E0B}${U+8F7D}${U+3002}" /TRANSLATE "${U+6B63}${U+5728}${U+4E0B}${U+8F7D} LobsterAI ${U+5B89}${U+88C5}${U+5305}" "${U+6B63}${U+5728}${U+8FDE}${U+63A5}${U+670D}${U+52A1}${U+5668}${U+2026}" "${U+79D2}" "${U+5206}${U+949F}" "${U+5C0F}${U+65F6}" "" "${U+5DF2}${U+4E0B}${U+8F7D} %dkB${U+FF08}%d%%${U+FF09}${U+FF0C}${U+5171} %dkB ${U+2014} %d.%01dkB/s" "${U+FF0C}${U+5269}${U+4F59}${U+7EA6} %d %s" "$packageUrl" "$PLUGINSDIR\package.7z" /END
++  inetc::get /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /CANCELTEXT "${U+53D6}${U+6D88}" /QUESTION "${U+786E}${U+5B9A}${U+8981}${U+53D6}${U+6D88}${U+4E0B}${U+8F7D}${U+5417}${U+FF1F}" /RESUME "${U+7F51}${U+7EDC}${U+8FDE}${U+63A5}${U+4E2D}${U+65AD}${U+FF0C}${U+8BF7}${U+68C0}${U+67E5}${U+7F51}${U+7EDC}${U+540E}${U+70B9}${U+51FB}${U+201C}${U+91CD}${U+8BD5}${U+201D}${U+7EE7}${U+7EED}${U+4E0B}${U+8F7D}${U+3002}" /TRANSLATE "${U+6B63}${U+5728}${U+4E0B}${U+8F7D} 智码 GLM Code ${U+5B89}${U+88C5}${U+5305}" "${U+6B63}${U+5728}${U+8FDE}${U+63A5}${U+670D}${U+52A1}${U+5668}${U+2026}" "${U+79D2}" "${U+5206}${U+949F}" "${U+5C0F}${U+65F6}" "" "${U+5DF2}${U+4E0B}${U+8F7D} %dkB${U+FF08}%d%%${U+FF09}${U+FF0C}${U+5171} %dkB ${U+2014} %d.%01dkB/s" "${U+FF0C}${U+5269}${U+4F59}${U+7EA6} %d %s" "$packageUrl" "$PLUGINSDIR\package.7z" /END
    Pop $0
- 
+
    ${if} $0 == "Cancelled"
 +    !ifmacrodef customBeforeInstallerQuit
 +      !insertmacro customBeforeInstallerQuit "web-package-download-cancelled"
 +    !endif
      Quit
    ${endif}
- 
+
    ${if} $0 != "OK"
      # try without proxy
 -    inetc::get /NOPROXY /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /RESUME "" "$packageUrl" "$PLUGINSDIR\package.7z" /END
-+    inetc::get /NOPROXY /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /CANCELTEXT "${U+53D6}${U+6D88}" /QUESTION "${U+786E}${U+5B9A}${U+8981}${U+53D6}${U+6D88}${U+4E0B}${U+8F7D}${U+5417}${U+FF1F}" /RESUME "${U+7F51}${U+7EDC}${U+8FDE}${U+63A5}${U+4E2D}${U+65AD}${U+FF0C}${U+8BF7}${U+68C0}${U+67E5}${U+7F51}${U+7EDC}${U+540E}${U+70B9}${U+51FB}${U+201C}${U+91CD}${U+8BD5}${U+201D}${U+7EE7}${U+7EED}${U+4E0B}${U+8F7D}${U+3002}" /TRANSLATE "${U+6B63}${U+5728}${U+4E0B}${U+8F7D} LobsterAI ${U+5B89}${U+88C5}${U+5305}" "${U+6B63}${U+5728}${U+8FDE}${U+63A5}${U+670D}${U+52A1}${U+5668}${U+2026}" "${U+79D2}" "${U+5206}${U+949F}" "${U+5C0F}${U+65F6}" "" "${U+5DF2}${U+4E0B}${U+8F7D} %dkB${U+FF08}%d%%${U+FF09}${U+FF0C}${U+5171} %dkB ${U+2014} %d.%01dkB/s" "${U+FF0C}${U+5269}${U+4F59}${U+7EA6} %d %s" "$packageUrl" "$PLUGINSDIR\package.7z" /END
++    inetc::get /NOPROXY /USERAGENT "electron-builder (Mozilla)" /HEADER "X-Arch: $packageArch" /CANCELTEXT "${U+53D6}${U+6D88}" /QUESTION "${U+786E}${U+5B9A}${U+8981}${U+53D6}${U+6D88}${U+4E0B}${U+8F7D}${U+5417}${U+FF1F}" /RESUME "${U+7F51}${U+7EDC}${U+8FDE}${U+63A5}${U+4E2D}${U+65AD}${U+FF0C}${U+8BF7}${U+68C0}${U+67E5}${U+7F51}${U+7EDC}${U+540E}${U+70B9}${U+51FB}${U+201C}${U+91CD}${U+8BD5}${U+201D}${U+7EE7}${U+7EED}${U+4E0B}${U+8F7D}${U+3002}" /TRANSLATE "${U+6B63}${U+5728}${U+4E0B}${U+8F7D} 智码 GLM Code ${U+5B89}${U+88C5}${U+5305}" "${U+6B63}${U+5728}${U+8FDE}${U+63A5}${U+670D}${U+52A1}${U+5668}${U+2026}" "${U+79D2}" "${U+5206}${U+949F}" "${U+5C0F}${U+65F6}" "" "${U+5DF2}${U+4E0B}${U+8F7D} %dkB${U+FF08}%d%%${U+FF09}${U+FF0C}${U+5171} %dkB ${U+2014} %d.%01dkB/s" "${U+FF0C}${U+5269}${U+4F59}${U+7EA6} %d %s" "$packageUrl" "$PLUGINSDIR\package.7z" /END
      Pop $0
    ${endif}
- 
+
    ${if} $0 == "Cancelled"
 +    !ifmacrodef customBeforeInstallerQuit
 +      !insertmacro customBeforeInstallerQuit "web-package-download-cancelled"
@@ -264,7 +264,7 @@ index 8ec0be3..253545c 100644
 +    !endif
      Quit
    ${endif}
- 
+
 +  ShowWindow $R9 5
 +
    StrCpy $packageFile "$PLUGINSDIR\package.7z"
@@ -276,7 +276,7 @@ index 053772f..57a73d8 100644
 @@ -11,6 +11,20 @@ StrCpy $appExe "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
  # must be called before uninstallOldVersion
  !insertmacro setLinkVars
- 
+
 +# Preserve the user's shortcut choices while the old app executable still
 +# exists. A custom update fast path may rename $INSTDIR in CHECK_APP_RUNNING.
 +Var /GLOBAL keepShortcuts
@@ -297,7 +297,7 @@ index 053772f..57a73d8 100644
 @@ -37,26 +51,26 @@ StrCpy $appExe "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
    ${endif}
  !endif
- 
+
 -Var /GLOBAL keepShortcuts
 -StrCpy $keepShortcuts "false"
 -!insertMacro setIsTryToKeepShortcuts
@@ -318,7 +318,7 @@ index 053772f..57a73d8 100644
 +  !insertmacro uninstallOldVersion SHELL_CONTEXT
 +  !insertmacro handleUninstallResult SHELL_CONTEXT
 +!endif
- 
+
  ${if} $installMode == "all"
 -  !insertmacro uninstallOldVersion HKEY_CURRENT_USER
 -  !insertmacro handleUninstallResult HKEY_CURRENT_USER
@@ -329,7 +329,7 @@ index 053772f..57a73d8 100644
 +    !insertmacro handleUninstallResult HKEY_CURRENT_USER
 +  !endif
  ${endIf}
- 
+
 +!ifmacrodef customAfterUninstallOldVersions
 +  !insertmacro customAfterUninstallOldVersions
 +!endif
@@ -367,13 +367,13 @@ index 1b88a9d..a52559b 100644
 @@ -33,8 +33,24 @@ Var oldMenuDirectory
    !include "assistedInstaller.nsh"
  !endif
- 
+
 +!ifmacrodef customInstallerUserAbort
 +  !define MUI_CUSTOMFUNCTION_ABORT lobsterCustomInstallerUserAbort
 +!endif
 +
  !insertmacro addLangs
- 
+
 +!ifmacrodef customInstallerUserAbort
 +  Function lobsterCustomInstallerUserAbort
 +    !insertmacro customInstallerUserAbort
@@ -396,7 +396,7 @@ index 52a83df..0500e4e 100644
 @@ -36,6 +36,28 @@ Var isForceCurrentInstall
  			Abort
  		${endIf}
- 
+
 +		!ifndef BUILD_UNINSTALLER
 +			# In-app update (--updated): reuse the mode of the existing installation
 +			# instead of asking again -- the user already chose at first install.

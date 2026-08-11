@@ -10,7 +10,7 @@ OpenClaw already supports Codex-style session goals:
 - `sessions.list` rows that include the current goal state;
 - compact UI labels such as `Pursuing goal (12k/50k)`.
 
-LobsterAI currently treats Cowork sessions as ordinary chat sessions and does
+智码 GLM Code currently treats Cowork sessions as ordinary chat sessions and does
 not surface this OpenClaw goal state. Users can ask for long work, but the
 client has no persistent visual target, no elapsed goal indicator, and no
 dedicated controls for pausing, resuming, completing, blocking, or clearing the
@@ -18,17 +18,17 @@ target.
 
 ## 2. Goals
 
-Add a LobsterAI client goal mode that mirrors OpenClaw's session-goal model:
+Add a 智码 GLM Code client goal mode that mirrors OpenClaw's session-goal model:
 
 1. Show the active session's goal near the Cowork input area and in session
    state where useful.
 2. Keep OpenClaw as the authoritative goal state owner.
 3. Use the existing Cowork/OpenClaw session key mapping instead of creating a
-   second LobsterAI goal table.
+   second 智码 GLM Code goal table.
 4. Provide user controls for starting, pausing, resuming, completing, blocking,
    and clearing a goal.
 5. Show token usage and elapsed active time when OpenClaw provides enough data.
-6. Keep the model-side goal tools available through OpenClaw; LobsterAI should
+6. Keep the model-side goal tools available through OpenClaw; 智码 GLM Code should
    not emulate model goal decisions in the renderer.
 
 ## 3. Non-Goals
@@ -36,9 +36,9 @@ Add a LobsterAI client goal mode that mirrors OpenClaw's session-goal model:
 - Goal mode is not a scheduled task, reminder, cron job, standing order, or
   detached worker.
 - Goal mode is not a task list. A session has at most one goal.
-- LobsterAI will not create an independent goal persistence layer while
+- 智码 GLM Code will not create an independent goal persistence layer while
   OpenClaw owns goal state.
-- LobsterAI does not expose `/goal` command text as normal user-visible chat
+- 智码 GLM Code does not expose `/goal` command text as normal user-visible chat
   content when the goal UI is used. Existing-session goal mutations use the
   OpenClaw `sessions.goal` RPC.
 
@@ -85,7 +85,7 @@ create a goal from the current draft or by entering a specific objective.
 
 ### 5.1 Authoritative State
 
-OpenClaw remains authoritative. LobsterAI normalizes the `goal` field from
+OpenClaw remains authoritative. 智码 GLM Code normalizes the `goal` field from
 `sessions.list` rows into a shared `CoworkGoal` type.
 
 ### 5.2 Main Process
@@ -108,7 +108,7 @@ current session. Streamed `goalUpdate` events update both places.
 
 ### 5.4 Mutations
 
-For existing sessions, LobsterAI sends goal mutations through the OpenClaw
+For existing sessions, 智码 GLM Code sends goal mutations through the OpenClaw
 `sessions.goal` RPC. `start`, `create`, `set`, and `resume` may trigger a
 normal continuation only when the session is not already running; `pause`,
 `complete`, `block`, and `clear` are operator mutations and do not create a new

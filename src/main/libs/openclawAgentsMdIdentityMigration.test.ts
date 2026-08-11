@@ -12,7 +12,7 @@ import {
   removeLegacyAgentsMdIdentityBlock,
 } from './openclawAgentsMdIdentityMigration';
 
-const MARKER = '<!-- LobsterAI managed: do not edit below this line -->';
+const MARKER = '<!-- 智码 GLM Code managed: do not edit below this line -->';
 
 const buildLegacyAgentsMd = (legacyBody = '你的名字是"小小翻译家"。'): string => [
   '# AGENTS.md - Your Workspace',

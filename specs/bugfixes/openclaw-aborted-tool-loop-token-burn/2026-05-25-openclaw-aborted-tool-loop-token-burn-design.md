@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-用户反馈“在没有定时任务、没有主动发起任务的时段，LobsterAI 仍然持续消耗 token”。本次网关侧抓到的请求证明，异常消耗不是普通心跳或 `cron.list` 轮询，而是一次真实模型请求在持续重放异常上下文。
+用户反馈“在没有定时任务、没有主动发起任务的时段，智码 GLM Code 仍然持续消耗 token”。本次网关侧抓到的请求证明，异常消耗不是普通心跳或 `cron.list` 轮询，而是一次真实模型请求在持续重放异常上下文。
 
 关键现场如下：
 
@@ -38,14 +38,14 @@ tool: Aborted
 
 这个问题由三层缺口叠加触发：
 
-1. 旧版本 OpenClaw/LobsterAI 没有对连续 `Aborted` 工具结果设置硬断路。
+1. 旧版本 OpenClaw/智码 GLM Code 没有对连续 `Aborted` 工具结果设置硬断路。
    - 工具执行已经无法取得结果。
    - 模型仍被允许反复选择同类工具。
    - 同一 run 在数小时内继续向模型发请求。
 
 2. 当前 OpenClaw 虽已有 tool loop detection / circuit breaker 能力，但默认关闭。
    - OpenClaw 配置说明中 `tools.loopDetection.enabled` 默认是 `false`。
-   - LobsterAI managed config 当前没有强制开启该能力。
+   - 智码 GLM Code managed config 当前没有强制开启该能力。
    - 因此用户升级后，如果只依赖默认配置，同类循环仍可能没有被拦住。
 
 3. tool loop detection 不是完整闭环。
@@ -59,7 +59,7 @@ tool: Aborted
 
 与本问题相关的当前代码状态：
 
-- `src/main/libs/openclawHistory.ts` 已过滤 heartbeat prompt/ack、`NO_REPLY` 和空文本 assistant，但这主要覆盖 LobsterAI 对 `chat.history` 的 UI 同步，不等价于 OpenClaw 发送模型请求前的上下文清洗。
+- `src/main/libs/openclawHistory.ts` 已过滤 heartbeat prompt/ack、`NO_REPLY` 和空文本 assistant，但这主要覆盖 智码 GLM Code 对 `chat.history` 的 UI 同步，不等价于 OpenClaw 发送模型请求前的上下文清洗。
 - `src/main/libs/openclawConfigSync.ts` 生成 managed OpenClaw 配置时设置了 `tools.deny` 和 `tools.web.search.enabled=false`，但未设置 `tools.loopDetection.enabled=true`。
 - OpenClaw 源码中已有 `tool-loop-detection.ts`，包含 warning、critical 和 global circuit breaker 阈值，但默认配置为关闭。
 - OpenClaw 的 transcript repair 会维护 tool_use/tool_result 配对，避免 strict provider 拒绝请求，但不会自动把大量连续 aborted tool turns 压缩或删除。
@@ -69,7 +69,7 @@ tool: Aborted
 修复目标：
 
 1. 同一 run 内连续工具 `Aborted` 不得无限继续请求模型。
-2. LobsterAI managed runtime 默认开启 OpenClaw tool loop detection / circuit breaker。
+2. 智码 GLM Code managed runtime 默认开启 OpenClaw tool loop detection / circuit breaker。
 3. 对 `Aborted` 工具结果增加独立硬断路，即使通用 loop detection 没有命中，也能终止 run。
 4. 发送模型请求前清理或压缩旧版本残留的 `assistant tool_calls + tool Aborted` 异常历史，避免一次请求携带数千条无效轮次。
 5. run 被用户 stop、工具系统 abort 或断路器终止后，状态必须收口，不再自动续跑同一任务。
@@ -92,54 +92,54 @@ tool: Aborted
 
 ### 场景 1: 同一工具连续 Aborted
 
-**Given** agent 在一次任务中多次调用同一工具和同一参数  
-**And** 工具结果连续返回 `Aborted`  
-**When** 连续失败次数达到阈值  
-**Then** 系统应终止当前 run  
-**And** 不再向模型发送下一轮请求  
+**Given** agent 在一次任务中多次调用同一工具和同一参数
+**And** 工具结果连续返回 `Aborted`
+**When** 连续失败次数达到阈值
+**Then** 系统应终止当前 run
+**And** 不再向模型发送下一轮请求
 **And** UI 显示任务因工具连续中止而失败
 
 ### 场景 2: 瞬时工具失败后恢复
 
-**Given** 某个工具调用偶发返回 `Aborted` 或超时  
-**When** 后续工具调用正常成功并产生有效结果  
-**Then** 系统不应过早终止任务  
+**Given** 某个工具调用偶发返回 `Aborted` 或超时
+**When** 后续工具调用正常成功并产生有效结果
+**Then** 系统不应过早终止任务
 **And** 模型应能继续完成用户任务
 
 ### 场景 3: 用户主动停止任务
 
-**Given** 用户点击停止当前任务  
-**When** LobsterAI 调用 `chat.abort` 或 OpenClaw 工具收到 abort signal  
-**Then** 当前 run 应进入终止态  
-**And** 不应把用户停止后的 `Aborted` 工具结果作为新上下文继续喂给模型  
+**Given** 用户点击停止当前任务
+**When** 智码 GLM Code 调用 `chat.abort` 或 OpenClaw 工具收到 abort signal
+**Then** 当前 run 应进入终止态
+**And** 不应把用户停止后的 `Aborted` 工具结果作为新上下文继续喂给模型
 **And** 不应在用户停止后自动重启同一任务
 
 ### 场景 4: 升级后打开旧污染会话
 
-**Given** 旧版本已经写入大量 `assistant tool_calls + tool Aborted` 历史  
-**When** 用户升级后继续该会话或 OpenClaw 恢复该 session  
-**Then** 发送模型请求前应清理或压缩这些异常轮次  
+**Given** 旧版本已经写入大量 `assistant tool_calls + tool Aborted` 历史
+**When** 用户升级后继续该会话或 OpenClaw 恢复该 session
+**Then** 发送模型请求前应清理或压缩这些异常轮次
 **And** 单次请求不应携带数千条 aborted 历史
 
 ### 场景 5: 正常工具轮次保留
 
-**Given** 会话中存在正常 tool call 和对应 tool result  
-**When** 发送模型请求或做 history sync  
-**Then** 正常工具结果应保留  
+**Given** 会话中存在正常 tool call 和对应 tool result
+**When** 发送模型请求或做 history sync
+**Then** 正常工具结果应保留
 **And** 不应因为新增清洗逻辑破坏 provider 所要求的 tool_call/tool_result 配对
 
 ### 场景 6: 无活动任务时无模型请求
 
-**Given** 用户没有正在运行的 Cowork / IM / cron 任务  
-**When** LobsterAI 只进行 gateway 状态轮询、session list 或 cron list  
-**Then** 不应产生新的模型请求  
+**Given** 用户没有正在运行的 Cowork / IM / cron 任务
+**When** 智码 GLM Code 只进行 gateway 状态轮询、session list 或 cron list
+**Then** 不应产生新的模型请求
 **And** 日志中不应出现 `chat.send`、embedded run start 或 provider request
 
 ## 3. 功能需求
 
 ### FR-1: Managed OpenClaw 默认开启 tool loop detection
 
-LobsterAI 生成的 managed OpenClaw 配置必须启用工具循环检测。
+智码 GLM Code 生成的 managed OpenClaw 配置必须启用工具循环检测。
 
 建议默认配置：
 
@@ -191,7 +191,7 @@ LobsterAI 生成的 managed OpenClaw 配置必须启用工具循环检测。
 终止要求：
 
 1. 停止当前 active run 的后续模型请求。
-2. 向 gateway / LobsterAI 发出 final error 或 lifecycle error。
+2. 向 gateway / 智码 GLM Code 发出 final error 或 lifecycle error。
 3. 清理 active turn。
 4. 不把该 runId 放入可继续续跑状态。
 5. UI 显示可理解的失败信息，例如“工具连续中止，任务已停止以避免继续消耗 token”。
@@ -219,16 +219,16 @@ tool content="Aborted"
 
 ### FR-6: 用户 stop 后不再继续自动 retry
 
-当 LobsterAI 调用 `stopSession()` 或 gateway 收到 `chat.abort` 后：
+当 智码 GLM Code 调用 `stopSession()` 或 gateway 收到 `chat.abort` 后：
 
 - OpenClaw 应将当前 run 标记为 terminal aborted。
 - 后续 late tool result / assistant event 不应重新打开该 run。
 - 如果 session history 中出现 stop 产生的 `Aborted` tool result，不应触发下一轮模型请求。
-- LobsterAI active turn cleanup 不应留下可继续执行的 pending retry。
+- 智码 GLM Code active turn cleanup 不应留下可继续执行的 pending retry。
 
-### FR-7: LobsterAI history sync 不引入异常消息
+### FR-7: 智码 GLM Code history sync 不引入异常消息
 
-LobsterAI 从 `chat.history` 同步 UI 消息时，应继续忽略：
+智码 GLM Code 从 `chat.history` 同步 UI 消息时，应继续忽略：
 
 - 空文本 assistant。
 - `content=null` assistant。
@@ -255,7 +255,7 @@ LobsterAI 从 `chat.history` 同步 UI 消息时，应继续忽略：
 
 ## 4. 实现方案
 
-### 4.1 LobsterAI managed config 启用 loop detection
+### 4.1 智码 GLM Code managed config 启用 loop detection
 
 修改 `src/main/libs/openclawConfigSync.ts` 中 generated config 的 `tools` 段：
 
@@ -283,7 +283,7 @@ tools: {
 },
 ```
 
-如果 OpenClaw 后续把 loop detection 默认值改为 true，LobsterAI 仍应显式写入该配置，避免旧 runtime 或用户 overlay 下行为漂移。
+如果 OpenClaw 后续把 loop detection 默认值改为 true，智码 GLM Code 仍应显式写入该配置，避免旧 runtime 或用户 overlay 下行为漂移。
 
 ### 4.2 OpenClaw 侧记录 `Aborted` outcome
 
@@ -338,11 +338,11 @@ sanitizeAbortedToolLoopHistory(messages, {
 - 可选地插入一条短 summary，说明历史中曾发生多次 aborted 工具调用。
 - 保证输出后 transcript 仍符合 provider 的 tool_call/tool_result 配对规则。
 
-该函数应在发送模型请求前运行，而不仅在 `chat.history` 返回给 LobsterAI 时运行。
+该函数应在发送模型请求前运行，而不仅在 `chat.history` 返回给 智码 GLM Code 时运行。
 
-### 4.5 LobsterAI 收到断路错误后的 UI 收口
+### 4.5 智码 GLM Code 收到断路错误后的 UI 收口
 
-当 OpenClaw 因断路器终止 run 时，LobsterAI `openclawRuntimeAdapter.ts` 应按错误完成路径处理：
+当 OpenClaw 因断路器终止 run 时，智码 GLM Code `openclawRuntimeAdapter.ts` 应按错误完成路径处理：
 
 - 当前 assistant streaming 停止。
 - 当前 session 从 running 状态退出。
@@ -381,7 +381,7 @@ sanitizeAbortedToolLoopHistory(messages, {
 
 ## 6. 涉及文件
 
-LobsterAI 侧：
+智码 GLM Code 侧：
 
 - `src/main/libs/openclawConfigSync.ts`：managed config 默认启用 `tools.loopDetection`。
 - `src/main/libs/openclawConfigSync.runtime.test.ts` 或相邻测试：验证生成的 OpenClaw config 包含 loop detection 配置。
@@ -398,7 +398,7 @@ OpenClaw patch 侧：
 
 ## 7. 验收标准
 
-1. LobsterAI 生成的 managed OpenClaw config 中包含 `tools.loopDetection.enabled=true`。
+1. 智码 GLM Code 生成的 managed OpenClaw config 中包含 `tools.loopDetection.enabled=true`。
 2. 构造同一工具同一参数连续返回 `Aborted` 的测试，run 在阈值内终止，不会继续调用模型到第 20 次以后。
 3. 构造现场同类历史：`assistant:null + exec {"command":"dir"} + tool "Aborted"` 重复 3000 次；发送模型请求前被压缩或清理，最终请求不再包含数千条 aborted 轮次。
 4. 用户点击 stop 后，当前 run 不再产生后续模型请求。
@@ -448,7 +448,7 @@ OpenClaw patch 侧：
 
 ### 8.4 手工日志验证
 
-在本地运行 OpenClaw gateway + LobsterAI：
+在本地运行 OpenClaw gateway + 智码 GLM Code：
 
 1. 启动任务，模拟工具连续 abort。
 2. 检查 `main-YYYY-MM-DD.log` 和 OpenClaw gateway log。

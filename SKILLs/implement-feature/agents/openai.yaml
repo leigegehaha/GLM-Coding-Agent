@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Feature"
+  short_description: "Implement repository features end to end with validation."
+  default_prompt: "Use $implement-feature to implement this repository change end to end."

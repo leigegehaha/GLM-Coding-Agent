@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { CoworkSystemMessageKind } from '../common/coworkSystemMessages';
 import { AgentId, normalizeAgentAvatarIcon } from '../shared/agent';
+import { DEFAULT_CODING_OPTIMIZATION_ENABLED } from '../shared/cowork/codingOptimization';
 import {
   COWORK_MESSAGE_PAGE_SIZE,
   COWORK_SESSION_PAGE_SIZE,
@@ -487,6 +488,7 @@ export interface CoworkSession {
   cwd: string;
   systemPrompt: string;
   modelOverride: string;
+  codingOptimized?: boolean;
   executionMode: CoworkExecutionMode;
   activeSkillIds: string[];
   agentId: string;
@@ -585,6 +587,7 @@ export interface CoworkConfig {
   systemPrompt: string;
   executionMode: CoworkExecutionMode;
   agentEngine: CoworkAgentEngine;
+  codingOptimizationEnabled?: boolean;
   memoryEnabled: boolean;
   memoryImplicitUpdateEnabled: boolean;
   memoryLlmJudgeEnabled: boolean;
@@ -610,6 +613,7 @@ CoworkConfig,
   | 'workingDirectory'
   | 'executionMode'
   | 'agentEngine'
+  | 'codingOptimizationEnabled'
   | 'memoryEnabled'
   | 'memoryImplicitUpdateEnabled'
   | 'memoryLlmJudgeEnabled'
@@ -841,7 +845,8 @@ export class CoworkStore {
     executionMode: CoworkExecutionMode = 'local',
     activeSkillIds: string[] = [],
     agentId: string = 'main',
-    modelOverride: string = ''
+    modelOverride: string = '',
+    codingOptimized: boolean = DEFAULT_CODING_OPTIMIZATION_ENABLED,
   ): CoworkSession {
     const id = uuidv4();
     const now = Date.now();
@@ -849,8 +854,8 @@ export class CoworkStore {
     this.db
       .prepare(
         `
-      INSERT INTO cowork_sessions (id, title, claude_session_id, status, cwd, system_prompt, model_override, execution_mode, active_skill_ids, agent_id, pinned, created_at, updated_at)
-      VALUES (?, ?, NULL, 'idle', ?, ?, ?, ?, ?, ?, 0, ?, ?)
+      INSERT INTO cowork_sessions (id, title, claude_session_id, status, cwd, system_prompt, model_override, coding_optimized, execution_mode, active_skill_ids, agent_id, pinned, created_at, updated_at)
+      VALUES (?, ?, NULL, 'idle', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
     `,
       )
       .run(
@@ -859,6 +864,7 @@ export class CoworkStore {
         cwd,
         systemPrompt,
         modelOverride,
+        codingOptimized ? 1 : 0,
         executionMode,
         JSON.stringify(activeSkillIds),
         agentId,
@@ -876,6 +882,7 @@ export class CoworkStore {
       cwd,
       systemPrompt,
       modelOverride,
+      codingOptimized,
       executionMode,
       activeSkillIds,
       agentId,
@@ -905,6 +912,7 @@ export class CoworkStore {
       cwd: string;
       system_prompt: string;
       model_override?: string | null;
+      coding_optimized?: number | null;
       execution_mode?: string | null;
       active_skill_ids?: string | null;
       agent_id?: string | null;
@@ -915,7 +923,7 @@ export class CoworkStore {
 
     const row = this.getOne<SessionRow>(
       `
-      SELECT id, title, claude_session_id, status, pinned, pin_order, cwd, system_prompt, model_override, execution_mode, active_skill_ids, agent_id, goal_json, created_at, updated_at
+      SELECT id, title, claude_session_id, status, pinned, pin_order, cwd, system_prompt, model_override, coding_optimized, execution_mode, active_skill_ids, agent_id, goal_json, created_at, updated_at
       FROM cowork_sessions
       WHERE id = ?
     `,
@@ -951,6 +959,7 @@ export class CoworkStore {
       cwd: row.cwd,
       systemPrompt: row.system_prompt,
       modelOverride: row.model_override || '',
+      codingOptimized: row.coding_optimized !== 0,
       executionMode: (row.execution_mode as CoworkExecutionMode) || 'local',
       activeSkillIds,
       agentId: row.agent_id || 'main',
@@ -1133,12 +1142,12 @@ export class CoworkStore {
       `
       INSERT INTO cowork_sessions (
         id, title, claude_session_id, status, cwd, system_prompt, model_override,
-        execution_mode, active_skill_ids, agent_id, pinned, pin_order,
+        coding_optimized, execution_mode, active_skill_ids, agent_id, pinned, pin_order,
         parent_session_id, forked_from_message_id, forked_at, fork_mode,
         fork_workspace_path, fork_git_branch, fork_git_base_ref,
         created_at, updated_at
       )
-      VALUES (?, ?, NULL, 'idle', ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, NULL, 'idle', ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     );
     const insertMessage = this.db.prepare(
@@ -1155,6 +1164,7 @@ export class CoworkStore {
         cwd,
         source.systemPrompt,
         source.modelOverride,
+        source.codingOptimized === false ? 0 : 1,
         source.executionMode,
         JSON.stringify(source.activeSkillIds),
         source.agentId,
@@ -1352,7 +1362,7 @@ export class CoworkStore {
     updates: Partial<
       Pick<
         CoworkSession,
-        'title' | 'claudeSessionId' | 'status' | 'cwd' | 'systemPrompt' | 'modelOverride' | 'executionMode' | 'goal'
+        'title' | 'claudeSessionId' | 'status' | 'cwd' | 'systemPrompt' | 'modelOverride' | 'codingOptimized' | 'executionMode' | 'goal'
       >
     >,
     options: { touchUpdatedAt?: boolean } = {},
@@ -1399,6 +1409,10 @@ export class CoworkStore {
     if (updates.modelOverride !== undefined) {
       setClauses.push('model_override = ?');
       values.push(updates.modelOverride);
+    }
+    if (updates.codingOptimized !== undefined) {
+      setClauses.push('coding_optimized = ?');
+      values.push(updates.codingOptimized ? 1 : 0);
     }
     if (updates.executionMode !== undefined) {
       setClauses.push('execution_mode = ?');
@@ -1815,7 +1829,7 @@ export class CoworkStore {
       timestamp: row.created_at,
       preview: getCoworkRailPreview(
         row.preview_content,
-        row.type === 'user' ? `Turn ${index + 1}` : 'LobsterAI',
+        row.type === 'user' ? `Turn ${index + 1}` : '智码 GLM Code',
         COWORK_RAIL_TOOLTIP_PREVIEW_MAX_LENGTH,
       ),
       contentLen: row.content_len,
@@ -2158,6 +2172,7 @@ export class CoworkStore {
       'workingDirectory',
       'executionMode',
       'agentEngine',
+      'codingOptimizationEnabled',
       'memoryEnabled',
       'memoryImplicitUpdateEnabled',
       'memoryLlmJudgeEnabled',
@@ -2188,6 +2203,10 @@ export class CoworkStore {
       systemPrompt: getDefaultSystemPrompt(),
       executionMode: 'local' as CoworkExecutionMode,
       agentEngine: 'openclaw' as CoworkAgentEngine,
+      codingOptimizationEnabled: parseBooleanConfig(
+        cfg.get('codingOptimizationEnabled'),
+        DEFAULT_CODING_OPTIMIZATION_ENABLED,
+      ),
       memoryEnabled: parseBooleanConfig(cfg.get('memoryEnabled'), DEFAULT_MEMORY_ENABLED),
       memoryImplicitUpdateEnabled: parseBooleanConfig(
         cfg.get('memoryImplicitUpdateEnabled'),
@@ -2228,6 +2247,13 @@ export class CoworkStore {
     }
     if (config.agentEngine !== undefined) {
       this.upsertConfig('agentEngine', 'openclaw', now);
+    }
+    if (config.codingOptimizationEnabled !== undefined) {
+      this.upsertConfig(
+        'codingOptimizationEnabled',
+        config.codingOptimizationEnabled ? '1' : '0',
+        now,
+      );
     }
     if (config.memoryEnabled !== undefined) {
       this.upsertConfig('memoryEnabled', config.memoryEnabled ? '1' : '0', now);
@@ -3189,6 +3215,7 @@ export class CoworkStore {
     const cwd = parent?.cwd || agent?.workingDirectory || '';
     const systemPrompt = agent?.systemPrompt || '';
     const modelOverride = existing?.modelOverride || '';
+    const codingOptimized = parent?.codingOptimized ?? DEFAULT_CODING_OPTIMIZATION_ENABLED;
     const executionMode = parent?.executionMode || 'local';
     const activeSkillIds = agent?.skillIds ?? [];
     const status = options.status ?? 'running';
@@ -3204,6 +3231,7 @@ export class CoworkStore {
               cwd = ?,
               system_prompt = ?,
               model_override = ?,
+              coding_optimized = ?,
               execution_mode = ?,
               active_skill_ids = ?,
               agent_id = ?,
@@ -3219,6 +3247,7 @@ export class CoworkStore {
           cwd,
           systemPrompt,
           modelOverride,
+          codingOptimized ? 1 : 0,
           executionMode,
           JSON.stringify(activeSkillIds),
           options.agentId,
@@ -3232,10 +3261,10 @@ export class CoworkStore {
           `
           INSERT INTO cowork_sessions (
             id, title, claude_session_id, status, cwd, system_prompt, model_override,
-            execution_mode, active_skill_ids, agent_id, pinned, pin_order,
+            coding_optimized, execution_mode, active_skill_ids, agent_id, pinned, pin_order,
             parent_session_id, created_at, updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?)
         `,
         )
         .run(
@@ -3246,6 +3275,7 @@ export class CoworkStore {
           cwd,
           systemPrompt,
           modelOverride,
+          codingOptimized ? 1 : 0,
           executionMode,
           JSON.stringify(activeSkillIds),
           options.agentId,

@@ -76,7 +76,7 @@ ensure_npm_available() {
   fi
 
   echo "✗ npm is unavailable, cannot repair web-search runtime"
-  echo "  Please reinstall the web-search skill runtime from LobsterAI."
+  echo "  Please reinstall the web-search skill runtime from 智码 GLM Code."
   return 1
 }
 
@@ -216,7 +216,7 @@ cd "$PROJECT_DIR"
 if ! resolve_node_runtime; then
   echo "✗ Failed to start Bridge Server"
   echo "  Node.js runtime not found."
-  echo "  Please install Node.js, or run from LobsterAI so scripts can use Electron runtime."
+  echo "  Please install Node.js, or run from 智码 GLM Code so scripts can use Electron runtime."
   exit 1
 fi
 

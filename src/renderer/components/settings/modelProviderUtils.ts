@@ -32,6 +32,18 @@ export type ProvidersConfig = NonNullable<AppConfig['providers']>;
 export type ProviderConfig = ProvidersConfig[string];
 export type Model = NonNullable<ProviderConfig['models']>[number];
 
+export const CODING_PLAN_DEFAULT_MODEL_ID = 'glm-5.2';
+
+export const resolveCodingPlanDefaultModel = <T extends Pick<Model, 'id' | 'name'>>(
+  models: T[],
+): T | undefined => {
+  const targetId = normalizeModelIdForComparison(CODING_PLAN_DEFAULT_MODEL_ID);
+  return models.find(model => (
+    normalizeModelIdForComparison(model.id) === targetId
+    || normalizeModelIdForComparison(model.name) === targetId
+  )) ?? models[0];
+};
+
 export const hasEquivalentProviderModelId = (
   models: Array<Pick<Model, 'id'>>,
   modelId: string,
@@ -95,6 +107,10 @@ export const hasProviderAuthConfigured = (provider: ProviderType, config: Provid
     return config.authType === ProviderAuthType.OAuth;
   }
 
+  if (provider === ProviderName.ZhimaCoding) {
+    return (config.credentialRef?.trim().length ?? 0) > 0;
+  }
+
   return config.apiKey.trim().length > 0;
 };
 
@@ -105,7 +121,7 @@ export const normalizeApiFormat = (value: unknown): 'anthropic' | 'openai' => (
 );
 
 export const getFixedApiFormatForProvider = (provider: string): 'anthropic' | 'openai' | 'gemini' | null => {
-  if (provider === 'openai' || provider === 'stepfun') {
+  if (provider === 'openai' || provider === 'stepfun' || provider === ProviderName.ZhimaCoding) {
     return 'openai';
   }
   if (provider === ProviderName.Youdaozhiyun || provider === ProviderName.Copilot || provider === ProviderName.Qianfan || provider === ProviderName.Xai) {

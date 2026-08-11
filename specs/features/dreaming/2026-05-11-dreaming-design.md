@@ -6,13 +6,13 @@
 
 OpenClaw 提供了 **Dreaming** 功能——一个后台记忆整合系统。它通过三个阶段（Light / Deep / REM）定期处理短期记忆信号，将高价值条目提升为永久记忆，并生成人类可读的 Dream Diary（`DREAMS.md`）。
 
-该功能默认关闭，需要在 `openclaw.json` 中配置 `dreaming` 字段才能启用。目前 LobsterAI 尚未提供该功能的 UI 入口。
+该功能默认关闭，需要在 `openclaw.json` 中配置 `dreaming` 字段才能启用。目前 智码 GLM Code 尚未提供该功能的 UI 入口。
 
 参考文档：https://docs.openclaw.ai/concepts/dreaming
 
 ### 1.2 目标
 
-在 LobsterAI 的 **设置 > 记忆** 页面中，新增 Dreaming 配置区域，允许用户：
+在 智码 GLM Code 的 **设置 > 记忆** 页面中，新增 Dreaming 配置区域，允许用户：
 
 - 启用/禁用 Dreaming
 - 配置运行频率（cron 定时）

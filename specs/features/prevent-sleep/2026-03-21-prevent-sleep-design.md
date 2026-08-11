@@ -2,11 +2,11 @@
 
 ## Overview
 
-Add a "prevent sleep" toggle to Settings > General tab, preventing the system from sleeping while LobsterAI is running. Follows the existing autoLaunch pattern.
+Add a "prevent sleep" toggle to Settings > General tab, preventing the system from sleeping while 智码 GLM Code is running. Follows the existing autoLaunch pattern.
 
 ## User Story
 
-As a user running long AI tasks or IM bots, I want LobsterAI to prevent my computer from sleeping, so tasks aren't interrupted by the system going to sleep.
+As a user running long AI tasks or IM bots, I want 智码 GLM Code to prevent my computer from sleeping, so tasks aren't interrupted by the system going to sleep.
 
 ## Design
 
@@ -108,7 +108,7 @@ preventSleep: {
 ## 实施计划
 
 
-**Goal:** Add a "prevent sleep" toggle in Settings > General that keeps the system awake while LobsterAI is running.
+**Goal:** Add a "prevent sleep" toggle in Settings > General that keeps the system awake while 智码 GLM Code is running.
 
 **Architecture:** Follows the existing autoLaunch pattern — independent IPC channel, store key, and immediate toggle (no save button). Main process uses Electron's `powerSaveBlocker` API.
 

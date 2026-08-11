@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codebase Onboarding"
+  short_description: "Map an unfamiliar repository before making code changes."
+  default_prompt: "Use $codebase-onboarding to map this repository before changing code."

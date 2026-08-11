@@ -11,7 +11,7 @@ Three focused UI changes to the IM bot email channel (龙虾邮箱) configuratio
 ### 1. API Key link — add channel parameter
 
 **Current:** `https://claw.163.com/projects/dashboard/#/api-keys`
-**New:** `https://claw.163.com/projects/dashboard/?channel=LobsterAI#/api-keys`
+**New:** `https://claw.163.com/projects/dashboard/?channel=GLMCode#/api-keys`
 
 **File:** `src/renderer/components/im/IMSettings.tsx` line ~569
 
@@ -90,13 +90,13 @@ In `src/renderer/components/im/IMSettings.tsx`, line 569, replace:
 with:
 
 ```typescript
-    const apiKeyUrl = 'https://claw.163.com/projects/dashboard/?channel=LobsterAI#/api-keys';
+    const apiKeyUrl = 'https://claw.163.com/projects/dashboard/?channel=GLMCode#/api-keys';
 ```
 
 - [ ] **Step 2: Verify the change**
 
 Run: `grep -n 'claw.163.com/projects/dashboard' src/renderer/components/im/IMSettings.tsx`
-Expected: single match at line ~569 with the new URL containing `?channel=LobsterAI`.
+Expected: single match at line ~569 with the new URL containing `?channel=GLMCode`.
 
 - [ ] **Step 3: Commit**
 

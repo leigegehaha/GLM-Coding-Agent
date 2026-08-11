@@ -6,7 +6,7 @@
 
 HTML 静态分享当前在客户端只暴露“分享码”模式，用户创建分享时不能选择公开访问。实际系统历史上曾支持 `public` 模式，数据库结构、服务端静态访问链路和管理员后台展示也仍保留了部分公开访问能力：
 
-- 客户端仓库 `/Users/admin/Documents/lobsterai/LobsterAI`
+- 客户端仓库 `/Users/admin/Documents/lobsterai/智码 GLM Code`
   - `src/shared/htmlShare/constants.ts` 中 `HtmlShareAccessMode` 只定义了 `Code`。
   - `src/main/main.ts` 的 `validateHtmlShareAccessMode()` 只允许 `code`。
   - `uploadHtmlShare()` / `updateHtmlShare()` 调用没有把 `accessMode` 传给服务端。
@@ -485,7 +485,7 @@ SHOW INDEX FROM html_shares WHERE Key_name = 'idx_html_shares_access_mode';
 
 ## 6. 涉及文件
 
-### 6.1 桌面客户端 `/Users/admin/Documents/lobsterai/LobsterAI`
+### 6.1 桌面客户端 `/Users/admin/Documents/lobsterai/智码 GLM Code`
 
 | 文件 | 变更 |
 |------|------|

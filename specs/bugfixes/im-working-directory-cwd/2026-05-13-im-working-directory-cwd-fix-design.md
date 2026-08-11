@@ -4,11 +4,11 @@
 
 ### 1.1 问题
 
-用户在 LobsterAI 中给微信、飞书等 IM 渠道完成绑定后，从 IM 中询问“当前的工作目录是哪里”，回复显示的是默认的 LobsterAI 目录，而不是用户在 LobsterAI 中选择的任务工作目录。
+用户在 智码 GLM Code 中给微信、飞书等 IM 渠道完成绑定后，从 IM 中询问“当前的工作目录是哪里”，回复显示的是默认的 智码 GLM Code 目录，而不是用户在 智码 GLM Code 中选择的任务工作目录。
 
-同一用户在 LobsterAI 桌面内新建任务并询问相同问题时，回复是正确的用户选择目录。
+同一用户在 智码 GLM Code 桌面内新建任务并询问相同问题时，回复是正确的用户选择目录。
 
-后续复查发现一个更具体的回归：IM 端现在不再总是回答 LobsterAI 默认目录，而是统一回答主 Agent 的工作目录。这个结果仍然不正确，因为微信、飞书、钉钉、网易 IM 等不同 IM 入口可以绑定到不同 Agent。IM 入站任务的 cwd 必须由“该 IM 账号/实例/会话路由到的 Agent”决定，不能统一使用 main Agent。
+后续复查发现一个更具体的回归：IM 端现在不再总是回答 智码 GLM Code 默认目录，而是统一回答主 Agent 的工作目录。这个结果仍然不正确，因为微信、飞书、钉钉、网易 IM 等不同 IM 入口可以绑定到不同 Agent。IM 入站任务的 cwd 必须由“该 IM 账号/实例/会话路由到的 Agent”决定，不能统一使用 main Agent。
 
 这个现象说明“桌面 Cowork 新建任务”和“IM 入站消息”实际走了不同的 cwd 注入路径。不能只看本地 `cowork_sessions.cwd` 是否正确，还必须确认 OpenClaw channel run 真正执行工具时使用的 cwd。
 
@@ -21,13 +21,13 @@
 3. 新 session 创建时把解析结果写入 `cowork_sessions.cwd`。
 4. `src/main/libs/agentEngine/openclawRuntimeAdapter.ts` 在 `chat.send` 参数中写入 `cwd: session.cwd`。
 
-所以桌面任务能正确回答 cwd，是因为每次由 LobsterAI 主动调用 `chat.send` 时都会显式传入 session cwd。
+所以桌面任务能正确回答 cwd，是因为每次由 智码 GLM Code 主动调用 `chat.send` 时都会显式传入 session cwd。
 
 IM 入站消息链路：
 
 1. 微信、飞书、钉钉等平台主要由 OpenClaw channel plugin 接收消息。
 2. channel plugin 解析 route 和 `sessionKey` 后，调用 OpenClaw 的 channel reply dispatch，例如微信的 `dispatchReplyFromConfig()`、飞书的 `dispatchReplyFromConfig()`。
-3. LobsterAI 通过 `OpenClawChannelSessionSync` 发现 gateway 里的 channel session，并在本地创建或复用 Cowork session。
+3. 智码 GLM Code 通过 `OpenClawChannelSessionSync` 发现 gateway 里的 channel session，并在本地创建或复用 Cowork session。
 4. `OpenClawChannelSessionSync` 创建本地 session 时会调用 `getDefaultCwd(agentId)`，因此本地 `cowork_sessions.cwd` 可以是正确的。
 
 关键差异是：第 4 步发生在 OpenClaw channel run 已经由 gateway 发起之后。本地 Cowork session 的 cwd 只是同步结果，不会反向影响已经开始的 IM 回复。
@@ -38,18 +38,18 @@ IM 入站消息链路：
 
 具体证据：
 
-- `OpenClawRuntimeAdapter.runTurn()` 会从 `session.cwd` 计算 `runCwd`，并把它传给 `chat.send`。这只覆盖 LobsterAI 桌面主动发起的任务。
-- IM channel plugin 入站路径不经过 LobsterAI 的 `runtime.startSession()`，也不会使用 `OpenClawRuntimeAdapter` 的 `chat.send.cwd`。
+- `OpenClawRuntimeAdapter.runTurn()` 会从 `session.cwd` 计算 `runCwd`，并把它传给 `chat.send`。这只覆盖 智码 GLM Code 桌面主动发起的任务。
+- IM channel plugin 入站路径不经过 智码 GLM Code 的 `runtime.startSession()`，也不会使用 `OpenClawRuntimeAdapter` 的 `chat.send.cwd`。
 - `OpenClawChannelSessionSync.resolveOrCreateSession()` 虽然会用 `getDefaultCwd(agentId)` 创建本地 session，但这是后置同步，不能改变 OpenClaw 已经用于执行的 cwd。
-- 当前 `OpenClawConfigSync` 写出的 `agents.defaults.workspace` 是 LobsterAI 管理的 OpenClaw workspace，用于 Agent 记忆和 bootstrap 文件；用户选择的任务目录被写到 `agents.defaults.cwd` / `agents.list[].cwd`。
-- 当前随包 OpenClaw v2026.4.14 的 plugin-sdk 类型已声明 `agents.defaults.cwd` / `agents.list[].cwd` 可作为 Agent run cwd，并且 reply run 参数也包含 `cwd`；因此 LobsterAI 侧必须确保配置写出和 runtime 刷新正确。
+- 当前 `OpenClawConfigSync` 写出的 `agents.defaults.workspace` 是 智码 GLM Code 管理的 OpenClaw workspace，用于 Agent 记忆和 bootstrap 文件；用户选择的任务目录被写到 `agents.defaults.cwd` / `agents.list[].cwd`。
+- 当前随包 OpenClaw v2026.4.14 的 plugin-sdk 类型已声明 `agents.defaults.cwd` / `agents.list[].cwd` 可作为 Agent run cwd，并且 reply run 参数也包含 `cwd`；因此 智码 GLM Code 侧必须确保配置写出和 runtime 刷新正确。
 - `syncOpenClawConfig({ reason: 'agent-updated' })` 在 Agent 工作目录变化后默认不硬重启 gateway。即使未来 OpenClaw 支持 per-agent cwd，运行中的 channel runtime 也可能继续使用旧配置快照。
 
 因此，桌面任务正确而 IM 错误是合理的：桌面任务有 per-run `chat.send.cwd`，IM channel run 只有 OpenClaw runtime 自己解析出来的 workspace/default cwd。
 
 ### 1.4 本轮复查结论
 
-这次“所有 IM 都回答 main Agent 工作目录”的现象，说明前一轮只把 `agents.defaults.cwd` 改为 main Agent 工作目录并不够。它让 fallback cwd 从 LobsterAI 默认目录变成了 main Agent 目录，但没有保证非 main Agent 的 channel run 消费自己的 `agents.list[].cwd`。
+这次“所有 IM 都回答 main Agent 工作目录”的现象，说明前一轮只把 `agents.defaults.cwd` 改为 main Agent 工作目录并不够。它让 fallback cwd 从 智码 GLM Code 默认目录变成了 main Agent 目录，但没有保证非 main Agent 的 channel run 消费自己的 `agents.list[].cwd`。
 
 当前定位到两个独立问题：
 
@@ -62,33 +62,33 @@ IM 入站消息链路：
 
 ### 场景 A: 微信绑定到主 Agent 后使用当前 Agent 工作目录
 
-**Given** 用户在主 Agent 中选择工作目录 `/repo/user-project`，并绑定微信  
-**When** 用户在微信中发送“当前的工作目录是哪里”  
-**Then** 回复和工具执行 cwd 都应指向 `/repo/user-project`，而不是 LobsterAI 默认目录或 OpenClaw workspace。
+**Given** 用户在主 Agent 中选择工作目录 `/repo/user-project`，并绑定微信
+**When** 用户在微信中发送“当前的工作目录是哪里”
+**Then** 回复和工具执行 cwd 都应指向 `/repo/user-project`，而不是 智码 GLM Code 默认目录或 OpenClaw workspace。
 
 ### 场景 B: 飞书绑定到非 main Agent
 
-**Given** Agent B 的默认工作目录为 `/repo/agent-b`，飞书绑定到 Agent B  
-**When** 用户在飞书中询问 cwd 或让 Agent 执行 `pwd`  
+**Given** Agent B 的默认工作目录为 `/repo/agent-b`，飞书绑定到 Agent B
+**When** 用户在飞书中询问 cwd 或让 Agent 执行 `pwd`
 **Then** OpenClaw 实际执行目录应为 `/repo/agent-b`。
 
 ### 场景 C: 修改 Agent 工作目录后继续从同一个 IM 对话提问
 
-**Given** 某 IM 对话已经存在 channel session，原 cwd 为 `/repo/old`  
-**When** 用户在 LobsterAI 中把绑定 Agent 的工作目录改为 `/repo/new`  
+**Given** 某 IM 对话已经存在 channel session，原 cwd 为 `/repo/old`
+**When** 用户在 智码 GLM Code 中把绑定 Agent 的工作目录改为 `/repo/new`
 **Then** 后续 IM 消息不应继续沿用 `/repo/old` 或默认目录。
 
 ### 场景 D: 桌面任务行为不回退
 
-**Given** 用户在 LobsterAI 桌面内新建任务  
-**When** 任务由 `cowork:session:start` 创建  
+**Given** 用户在 智码 GLM Code 桌面内新建任务
+**When** 任务由 `cowork:session:start` 创建
 **Then** 仍然通过 `chat.send.cwd` 使用 session 快照目录，不受 IM 修复影响。
 
 ### 场景 E: IM 发起任务的文件型结果落在 Agent 工作目录
 
-**Given** Agent B 的默认工作目录为 `/repo/agent-b`，飞书绑定到 Agent B  
-**When** 用户在飞书里要求“生成一份总结文档/图片/PPT/数据文件”  
-**Then** 生成的最终文件应默认保存到 `/repo/agent-b` 或其子目录，而不是 LobsterAI 应用目录、OpenClaw workspace、`~/.openclaw/workspace-*` 或临时目录。
+**Given** Agent B 的默认工作目录为 `/repo/agent-b`，飞书绑定到 Agent B
+**When** 用户在飞书里要求“生成一份总结文档/图片/PPT/数据文件”
+**Then** 生成的最终文件应默认保存到 `/repo/agent-b` 或其子目录，而不是 智码 GLM Code 应用目录、OpenClaw workspace、`~/.openclaw/workspace-*` 或临时目录。
 
 **And** IM 回复中提到的文件路径、媒体发送路径、本地 Cowork session 里的文件链接都应指向同一份用户工作目录内的结果文件。
 
@@ -105,13 +105,13 @@ OpenClaw channel run 的实际执行 cwd 必须先根据当前 IM 来源解析�
 5. legacy `cowork_config.workingDirectory`。
 6. 最后才是 OpenClaw workspace fallback。
 
-不能只更新 LobsterAI 本地 `cowork_sessions.cwd`，因为它不决定 IM 的真实执行目录。
+不能只更新 智码 GLM Code 本地 `cowork_sessions.cwd`，因为它不决定 IM 的真实执行目录。
 
 非 main Agent 的 IM run 不允许在未检查自身 `cwd` 的情况下落到 `agents.defaults.cwd`。否则多个 IM 绑定到不同 Agent 时，都会表现为 main Agent 工作目录。
 
 ### FR-2: 不把 Agent workspace 当成用户任务目录
 
-LobsterAI 之前已经把 OpenClaw workspace 与用户项目 cwd 解耦。修复不应简单地把 `agents.list[].workspace` 改成用户选择目录，否则会把 `AGENTS.md`、`IDENTITY.md`、`USER.md`、Agent 记忆和 inbound media 等 OpenClaw 工作区文件写入用户项目。
+智码 GLM Code 之前已经把 OpenClaw workspace 与用户项目 cwd 解耦。修复不应简单地把 `agents.list[].workspace` 改成用户选择目录，否则会把 `AGENTS.md`、`IDENTITY.md`、`USER.md`、Agent 记忆和 inbound media 等 OpenClaw 工作区文件写入用户项目。
 
 正确方向是让 OpenClaw channel dispatch 支持独立的 run cwd，语义上与桌面 `chat.send.cwd` 一致。
 
@@ -200,7 +200,7 @@ LobsterAI 之前已经把 OpenClaw workspace 与用户项目 cwd 解耦。修复
 
 ### 4.2 新增统一的 Agent run cwd 解析
 
-需要在 OpenClaw channel runtime 或 LobsterAI 可维护的 channel glue 层新增统一解析函数，语义如下：
+需要在 OpenClaw channel runtime 或 智码 GLM Code 可维护的 channel glue 层新增统一解析函数，语义如下：
 
 ```text
 explicit run cwd > agents.list[resolvedAgentId].cwd > agents.defaults.cwd when resolvedAgentId is main/default > legacy cowork cwd > agent workspace fallback
@@ -256,13 +256,13 @@ replyOptions: { ...replyOptions, cwd: resolvedRunCwd }
 - peer / group / team 级 binding 优先级应与 core `resolveAgentRoute()` 一致，避免 sessionKey 和 cwd 来源不一致。
 - `matchedBy` debug 需要输出 exact account、channel wildcard、default 等信息。
 
-如果短期内无法修改钉钉 connector，则 LobsterAI 写出 binding 时需要对这类自定义 matcher 平台生成它能识别的 binding 形态。但长期应收敛到 core routing，减少平台之间的路由差异。
+如果短期内无法修改钉钉 connector，则 智码 GLM Code 写出 binding 时需要对这类自定义 matcher 平台生成它能识别的 binding 形态。但长期应收敛到 core routing，减少平台之间的路由差异。
 
-### 4.5 LobsterAI 写出正确 cwd 配置
+### 4.5 智码 GLM Code 写出正确 cwd 配置
 
 `src/main/libs/openclawConfigSync.ts` 和 `src/main/libs/openclawAgentModels.ts` 需要保持以下输出：
 
-- `agents.defaults.workspace`：LobsterAI 管理的 main Agent workspace，例如 `{STATE_DIR}/workspace-main`。
+- `agents.defaults.workspace`：智码 GLM Code 管理的 main Agent workspace，例如 `{STATE_DIR}/workspace-main`。
 - `agents.defaults.cwd`：main Agent 的 `workingDirectory`，为空时 fallback 到 legacy `cowork_config.workingDirectory`。
 - `agents.list[].workspace`：每个 Agent 的 OpenClaw 管理 workspace，例如 `{STATE_DIR}/workspace-{agentId}`。
 - `agents.list[].cwd`：该 Agent 的用户任务目录。
@@ -285,7 +285,7 @@ replyOptions: { ...replyOptions, cwd: resolvedRunCwd }
 Agent 工作目录变化后，读取 `im_session_mappings` 中绑定该 Agent 的 channel session：
 
 - 如果 OpenClaw 支持 `sessions.patch({ key, cwd })`，则对每个 `openclaw_session_key` patch cwd。
-- 如果 channel run 每轮都会从 Agent 配置重新解析 cwd，则只需要清理 LobsterAI 的 `OpenClawChannelSessionSync` cache，并在下一轮同步时校正本地 `cowork_sessions.cwd`。
+- 如果 channel run 每轮都会从 Agent 配置重新解析 cwd，则只需要清理 智码 GLM Code 的 `OpenClawChannelSessionSync` cache，并在下一轮同步时校正本地 `cowork_sessions.cwd`。
 - 如果两者都不支持，则需要设计 session reset：删除或忽略旧 channel session，创建新的本地 Cowork session，并确保不会把旧 gateway history 全量同步进新 session。
 
 最小可接受行为是：工作目录变化后的下一条 IM 消息真实执行 cwd 正确。
@@ -298,14 +298,14 @@ IM channel run 需要和桌面 Cowork run 保持同一类路径语义：
 - 如果 skill 或工具使用自己的默认输出目录，需要把默认目录初始化为 `resolvedCwd`，或在调用前注入等价 cwd。
 - 如果平台发送文件需要生成临时上传副本，上传副本可以在 OpenClaw temp 下，但原始成果必须保存在 `resolvedCwd`。
 - 如果 OpenClaw channel plugin 会下载入站附件到 workspace，例如 `media/inbound`，这类输入缓存可以保持现状；但由 Agent 处理后产出的最终文件不能继续写回输入缓存目录。
-- LobsterAI 同步到本地 Cowork session 后，文件链接解析应继续使用 `cowork_sessions.cwd`，且该值应与本轮 `resolvedCwd` 一致。
+- 智码 GLM Code 同步到本地 Cowork session 后，文件链接解析应继续使用 `cowork_sessions.cwd`，且该值应与本轮 `resolvedCwd` 一致。
 
 需要重点检查的路径：
 
 - 文档、PPT、表格、图片生成类 skills 的默认输出目录。
 - OpenClaw file/write/edit/apply_patch 工具的 cwd。
 - IM 平台媒体发送工具读取文件时的源路径。
-- LobsterAI `CoworkSessionDetail` 对相对文件链接的 cwd 解析。
+- 智码 GLM Code `CoworkSessionDetail` 对相对文件链接的 cwd 解析。
 
 ### 4.9 避免伪修复
 
@@ -334,7 +334,7 @@ IM channel run 需要和桌面 Cowork run 保持同一类路径语义：
 | 用户在 IM 中明确要求输出到某绝对路径 | 按工具权限与安全策略处理；默认输出仍不能漂移 |
 | 旧 OpenClaw runtime 不支持 channel cwd | 需要降级提示或采用 session reset/workspace fallback，不能静默声称已修复 |
 | IM 绑定 Agent 变化和 cwd 变化同时发生 | 先保证 route 到正确 Agent，再使用该 Agent 的 cwd |
-| 用户项目目录不存在 | LobsterAI 侧保存时或运行前应提示；不能让 OpenClaw静默 fallback 到默认目录 |
+| 用户项目目录不存在 | 智码 GLM Code 侧保存时或运行前应提示；不能让 OpenClaw静默 fallback 到默认目录 |
 
 ## 6. 涉及文件
 
@@ -366,8 +366,8 @@ IM channel run 需要和桌面 Cowork run 保持同一类路径语义：
 5. 修改 Agent 工作目录后，不新建 IM 对话，继续在同一个微信/飞书对话里询问 cwd，下一轮使用新目录。
 6. 从微信/飞书发起文件型任务，例如“生成一份 markdown 总结并保存”，最终文件默认出现在绑定 Agent 的工作目录。
 7. IM 回复中发送或引用的文件路径对应工作目录中的真实文件，不只是临时上传副本。
-8. LobsterAI 桌面新建任务仍使用 `cowork_sessions.cwd` 快照，并通过 `chat.send.cwd` 生效。
-9. OpenClaw workspace 文件仍写入 LobsterAI 管理目录，不污染用户项目目录。
+8. 智码 GLM Code 桌面新建任务仍使用 `cowork_sessions.cwd` 快照，并通过 `chat.send.cwd` 生效。
+9. OpenClaw workspace 文件仍写入 智码 GLM Code 管理目录，不污染用户项目目录。
 10. 生成的 `openclaw.json` 中 `workspace` 与 `cwd` 语义清晰分离。
 11. 相关单元测试和手动 IM 验证通过。
 
@@ -398,7 +398,7 @@ npm test -- openclawChannelSessionSync
 
 ### 手动验证
 
-1. 在 LobsterAI 中选择一个非默认目录，例如 `/tmp/lobsterai-cwd-check-a`。
+1. 在 智码 GLM Code 中选择一个非默认目录，例如 `/tmp/lobsterai-cwd-check-a`。
 2. 绑定微信到当前 Agent。
 3. 从微信发送：“请用 pwd 或当前运行环境告诉我当前工作目录。”
 4. 检查回复、OpenClaw approval request 或 debug 日志中的 cwd 是否为 `/tmp/lobsterai-cwd-check-a`。
@@ -438,9 +438,9 @@ npm test -- openclawChannelSessionSync
 
 ## 9. 本次实现落点
 
-本次实现采用“LobsterAI 配置写出 + OpenClaw runtime patch + channel plugin post-install patch”的组合：
+本次实现采用“智码 GLM Code 配置写出 + OpenClaw runtime patch + channel plugin post-install patch”的组合：
 
-1. LobsterAI 继续写出 `agents.defaults.cwd` 和 `agents.list[].cwd`，并在 main Agent 工作目录变化时触发 gateway restart/refresh。
+1. 智码 GLM Code 继续写出 `agents.defaults.cwd` 和 `agents.list[].cwd`，并在 main Agent 工作目录变化时触发 gateway restart/refresh。
 2. `scripts/patches/v2026.4.14/openclaw-im-bound-agent-run-cwd.patch` 在 OpenClaw 中新增 `resolveAgentRunCwd()`，并让 `getReplyFromConfig()` 按当前 `agentId` 解析 run cwd。这样微信、飞书、网易 Bee、网易 IM 等通过 SDK dispatch 的 channel run 不需要各自重复传 `replyOptions.cwd`。
 3. `scripts/ensure-openclaw-plugins.cjs` 增加 DingTalk post-install patch，让 `dingtalk-connector` 自定义 matcher 正确识别 `match.accountId === "*"`，避免平台级绑定落回 main Agent。
 4. `OpenClawChannelSessionSync` 复用已有 IM mapping 时会校正本地 `cowork_sessions.cwd`，保证 UI 与真实 Agent cwd 方向一致。

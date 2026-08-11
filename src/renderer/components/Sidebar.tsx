@@ -1,12 +1,13 @@
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { AgentId } from '@shared/agent';
+import type { CodingPlanAccountUser } from '@shared/codingPlanAccount/constants';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { agentService } from '../services/agent';
 import { coworkService } from '../services/cowork';
 import { i18nService } from '../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../services/logReporter';
 import { RootState } from '../store';
 import {
   selectCoworkSessions,
@@ -37,6 +38,7 @@ import LoginButton from './LoginButton';
 import SidebarAdBanner from './SidebarAdBanner';
 
 interface SidebarProps {
+  codingPlanAccount?: CodingPlanAccountUser | null;
   onShowSettings: () => void;
   onShowLogin?: () => void;
   activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'kits' | 'mcp' | 'sites';
@@ -104,7 +106,7 @@ const reportSidebarAction = (
   options: SidebarAnalyticsOptions = {},
 ): void => {
   console.debug('[Sidebar] reporting sidebar action analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.SidebarAction,
     source: options.source ?? 'home_sidebar',
     actionType,
@@ -131,6 +133,8 @@ const reportSidebarAction = (
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
+  codingPlanAccount,
+  onShowLogin,
   onShowSettings,
   activeView,
   onShowSkills,
@@ -169,6 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const resizeStartWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
   const agentScrollContainerRef = useRef<HTMLDivElement>(null);
   const isWindows = window.electron.platform === 'win32';
+  const isWebRuntime = window.electron.platform === 'web';
   const showHeaderRow = !isWindows;
   const batchSelectableKeySet = useMemo(
     () => new Set(batchSelectableItems.map((item) => item.key)),
@@ -515,7 +520,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       data-skin-sidebar="true"
       className={`relative shrink-0 overflow-hidden bg-surface-raised ${
         isResizing ? '' : 'sidebar-transition'
-      }`}
+      } ${isWebRuntime ? 'max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-elevated' : ''}`}
       style={{ width: isCollapsed ? 0 : sidebarWidth }}
     >
       <div
@@ -566,6 +571,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <SidebarSearchIcon className="h-4 w-4 shrink-0" />
             {i18nService.t('search')}
           </button>
+          {!isWebRuntime && (<>
           <button
             type="button"
             onClick={() => {
@@ -639,6 +645,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               {i18nService.t('sitesTitle')}
             </button>
           )}
+          </>)}
         </div>
       </div>
       <div className="relative min-h-0 flex-1">
@@ -657,7 +664,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             onShowCowork={onShowCowork}
             onTaskSelected={(params) => {
               console.debug('[Sidebar] reporting agent sidebar task selection analytics');
-              void reportYdAnalyzer({
+              void reportAnalytics({
                 action: LogReporterAction.SidebarAction,
                 source: 'home_agent_sidebar',
                 actionType: 'select_task',
@@ -676,7 +683,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             onBatchSelectableItemsChange={handleBatchSelectableItemsChange}
           />
         </div>
-        {!isBatchMode && (
+        {!isBatchMode && !isWebRuntime && (
           <SidebarAdBanner
             hidden={hideAdBanner}
             onVisibleChange={setIsSidebarBannerVisible}
@@ -757,18 +764,24 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-1 pl-3 pr-2 pt-1">
             {!hideLogin && (
               <div className="flex-1 min-w-0">
-                <LoginButton contentLeftOffset={isCollapsed ? 0 : sidebarWidth} />
+                <LoginButton
+                  codingPlanAccount={codingPlanAccount}
+                  contentLeftOffset={isCollapsed ? 0 : sidebarWidth}
+                  onShowLogin={onShowLogin}
+                />
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => onShowSettings()}
-              className={`inline-flex h-7 items-center justify-start gap-1.5 rounded-md px-1.5 text-sm font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04] ${hideLogin ? 'w-full' : 'shrink-0'}`}
-              aria-label={i18nService.t('settings')}
-            >
-              <Cog6ToothIcon className="h-4 w-4 shrink-0" />
-              {i18nService.t('settings')}
-            </button>
+            {!isWebRuntime && (
+              <button
+                type="button"
+                onClick={() => onShowSettings()}
+                className={`inline-flex h-7 items-center justify-start gap-1.5 rounded-md px-1.5 text-sm font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04] ${hideLogin ? 'w-full' : 'shrink-0'}`}
+                aria-label={i18nService.t('settings')}
+              >
+                <Cog6ToothIcon className="h-4 w-4 shrink-0" />
+                {i18nService.t('settings')}
+              </button>
+            )}
           </div>
         </div>
       )}

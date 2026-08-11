@@ -27,7 +27,7 @@ Response:
       "activityDescription": "邀请好友赚积分",
       "weight": 1,
       "status": 1,
-      "linkUrl": "https://lobsterai.youdao.com/portal#/invitation",
+      "linkUrl": "https://glmcoding.cn/portal#/invitation",
       "imageUrl": "https://nos.example.com/banner.png",
       "imageWidth": 800,
       "imageHeight": 250,

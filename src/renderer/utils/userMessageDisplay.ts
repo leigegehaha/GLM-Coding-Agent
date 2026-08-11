@@ -72,7 +72,7 @@ export function parseUserMessageForDisplay(
 
   // Normalize \r\n to \n so all line-anchored regexes work correctly
   let result = (content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  // LobsterAI sends goal-mode submissions to OpenClaw as local /goal commands.
+  // 智码 GLM Code sends goal-mode submissions to OpenClaw as local /goal commands.
   // The command is transport/control syntax, not user-facing message text.
   result = stripGoalCommandPrefixForDisplay(result);
 

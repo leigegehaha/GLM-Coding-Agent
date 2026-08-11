@@ -10,7 +10,7 @@
 gateway request timeout for sessions.patch
 ```
 
-从日志看，这次失败不是模型没有生成回复，而是 LobsterAI 在真正调用 `chat.send` 之前，先执行 OpenClaw `sessions.patch` 更新会话模型。该 RPC 在客户端默认 30 秒内没有返回，导致 `runTurn()` 直接进入 error，用户消息没有被发送给模型。
+从日志看，这次失败不是模型没有生成回复，而是 智码 GLM Code 在真正调用 `chat.send` 之前，先执行 OpenClaw `sessions.patch` 更新会话模型。该 RPC 在客户端默认 30 秒内没有返回，导致 `runTurn()` 直接进入 error，用户消息没有被发送给模型。
 
 ### 1.2 结论
 
@@ -20,7 +20,7 @@ gateway request timeout for sessions.patch
 2. `OpenClawRuntimeAdapter.runTurn()` 将本地 session 状态置为 `running`。
 3. 发送 `chat.send` 前，`ensureSessionModelForTurn()` 调用 `sessions.patch` 以确保 OpenClaw 当前 session 使用本地选中的模型。
 4. OpenClaw gateway 的 `sessions.patch` 请求超过 30 秒未返回。
-5. LobsterAI 抛出 `gateway request timeout for sessions.patch`。
+5. 智码 GLM Code 抛出 `gateway request timeout for sessions.patch`。
 6. 当前 turn 结束为 error，`chat.send` 没有执行。
 
 系统性原因是 OpenClaw gateway 的 session 存储/RPC 路径已经处于拥塞状态，尤其是 `sessions.json.lock` 长时间持有后阻塞了 session 读写类 RPC。日志中同一阶段还有大量 `sessions.list` 上下文用量刷新超时，说明这不是单次 patch 偶发失败，而是 session RPC 队列整体被拖慢。
@@ -60,7 +60,7 @@ OpenClaw 侧也记录了 session 写锁异常：
 
 ```text
 [session-write-lock] releasing lock held for 57907ms (max=15000ms):
-/Users/wangning/Library/Application Support/LobsterAI/openclaw/state/agents/main/sessions/sessions.json.lock
+/Users/wangning/Library/Application Support/智码 GLM Code/openclaw/state/agents/main/sessions/sessions.json.lock
 ```
 
 这说明需要解决的是“关键发送路径被 session 存储拥塞拖死”，而不是单纯把错误提示翻译得更友好。
@@ -78,32 +78,32 @@ OpenClaw 侧也记录了 session 写锁异常：
 
 ### 场景 A：Gateway session 存储短暂变慢
 
-**Given** OpenClaw gateway 仍然可连接  
-**And** `sessions.patch` 因 session 写锁或队列延迟短暂超过 30 秒  
-**When** 用户继续一个已有 Cowork 会话  
-**Then** 如果本地已确认当前模型与目标模型一致，应允许继续 `chat.send`  
+**Given** OpenClaw gateway 仍然可连接
+**And** `sessions.patch` 因 session 写锁或队列延迟短暂超过 30 秒
+**When** 用户继续一个已有 Cowork 会话
+**Then** 如果本地已确认当前模型与目标模型一致，应允许继续 `chat.send`
 **And** 不应因为非必要的模型 patch 超时直接丢弃用户问题
 
 ### 场景 B：用户刚切换了 session 级模型
 
-**Given** 用户刚在当前会话显式切换模型  
-**When** 发送下一轮消息前需要保证 OpenClaw session 使用新模型  
-**Then** `sessions.patch` 仍然是强一致步骤  
+**Given** 用户刚在当前会话显式切换模型
+**When** 发送下一轮消息前需要保证 OpenClaw session 使用新模型
+**Then** `sessions.patch` 仍然是强一致步骤
 **And** 如果 patch 失败，不能静默用旧模型发送
 
 ### 场景 C：上下文用量刷新大量并发
 
-**Given** 多个 session 同时触发 context usage 刷新  
-**And** Gateway 已经出现 `sessions.list` timeout  
-**When** 用户发送新消息  
-**Then** 非关键 context usage 刷新应退避或合并  
+**Given** 多个 session 同时触发 context usage 刷新
+**And** Gateway 已经出现 `sessions.list` timeout
+**When** 用户发送新消息
+**Then** 非关键 context usage 刷新应退避或合并
 **And** 不能继续向 gateway 注入更多 `sessions.list` 压力
 
 ### 场景 D：Gateway RPC 健康度下降
 
-**Given** 最近一段时间出现多个 `sessions.list`、`sessions.patch` 或 `chat.history` timeout  
-**When** 用户发起新 turn  
-**Then** LobsterAI 应优先保护用户发送链路  
+**Given** 最近一段时间出现多个 `sessions.list`、`sessions.patch` 或 `chat.history` timeout
+**When** 用户发起新 turn
+**Then** 智码 GLM Code 应优先保护用户发送链路
 **And** 应记录可诊断的健康状态和降级原因
 
 ## 3. 功能需求
@@ -182,7 +182,7 @@ type SessionModelPatchState = {
 
 ### FR-5：Gateway RPC 健康状态需要可观测
 
-LobsterAI 需要维护轻量 gateway RPC health state：
+智码 GLM Code 需要维护轻量 gateway RPC health state：
 
 ```typescript
 type GatewayRpcHealth = {
@@ -222,7 +222,7 @@ gateway request timeout for sessions.patch
 
 ### FR-7：OpenClaw runtime 侧需要补足锁诊断
 
-LobsterAI 可以先做降级和限流，但根因仍在 OpenClaw session 写锁持有过久。
+智码 GLM Code 可以先做降级和限流，但根因仍在 OpenClaw session 写锁持有过久。
 
 OpenClaw runtime 侧后续应增加：
 

@@ -25,7 +25,7 @@ describe('AuthCallbackRouter', () => {
     const router = new AuthCallbackRouter({ getTarget: () => target });
 
     expect(router.markListenerReadyAndConsumePending()).toBeNull();
-    router.handleDeepLink('lobsterai://auth/callback?code=ready-code');
+    router.handleDeepLink('glmcode://auth/callback?code=ready-code');
 
     expect(sent).toEqual([
       { channel: AuthIpcChannel.Callback, payload: { code: 'ready-code' } },

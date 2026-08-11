@@ -743,6 +743,7 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
               <div className="flex-1 space-y-1.5 overflow-y-auto pb-1">
               {filteredProviderEntries.map(({ providerKey, config, isCustom, displayLabel }) => {
                 const provider = providerKey as string;
+                const isZhimaCodingPlan = providerKey === ProviderName.ZhimaCoding;
                 const hasValidAuth = hasProviderAuthConfigured(providerKey, config);
                 const effectiveEnabled = config.enabled && hasValidAuth;
                 const canToggleProvider = effectiveEnabled || hasValidAuth;
@@ -756,7 +757,9 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
                     className={`group flex items-center p-2 rounded-xl cursor-pointer transition-colors ${
                       activeProvider === provider
                         ? 'bg-primary-muted border border-primary shadow-subtle'
-                        : 'bg-surface hover:bg-surface-raised border border-transparent'
+                        : isZhimaCodingPlan
+                          ? 'border border-primary/40 bg-primary-muted/60 hover:border-primary/70 hover:bg-primary-muted'
+                          : 'bg-surface hover:bg-surface-raised border border-transparent'
                     }`}
                   >
                     <div className="flex flex-1 items-center min-w-0">
@@ -766,16 +769,23 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
                         </span>
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className={`text-sm font-medium truncate ${
-                          activeProvider === provider
-                            ? 'text-primary'
-                            : 'text-foreground'
-                        }`}>
+                        <span
+                          className={`truncate text-sm ${
+                            activeProvider === provider || isZhimaCodingPlan
+                              ? 'font-semibold text-primary'
+                              : 'font-medium text-foreground'
+                          }`}
+                        >
                           {displayLabel}
                         </span>
                         {isCustom && (
                           <span className="text-[9px] leading-tight mt-0.5 text-primary">
                             {i18nService.t('customBadge')}
+                          </span>
+                        )}
+                        {isZhimaCodingPlan && (
+                          <span className="mt-0.5 text-[9px] font-medium leading-tight text-primary/80">
+                            {i18nService.t('codingPlanOfficialProvider')}
                           </span>
                         )}
                       </div>
@@ -1496,7 +1506,7 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
               )}
 
               {/* Standard API key section for non-MiniMax providers */}
-              {providerRequiresApiKey(activeProvider) && activeProvider !== 'minimax' && !(activeProvider === 'openai' && openaiIsOAuthMode) && !(activeProvider === 'xai' && xaiIsOAuthMode) && (
+              {providerRequiresApiKey(activeProvider) && activeProvider !== ProviderName.ZhimaCoding && activeProvider !== 'minimax' && !(activeProvider === 'openai' && openaiIsOAuthMode) && !(activeProvider === 'xai' && xaiIsOAuthMode) && (
                 <div>
                   {/* Standard API Key input for non-Qwen providers */}
                   {activeProvider !== 'qwen' && (
@@ -1599,6 +1609,12 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
                       {authAttentionHint}
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeProvider === ProviderName.ZhimaCoding && (
+                <div className="rounded-xl border border-primary/25 bg-primary-muted/50 px-3 py-2.5 text-xs leading-5 text-secondary">
+                  {i18nService.t('codingPlanCredentialManagedHint')}
                 </div>
               )}
 
@@ -2039,8 +2055,8 @@ const ModelSettingsSection: React.FC<ModelSettingsSectionProps> = ({
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={isTesting || (providerRequiresApiKey(activeProvider) && !providers[activeProvider].apiKey)}
-                  title={providerRequiresApiKey(activeProvider) && !providers[activeProvider].apiKey
+                  disabled={isTesting || !hasProviderAuthConfigured(activeProvider, providers[activeProvider])}
+                  title={!hasProviderAuthConfigured(activeProvider, providers[activeProvider])
                     ? i18nService.t('testConnectionRequiresApiKey')
                     : undefined}
                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-xl border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"

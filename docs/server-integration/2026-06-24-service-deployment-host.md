@@ -6,11 +6,11 @@ Node service deployment shares now use a dedicated host instead of the regular H
 
 Regular artifact shares still use:
 
-- `http://lobsterai-server-dev.inner.youdao.com/s/{shareId}/`
+- `https://glmcoding.cn/s/{shareId}/`
 
 Service deployment shares now use:
 
-- `http://shr-b25df9ca33df4d5f-share-service.lobsterai-server-dev.inner.youdao.com/`
+- `https://shr-b25df9ca33df4d5f-share-service.glmcoding.cn/`
 
 The backend no longer supports service deployment access through `/s/{shareId}/`.
 
@@ -27,7 +27,7 @@ Expected URL shape:
 Example:
 
 ```text
-http://shr-b25df9ca33df4d5f-share-service.lobsterai-server-dev.inner.youdao.com/
+https://shr-b25df9ca33df4d5f-share-service.glmcoding.cn/
 ```
 
 The service host handles all paths for the deployed app:
@@ -56,6 +56,6 @@ No auth changes. Electron client deployment APIs still require JWT Bearer auth.
 
 ## Notes & Caveats
 
-The dedicated host lets user apps keep root-relative API paths and cookies scoped to their own share host. This avoids collisions with LobsterAI server APIs such as `/api/*`.
+The dedicated host lets user apps keep root-relative API paths and cookies scoped to their own share host. This avoids collisions with 智码 GLM Code server APIs such as `/api/*`.
 
 Retention policy update: each user keeps at most three active service deployments. When a new deployment becomes live and the limit is exceeded, the backend stops the oldest active deployment for that user.

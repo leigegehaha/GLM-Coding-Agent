@@ -1,4 +1,4 @@
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import { resolveLocalizedText } from '../../services/skill';
 import type { Model } from '../../store/slices/modelSlice';
 import type { InstalledKit, MarketplaceKit } from '../../types/kit';
@@ -208,7 +208,7 @@ export interface PromptSubmitAnalyticsOptions {
 }
 
 export const reportPromptSubmit = (options: PromptSubmitAnalyticsOptions): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.PromptSubmit,
     surface: options.surface,
     conversationState: options.conversationState,
@@ -239,7 +239,7 @@ export interface PromptControlAnalyticsOptions {
 }
 
 export const reportPromptControlAction = (options: PromptControlAnalyticsOptions): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.PromptControlAction,
     controlType: options.controlType,
     surface: options.surface,
@@ -264,7 +264,7 @@ export interface PromptTemplateAnalyticsOptions {
 }
 
 export const reportPromptTemplateAction = (options: PromptTemplateAnalyticsOptions): void => {
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.PromptTemplateAction,
     surface: PromptAnalyticsSurface.Home,
     conversationState: PromptAnalyticsConversationState.NewTask,

@@ -27,8 +27,8 @@ describe('pricing catalog model mapping', () => {
       {
         modelId: 'qwen3.7-plus',
         modelName: 'Qwen3.7-Plus',
-        provider: 'LobsterAI',
-        providerLabel: 'LobsterAI Plan',
+        provider: '智码 GLM Code',
+        providerLabel: '智码 GLM Code Plan',
         description: 'Strong multimodal model',
         supportsImage: true,
         supportsThinking: true,
@@ -40,7 +40,7 @@ describe('pricing catalog model mapping', () => {
     expect(model).toMatchObject({
       id: 'qwen3.7-plus',
       name: 'Qwen3.7-Plus',
-      provider: 'LobsterAI Plan',
+      provider: '智码 GLM Code Plan',
       providerKey: ProviderName.LobsteraiServer,
       isServerModel: true,
       accessible: false,
@@ -126,7 +126,7 @@ describe('login diagnostics', () => {
         api: {
           fetch: vi.fn().mockResolvedValue({
             ok: true,
-            data: { data: { value: 'https://lobsterai.youdao.com/portal#/login' } },
+            data: { data: { value: 'https://glmcoding.cn/portal#/login' } },
           }),
         },
         auth: { login },
@@ -136,7 +136,7 @@ describe('login diagnostics', () => {
 
     await authService.login();
 
-    expect(login).toHaveBeenCalledWith('https://lobsterai.youdao.com/portal#/login');
+    expect(login).toHaveBeenCalledWith('https://glmcoding.cn/portal#/login');
     expect(fromRenderer).toHaveBeenCalledWith(
       'info',
       'AuthService',
@@ -147,7 +147,9 @@ describe('login diagnostics', () => {
       'AuthService',
       expect.stringMatching(/^login attempt \d+ handed off to the system browser$/),
     );
-    expect(fromRenderer.mock.calls.flat().join(' ')).not.toContain('lobsterai.youdao.com');
+    expect(fromRenderer.mock.calls.flat().join(' ')).not.toContain(
+      'https://glmcoding.cn/portal#/login',
+    );
   });
 
   test('records a warning while preserving the existing non-throwing IPC failure behavior', async () => {
@@ -160,7 +162,7 @@ describe('login diagnostics', () => {
         api: {
           fetch: vi.fn().mockResolvedValue({
             ok: true,
-            data: { data: { value: 'https://lobsterai.youdao.com/portal#/login' } },
+            data: { data: { value: 'https://glmcoding.cn/portal#/login' } },
           }),
         },
         auth: { login: vi.fn().mockResolvedValue({ success: false, error: 'open failed' }) },
@@ -181,7 +183,7 @@ describe('login diagnostics', () => {
 describe('auth state restoration', () => {
   const user = {
     yid: 'user@example.com',
-    nickname: 'Lobster User',
+    nickname: 'GLM Code User',
     avatarUrl: null,
   };
   const quota = {

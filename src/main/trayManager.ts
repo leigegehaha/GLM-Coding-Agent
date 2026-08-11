@@ -9,6 +9,7 @@ let contextMenu: Menu | null = null;
 let clickHandler: (() => void) | null = null;
 let rightClickHandler: (() => void) | null = null;
 let trayReminder: TrayReminderState = { count: 0 };
+let openWebConsoleHandler: (() => void) | null = null;
 
 export interface TrayReminderState {
   count: number;
@@ -38,6 +39,7 @@ function getLabels(): {
   newTask: string;
   viewCompletedTask: string;
   settings: string;
+  openWebConsole: string;
   quit: string;
 } {
   return {
@@ -45,6 +47,7 @@ function getLabels(): {
     newTask: t('trayNewTask'),
     viewCompletedTask: t('trayViewCompletedTask'),
     settings: t('traySettings'),
+    openWebConsole: t('trayOpenWebConsole'),
     quit: t('trayQuit'),
   };
 }
@@ -83,6 +86,12 @@ function buildContextMenu(getWindow: () => BrowserWindow | null): Menu {
         }
       },
     },
+    ...(openWebConsoleHandler
+      ? [{
+          label: labels.openWebConsole,
+          click: () => openWebConsoleHandler?.(),
+        }]
+      : []),
     { type: 'separator' },
     {
       label: labels.settings,
@@ -105,8 +114,13 @@ function buildContextMenu(getWindow: () => BrowserWindow | null): Menu {
   ]);
 }
 
-export function createTray(getWindow: () => BrowserWindow | null): Tray {
+export function createTray(
+  getWindow: () => BrowserWindow | null,
+  options: { openWebConsole?: () => void } = {},
+): Tray {
+  openWebConsoleHandler = options.openWebConsole ?? null;
   if (tray) {
+    contextMenu = buildContextMenu(getWindow);
     return tray;
   }
 
@@ -174,6 +188,7 @@ export function destroyTray(): void {
     clickHandler = null;
     rightClickHandler = null;
     trayReminder = { count: 0 };
+    openWebConsoleHandler = null;
   }
 }
 

@@ -4,7 +4,7 @@ Date: 2026-04-01
 
 ## Overview
 
-Add a configurable send-message shortcut to LobsterAI's cowork chat input. Users can choose from four fixed candidates and switch via a dropdown next to the send button or via the Settings > Shortcuts panel. Both entry points stay in sync through the existing `app_config.shortcuts` store.
+Add a configurable send-message shortcut to 智码 GLM Code's cowork chat input. Users can choose from four fixed candidates and switch via a dropdown next to the send button or via the Settings > Shortcuts panel. Both entry points stay in sync through the existing `app_config.shortcuts` store.
 
 ## Candidate Shortcut Values
 

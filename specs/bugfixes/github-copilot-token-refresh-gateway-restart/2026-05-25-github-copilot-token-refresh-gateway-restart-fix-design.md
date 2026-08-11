@@ -4,9 +4,9 @@
 
 ### 1.1 问题
 
-用户未主动修改 OpenClaw、IM 或模型配置时，GitHub Copilot 的后台 token 刷新会引起 OpenClaw Gateway 硬重启。表现为 Gateway 收到 `SIGTERM`，随后 LobsterAI 主进程重新 fork gateway。
+用户未主动修改 OpenClaw、IM 或模型配置时，GitHub Copilot 的后台 token 刷新会引起 OpenClaw Gateway 硬重启。表现为 Gateway 收到 `SIGTERM`，随后 智码 GLM Code 主进程重新 fork gateway。
 
-从日志看，本次重启不是 Gateway 崩溃，而是 LobsterAI 主进程主动执行：
+从日志看，本次重启不是 Gateway 崩溃，而是 智码 GLM Code 主进程主动执行：
 
 ```text
 [CopilotTokenManager] refreshing Copilot API token...
@@ -48,26 +48,26 @@ GitHub Copilot 的 token 生命周期被混入了持久配置生命周期：
 
 ### 场景 1：GitHub Copilot token 自动刷新
 
-**Given** 用户已登录 GitHub Copilot，OpenClaw Gateway 正在运行  
-**When** `CopilotTokenManager` 按计划刷新短期 Copilot API token  
+**Given** 用户已登录 GitHub Copilot，OpenClaw Gateway 正在运行
+**When** `CopilotTokenManager` 按计划刷新短期 Copilot API token
 **Then** renderer 与本地 Copilot proxy 可以继续使用新 token，但不写 `app_config`，不触发 `app-config-change`，不重启 Gateway。
 
 ### 场景 2：用户首次登录 GitHub Copilot
 
-**Given** 用户在设置页完成 GitHub Copilot 设备码登录  
-**When** 登录流程拿到 GitHub OAuth token 与首次 Copilot API token  
+**Given** 用户在设置页完成 GitHub Copilot 设备码登录
+**When** 登录流程拿到 GitHub OAuth token 与首次 Copilot API token
 **Then** 长期 GitHub OAuth token 按现有方式存储，provider 可启用，当前会话可立即使用 Copilot；是否需要保存 provider enabled 状态仍由设置页保存流程负责。
 
 ### 场景 3：用户退出 GitHub Copilot
 
-**Given** 用户已登录 GitHub Copilot  
-**When** 用户在设置页点击退出登录  
+**Given** 用户已登录 GitHub Copilot
+**When** 用户在设置页点击退出登录
 **Then** 清除 GitHub OAuth token 与运行时 Copilot token，禁用或清空 provider 本地状态；这是用户主动配置变更，可以走现有设置保存链路。
 
 ### 场景 4：Copilot 请求遇到 401/403 后刷新 token
 
-**Given** Copilot 请求返回认证错误  
-**When** renderer 或 proxy 调用 `github-copilot:refresh-token` 进行按需刷新  
+**Given** Copilot 请求返回认证错误
+**When** renderer 或 proxy 调用 `github-copilot:refresh-token` 进行按需刷新
 **Then** 请求重试使用刷新后的 token；按需刷新不写 `app_config`，不触发 Gateway restart。
 
 ## 3. 功能需求

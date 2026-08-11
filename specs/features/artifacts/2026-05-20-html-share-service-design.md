@@ -1,6 +1,6 @@
 # HTML 分享客户端设计文档（2026-05-20，按当前实现更新）
 
-本文档只描述 LobsterAI Electron 客户端的 HTML 分享入口、打包、上传调用和 UI 行为。服务端 API contract、错误码定义、鉴权规则、数据库结构和管理后台能力由 `lobsterai-server` 项目维护，客户端仓库不再保留服务端接口文档，避免两边文档漂移。
+本文档只描述 智码 GLM Code Electron 客户端的 HTML 分享入口、打包、上传调用和 UI 行为。服务端 API contract、错误码定义、鉴权规则、数据库结构和管理后台能力由 `lobsterai-server` 项目维护，客户端仓库不再保留服务端接口文档，避免两边文档漂移。
 
 当前 Electron 客户端已经实现 **HTML Artifact 文件分享**：用户在右侧 HTML 预览中点击分享，客户端打包该 HTML 文件所在目录的静态资源，上传到 `lobsterai-server`，并获得公网可访问地址。该能力当前仅在测试模式暴露，线上模式隐藏入口并由主进程 IPC 做二次拦截。
 
@@ -316,8 +316,8 @@ export const isTestModeEnabled = (): boolean => {
 
 export const getServerApiBaseUrl = (): string => {
   return isTestModeEnabled()
-    ? 'https://lobsterai-server.inner.youdao.com'
-    : 'https://lobsterai-server.youdao.com';
+    ? 'https://glmcoding.cn/api'
+    : 'https://glmcoding.cn/api';
 };
 
 export const getHtmlSharePublicBaseUrl = (): string => {

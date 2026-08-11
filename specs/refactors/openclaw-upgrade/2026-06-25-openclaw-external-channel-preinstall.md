@@ -11,9 +11,9 @@ OpenClaw 升级到 `v2026.6.1` 后，QQ Bot 和 Discord 的源码仍在 OpenClaw
 !dist/extensions/discord/**
 ```
 
-这代表两者从核心 bundled extension 迁移为 official external channel plugin。LobsterAI 的 embedded runtime 通过 `npm pack` 产物生成，因此打出的安装包不再包含 `dist/extensions/qqbot` 和 `dist/extensions/discord`。
+这代表两者从核心 bundled extension 迁移为 official external channel plugin。智码 GLM Code 的 embedded runtime 通过 `npm pack` 产物生成，因此打出的安装包不再包含 `dist/extensions/qqbot` 和 `dist/extensions/discord`。
 
-原有 LobsterAI 配置同步仍会写入 `plugins.entries.qqbot` 和 `channels.qqbot`。当 runtime 中没有对应插件时，OpenClaw 会报：
+原有 智码 GLM Code 配置同步仍会写入 `plugins.entries.qqbot` 和 `channels.qqbot`。当 runtime 中没有对应插件时，OpenClaw 会报：
 
 ```text
 plugins.entries.qqbot: plugin not installed: qqbot
@@ -26,7 +26,7 @@ plugins.entries.qqbot: plugin not installed: qqbot
 ### 1.2 目标
 
 - 将 OpenClaw 6.1 的官方外置 QQ/Discord channel 插件纳入现有 `openclaw.plugins` 构建期预装流程。
-- 在构建期把 QQ/Discord 作为 LobsterAI 随包预置的 OpenClaw official external channel plugins 安装到 `third-party-extensions`，而不是恢复到 OpenClaw 核心 `dist/extensions`。
+- 在构建期把 QQ/Discord 作为 智码 GLM Code 随包预置的 OpenClaw official external channel plugins 安装到 `third-party-extensions`，而不是恢复到 OpenClaw 核心 `dist/extensions`。
 - 运行期用户启用 QQ/Discord 后只需要同步配置和重启 gateway，不触发下载安装流程。
 - 让 OpenClaw 配置显式信任这些预置外置插件，避免非 bundled 插件自动加载警告。
 - 修复 NIM 配置实例和 secret env var 索引不一致的问题。
@@ -49,9 +49,9 @@ openclaw plugins install @openclaw/qqbot
 openclaw plugins install @openclaw/discord
 ```
 
-LobsterAI 不应把该动作推迟到用户启用 IM 时执行，否则首次启用会依赖网络并增加等待时间。由于现有 `openclaw.plugins` 已经表示 LobsterAI 构建期预装到 `third-party-extensions` 的插件，因此 QQ/Discord 可以直接纳入该清单，复用既有安装、缓存、打包校验和隐藏用户插件列表的逻辑。
+智码 GLM Code 不应把该动作推迟到用户启用 IM 时执行，否则首次启用会依赖网络并增加等待时间。由于现有 `openclaw.plugins` 已经表示 智码 GLM Code 构建期预装到 `third-party-extensions` 的插件，因此 QQ/Discord 可以直接纳入该清单，复用既有安装、缓存、打包校验和隐藏用户插件列表的逻辑。
 
-### 2.2 LobsterAI 构建链路
+### 2.2 智码 GLM Code 构建链路
 
 当前 runtime 构建链路为：
 
@@ -61,7 +61,7 @@ OpenClaw source -> pnpm build -> npm pack -> extract package -> npm install -> g
 
 由于 `npm pack` 遵循 OpenClaw 的 `files` 排除规则，QQ/Discord 不会自然进入 `vendor/openclaw-runtime/current/dist/extensions`。
 
-LobsterAI 已有 `ensure-openclaw-plugins.cjs`，会读取 `openclaw.plugins`，用 OpenClaw CLI 在构建期安装插件，并复制到：
+智码 GLM Code 已有 `ensure-openclaw-plugins.cjs`，会读取 `openclaw.plugins`，用 OpenClaw CLI 在构建期安装插件，并复制到：
 
 ```text
 vendor/openclaw-runtime/current/third-party-extensions/{pluginId}
@@ -100,7 +100,7 @@ vendor/openclaw-runtime/current/third-party-extensions/{pluginId}
 ]
 ```
 
-两者仍通过 LobsterAI 的构建期插件安装流程进入 `third-party-extensions`，不会被放回 OpenClaw core package 的 `dist/extensions`。
+两者仍通过 智码 GLM Code 的构建期插件安装流程进入 `third-party-extensions`，不会被放回 OpenClaw core package 的 `dist/extensions`。
 
 ### 3.2 构建期安装
 

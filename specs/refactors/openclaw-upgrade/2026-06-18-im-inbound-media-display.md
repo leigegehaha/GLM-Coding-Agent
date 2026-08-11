@@ -2,7 +2,7 @@
 
 ## Background
 
-After upgrading to OpenClaw `v2026.6.1`, IM channel sessions can receive and process inbound images correctly, but LobsterAI may render only the generated text description and omit the original image in the user message bubble.
+After upgrading to OpenClaw `v2026.6.1`, IM channel sessions can receive and process inbound images correctly, but 智码 GLM Code may render only the generated text description and omit the original image in the user message bubble.
 
 The issue was reproduced with WeChat/WeCom-style OpenClaw channel history. OpenClaw's own web UI shows the image, and the local transcript contains media fields such as:
 
@@ -10,14 +10,14 @@ The issue was reproduced with WeChat/WeCom-style OpenClaw channel history. OpenC
 {
   "role": "user",
   "content": "[Image]\nDescription:\n...",
-  "MediaPath": "C:\\Users\\yangwn\\AppData\\Roaming\\LobsterAI\\openclaw\\state\\media\\inbound\\4938ca3d-e7ee-41e2-bbce-795462523831.jpg",
-  "MediaPaths": ["C:\\Users\\yangwn\\AppData\\Roaming\\LobsterAI\\openclaw\\state\\media\\inbound\\4938ca3d-e7ee-41e2-bbce-795462523831.jpg"],
+  "MediaPath": "C:\\Users\\yangwn\\AppData\\Roaming\\智码 GLM Code\\openclaw\\state\\media\\inbound\\4938ca3d-e7ee-41e2-bbce-795462523831.jpg",
+  "MediaPaths": ["C:\\Users\\yangwn\\AppData\\Roaming\\智码 GLM Code\\openclaw\\state\\media\\inbound\\4938ca3d-e7ee-41e2-bbce-795462523831.jpg"],
   "MediaType": "image/jpeg",
   "MediaTypes": ["image/jpeg"]
 }
 ```
 
-LobsterAI's history extraction previously copied only `role`, text, timestamp, usage, and model metadata. The `MediaPath(s)` fields were dropped before the renderer saw the message.
+智码 GLM Code's history extraction previously copied only `role`, text, timestamp, usage, and model metadata. The `MediaPath(s)` fields were dropped before the renderer saw the message.
 
 ## Existing Legacy Path
 

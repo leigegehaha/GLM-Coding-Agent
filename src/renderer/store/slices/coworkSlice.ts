@@ -25,6 +25,7 @@ import {
   type CoworkSteerStatus as CoworkSteerStatusType,
 } from '../../../shared/cowork/steer';
 import { stripNullChars } from '../../../shared/cowork/text';
+import type { ModelThinkingLevel } from '../../../shared/providers';
 import {
   CoworkCollaborationMode,
   type CoworkCollaborationMode as CoworkCollaborationModeType,
@@ -83,6 +84,8 @@ interface CoworkState {
   draftSkillIds: Record<string, string[]>;
   /** Keyed by draftKey, stores the active collaboration mode for the draft/session. */
   draftCollaborationModes: Record<string, CoworkCollaborationModeType>;
+  /** Keyed by draftKey, stores the selected model thinking level. */
+  draftThinkingLevels: Record<string, ModelThinkingLevel>;
   /** Keyed by sessionId, stores the latest proposed plan confirmation UI state. */
   planConfirmations: Record<string, PlanConfirmationStatus>;
   /** Keyed by sessionId, stores ephemeral BTW side-chat windows and messages. */
@@ -125,6 +128,7 @@ const initialState: CoworkState = {
   draftKitIds: {},
   draftSkillIds: {},
   draftCollaborationModes: {},
+  draftThinkingLevels: {},
   planConfirmations: {},
   btwThreadsBySessionId: {},
   steerDrafts: {},
@@ -146,6 +150,7 @@ const initialState: CoworkState = {
     systemPrompt: '',
     executionMode: 'local',
     agentEngine: 'openclaw',
+    codingOptimizationEnabled: true,
     memoryEnabled: true,
     memoryImplicitUpdateEnabled: true,
     memoryLlmJudgeEnabled: false,
@@ -204,7 +209,7 @@ const buildRailIndexItemFromMessage = (
     timestamp: message.timestamp,
     preview: getCoworkRailPreview(
       message.content,
-      message.type === 'user' ? `Turn ${fallbackLabelIndex + 1}` : 'LobsterAI',
+      message.type === 'user' ? `Turn ${fallbackLabelIndex + 1}` : '智码 GLM Code',
       COWORK_RAIL_TOOLTIP_PREVIEW_MAX_LENGTH,
     ),
     contentLen: message.content.length,
@@ -1081,6 +1086,15 @@ const coworkSlice = createSlice({
       state.currentSession.modelOverride = modelOverride;
     },
 
+    updateCurrentSessionCodingOptimization(
+      state,
+      action: PayloadAction<{ sessionId: string; codingOptimized: boolean }>,
+    ) {
+      const { sessionId, codingOptimized } = action.payload;
+      if (state.currentSession?.id !== sessionId) return;
+      state.currentSession.codingOptimized = codingOptimized;
+    },
+
     enqueuePendingPermission(state, action: PayloadAction<CoworkPermissionRequest>) {
       const alreadyQueued = state.pendingPermissions.some(
         (permission) => permission.requestId === action.payload.requestId
@@ -1278,6 +1292,13 @@ const coworkSlice = createSlice({
       }
     },
 
+    setDraftThinkingLevel(
+      state,
+      action: PayloadAction<{ draftKey: string; level: ModelThinkingLevel }>,
+    ) {
+      state.draftThinkingLevels[action.payload.draftKey] = action.payload.level;
+    },
+
     setMediaModels(state, action: PayloadAction<{ image: MediaModel[]; video: MediaModel[] }>) {
       state.mediaModels = action.payload;
     },
@@ -1348,6 +1369,7 @@ export const {
   updateSessionPinned,
   updateSessionTitle,
   updateCurrentSessionModelOverride,
+  updateCurrentSessionCodingOptimization,
   enqueuePendingPermission,
   dequeuePendingPermission,
   clearPendingPermissions,
@@ -1360,6 +1382,7 @@ export const {
   setDraftKitIds,
   setDraftSkillIds,
   setDraftCollaborationMode,
+  setDraftThinkingLevel,
   setMediaModels,
   setMediaSelection,
 } = coworkSlice.actions;

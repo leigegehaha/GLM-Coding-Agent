@@ -1,3 +1,5 @@
+import { isKnownThinkingModelId } from './modelThinkingProfiles';
+
 /**
  * Provider Constants & Registry — Single Source of Truth
  *
@@ -21,7 +23,7 @@
 // ═══════════════════════════════════════════════════════
 
 // ─── Provider Name ──────────────────────────────────────────────────────
-// providerName identifies the LobsterAI internal provider (config key).
+// providerName identifies the 智码 GLM Code internal provider (config key).
 export const ProviderName = {
   OpenAI: 'openai',
   Gemini: 'gemini',
@@ -29,6 +31,7 @@ export const ProviderName = {
   Anthropic: 'anthropic',
   DeepSeek: 'deepseek',
   Moonshot: 'moonshot',
+  ZhimaCoding: 'zhima-coding',
   Zhipu: 'zhipu',
   Minimax: 'minimax',
   Youdaozhiyun: 'youdaozhiyun',
@@ -51,6 +54,7 @@ export type ProviderName = typeof ProviderName[keyof typeof ProviderName];
 export const OpenClawProviderId = {
   LobsteraiServer: 'lobsterai-server',
   Moonshot: 'moonshot',
+  ZhimaCoding: 'zhima-coding',
   Google: 'google',
   Xai: 'xai',
   Anthropic: 'anthropic',
@@ -199,6 +203,19 @@ const DEEPSEEK_V4_CONTEXT_WINDOW = 1_000_000;
 
 const PROVIDER_DEFINITIONS = [
   // ── China ──
+  {
+    id: ProviderName.ZhimaCoding,
+    label: '智码 Coding Plan',
+    website: 'https://glmcoding.cn',
+    apiKeyUrl: 'https://glmcoding.cn',
+    openClawProviderId: OpenClawProviderId.ZhimaCoding,
+    defaultBaseUrl: 'https://glmcoding.cn/v1',
+    defaultApiFormat: ApiFormat.OpenAI,
+    codingPlanSupported: false,
+    region: 'china',
+    enPriority: 0,
+    defaultModels: [],
+  },
   {
     id: ProviderName.DeepSeek,
     label: 'DeepSeek',
@@ -812,6 +829,9 @@ class ProviderRegistryImpl {
       return providerModelSupportsThinking;
     }
     if (configuredSupportsThinking === true) {
+      return true;
+    }
+    if (isKnownThinkingModelId(modelId)) {
       return true;
     }
     return configuredSupportsThinking ?? false;

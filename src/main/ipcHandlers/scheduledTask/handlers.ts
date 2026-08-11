@@ -269,7 +269,7 @@ function applyLocalAnnounceDeliveryNormalization(
 
   // IM conversations can be bound to a non-main agent. Run the job under that
   // agent so the gateway mirrors the delivered result into the conversation
-  // session the LobsterAI record maps to, instead of a main-agent shadow
+  // session the 智码 GLM Code record maps to, instead of a main-agent shadow
   // session that stays invisible in the UI.
   const existingAgentId = typeof normalizedInput.agentId === 'string'
     ? normalizedInput.agentId.trim()

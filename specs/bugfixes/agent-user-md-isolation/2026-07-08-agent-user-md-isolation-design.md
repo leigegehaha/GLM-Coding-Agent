@@ -15,18 +15,18 @@ workspace 模型不一致。
 
 - 新建 Agent 弹窗会读取 main Agent 的 `USER.md` 作为初始值；
 - 如果用户在新建弹窗里编辑“关于你”，保存时会先写 main Agent 的 `USER.md`；
-- Agent 创建后，LobsterAI 的 config sync 会把 main `USER.md` 再复制到新 Agent workspace；
-- 由于 OpenClaw 使用 `writeFileIfMissing` 创建 bootstrap 文件，LobsterAI 先写入后，
+- Agent 创建后，智码 GLM Code 的 config sync 会把 main `USER.md` 再复制到新 Agent workspace；
+- 由于 OpenClaw 使用 `writeFileIfMissing` 创建 bootstrap 文件，智码 GLM Code 先写入后，
   OpenClaw 后续不会再写自己的默认 `USER.md` 模板。
 
 ### 1.2 根因
 
 根因不是 SQLite 中 Agent 数据串写，也不是 OpenClaw runtime 只支持共享 `USER.md`。根因是
-LobsterAI 集成层把 `USER.md` 的所有权和作用域接错了。
+智码 GLM Code 集成层把 `USER.md` 的所有权和作用域接错了。
 
 当前代码路径中：
 
-| 文件 | 当前 LobsterAI 行为 | 正确语义 |
+| 文件 | 当前 智码 GLM Code 行为 | 正确语义 |
 |------|---------------------|----------|
 | `SOUL.md` | 非主 Agent 从 `agent.systemPrompt` 写入 `workspace-{agentId}/SOUL.md` | Agent 独立 |
 | `IDENTITY.md` | 非主 Agent 从 `agent.identity` 写入 `workspace-{agentId}/IDENTITY.md` | Agent 独立 |
@@ -71,7 +71,7 @@ workspace 的 optional bootstrap 文件；文件不存在时由 OpenClaw `ensure
 2. main Agent 修改 `USER.md` 不再传播到非主 Agent；
 3. 非主 Agent 修改 `USER.md` 不再修改 main Agent 或其它 Agent；
 4. 新建 Agent 不再使用 main `USER.md` 作为默认值；
-5. 新建 Agent 未显式填写“关于你”时，LobsterAI 不主动创建 `USER.md`，由 OpenClaw 在
+5. 新建 Agent 未显式填写“关于你”时，智码 GLM Code 不主动创建 `USER.md`，由 OpenClaw 在
    workspace 初始化/首次运行时按自身模板创建；
 6. 不引入新的数据库字段来保存 `USER.md`，文件本身仍是权威来源。
 
@@ -113,9 +113,9 @@ workspace 的 optional bootstrap 文件；文件不存在时由 OpenClaw `ensure
 
 **When** 用户不编辑“关于你”并创建 Agent
 
-**Then** LobsterAI 不写 main `USER.md`
+**Then** 智码 GLM Code 不写 main `USER.md`
 
-**And** LobsterAI 不写新 Agent 的 `USER.md`
+**And** 智码 GLM Code 不写新 Agent 的 `USER.md`
 
 **And** 后续 OpenClaw 初始化该 Agent workspace 时，如果 `USER.md` 缺失，由 OpenClaw 自己
 使用默认模板创建。
@@ -126,7 +126,7 @@ workspace 的 optional bootstrap 文件；文件不存在时由 OpenClaw `ensure
 
 **When** Agent 创建成功
 
-**Then** LobsterAI 将该内容写入新 Agent 的 `workspace-{agentId}/USER.md`
+**Then** 智码 GLM Code 将该内容写入新 Agent 的 `workspace-{agentId}/USER.md`
 
 **And** 不修改 main Agent 的 `USER.md`
 
@@ -243,7 +243,7 @@ src/shared/cowork/constants.ts
 
 `syncPerAgentWorkspaces()` 不应读取 main `USER.md`，也不应写入非主 Agent 的 `USER.md`。
 
-它仍然负责 LobsterAI 自己持有的数据：
+它仍然负责 智码 GLM Code 自己持有的数据：
 
 - `SOUL.md`：来自 `agent.systemPrompt`；
 - `IDENTITY.md`：来自 `agent.identity`；
@@ -437,7 +437,7 @@ this.syncFileIfChanged(userPath, userContent);
 | main 与非主 Agent 的 `USER.md` 内容刚好相同 | 不自动删除；除非用户显式执行可回滚 repair |
 | 写入 `USER.md` 成功但 config sync 失败 | 文件保存仍成立，记录 sync warning；不回滚用户文件 |
 | 新建 Agent 成功但写 `USER.md` 失败 | 保留 Agent，提示“关于你”保存失败，用户可重试 |
-| OpenClaw 默认模板更新 | LobsterAI 不内置模板，因此自动跟随 OpenClaw runtime |
+| OpenClaw 默认模板更新 | 智码 GLM Code 不内置模板，因此自动跟随 OpenClaw runtime |
 
 ## 6. 验收标准
 
@@ -446,7 +446,7 @@ this.syncFileIfChanged(userPath, userContent);
 1. 修改 main Agent 的“关于你”后，非主 Agent 的 `USER.md` 不变化。
 2. 修改 Agent A 的“关于你”后，Agent B 和 main 的 `USER.md` 不变化。
 3. 新建 Agent 未填写“关于你”时，main `USER.md` 不变化，新 Agent workspace 不被
-   LobsterAI 写入 main 内容。
+   智码 GLM Code 写入 main 内容。
 4. 新建 Agent 填写“关于你”时，该内容只出现在新 Agent workspace。
 5. 删除非主 Agent 的 `USER.md` 后打开设置页，不会回退显示 main 内容。
 6. OpenClaw 首次运行新 Agent 时，缺失的 `USER.md` 可由 OpenClaw 自己创建默认模板。

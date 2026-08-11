@@ -2,7 +2,7 @@ import { ArrowPathIcon, ArrowUpCircleIcon, Cog6ToothIcon,PlusIcon, TrashIcon } f
 import { useCallback, useEffect, useImperativeHandle, useRef,useState } from 'react';
 
 import { i18nService } from '../../services/i18n';
-import { LogReporterAction, reportYdAnalyzer } from '../../services/logReporter';
+import { LogReporterAction, reportAnalytics } from '../../services/logReporter';
 import PluginConfigPage from './PluginConfigPage';
 
 type PluginSource = 'npm' | 'clawhub' | 'git' | 'local' | 'openclaw';
@@ -62,7 +62,7 @@ const reportPluginAction = (
   } = {},
 ): void => {
   console.debug('[PluginsSettings] reporting plugin action analytics');
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.PluginAction,
     source: PLUGINS_ANALYTICS_SOURCE,
     actionType,

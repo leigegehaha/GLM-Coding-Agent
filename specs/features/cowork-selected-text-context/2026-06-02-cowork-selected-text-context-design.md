@@ -1,10 +1,10 @@
-# LobsterAI Cowork 选中文本添加到对话设计文档
+# 智码 GLM Code Cowork 选中文本添加到对话设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI Cowork 当前支持用户直接输入问题、添加文件和图片附件、选择 Skill / Kit，并通过 OpenClaw Gateway 发起对话。在阅读 assistant 回复时，用户经常需要针对其中一小段内容继续追问，例如：
+智码 GLM Code Cowork 当前支持用户直接输入问题、添加文件和图片附件、选择 Skill / Kit，并通过 OpenClaw Gateway 发起对话。在阅读 assistant 回复时，用户经常需要针对其中一小段内容继续追问，例如：
 
 - 询问某个术语是什么意思。
 - 要求展开某条实现建议。
@@ -20,11 +20,11 @@ LobsterAI Cowork 当前支持用户直接输入问题、添加文件和图片附
 
 Codex 提供了“选中文本后添加到对话”的轻量交互：用户在 assistant 内容中选中文本，点击浮层操作后，输入区显示“已选文本片段”提示；发送时，片段作为当前用户请求的上下文一起交给模型。
 
-LobsterAI 可以参考这一交互，但必须适配现有 OpenClaw 接入方式。
+智码 GLM Code 可以参考这一交互，但必须适配现有 OpenClaw 接入方式。
 
 ### 1.2 OpenClaw 能力确认
 
-LobsterAI 当前固定使用 OpenClaw `v2026.4.14`，并通过 Gateway RPC `chat.send` 发起 Cowork turn。
+智码 GLM Code 当前固定使用 OpenClaw `v2026.4.14`，并通过 Gateway RPC `chat.send` 发起 Cowork turn。
 
 OpenClaw `ChatSendParamsSchema` 为严格 schema，关键字段如下：
 
@@ -34,7 +34,7 @@ OpenClaw `ChatSendParamsSchema` 为严格 schema，关键字段如下：
   message: string;
   attachments?: unknown[];
   idempotencyKey: string;
-  // LobsterAI patch 额外增加 cwd?: string
+  // 智码 GLM Code patch 额外增加 cwd?: string
 }
 ```
 
@@ -44,7 +44,7 @@ OpenClaw `ChatSendParamsSchema` 为严格 schema，关键字段如下：
 { additionalProperties: false }
 ```
 
-因此，LobsterAI 不能直接向 `chat.send` 增加以下自定义字段：
+因此，智码 GLM Code 不能直接向 `chat.send` 增加以下自定义字段：
 
 ```ts
 {
@@ -59,7 +59,7 @@ OpenClaw 当前也没有“文本引用附件”协议：
 
 - `attachments` 用于图片等媒体输入，不适合承载文本片段。
 - `chat.inject` 用于向 transcript 追加 assistant note，不会触发模型运行。
-- `chat.history` 用于读取展示归一化后的历史，不提供 LobsterAI 自定义 UI 引用结构。
+- `chat.history` 用于读取展示归一化后的历史，不提供 智码 GLM Code 自定义 UI 引用结构。
 
 OpenClaw 会把 `chat.send.message` 保存为 user transcript：
 
@@ -73,7 +73,7 @@ OpenClaw 会把 `chat.send.message` 保存为 user transcript：
 
 因此，本功能采用双层存储：
 
-1. LobsterAI SQLite 保存结构化文本片段，服务于 UI 恢复、展开和来源定位。
+1. 智码 GLM Code SQLite 保存结构化文本片段，服务于 UI 恢复、展开和来源定位。
 2. 发给 OpenClaw 时，把文本片段序列化进 `chat.send.message`，确保模型与 OpenClaw 后续历史能够读取。
 
 ### 1.3 目标
@@ -86,10 +86,10 @@ OpenClaw 会把 `chat.send.message` 保存为 user transcript：
 4. 输入区以紧凑 chip 显示已选文本片段数量。
 5. 支持在同一次追问中添加多个文本片段。
 6. 支持查看和移除已选片段。
-7. 发送消息时，把结构化片段保存到 LobsterAI SQLite 的 user message metadata。
+7. 发送消息时，把结构化片段保存到 智码 GLM Code SQLite 的 user message metadata。
 8. 发送给 OpenClaw 时，把片段序列化为 `chat.send.message` 中的上下文区块。
 9. 历史 user message 中展示“已选文本片段”标记，并支持展开查看快照。
-10. 保持 user message 主体简洁，不在 LobsterAI 对话气泡中重复渲染发送给 OpenClaw 的包装文本。
+10. 保持 user message 主体简洁，不在 智码 GLM Code 对话气泡中重复渲染发送给 OpenClaw 的包装文本。
 11. 不修改 OpenClaw Gateway schema，不新增 OpenClaw patch。
 
 ### 1.4 非目标
@@ -99,7 +99,7 @@ OpenClaw 会把 `chat.send.message` 保存为 user transcript：
 - 不修改 OpenClaw `chat.send` schema。
 - 不把文本片段塞入 OpenClaw `attachments`。
 - 不使用 `chat.inject` 模拟引用消息。
-- 不在 OpenClaw transcript 中保存 LobsterAI 的 `sourceMessageId` 或 DOM offset。
+- 不在 OpenClaw transcript 中保存 智码 GLM Code 的 `sourceMessageId` 或 DOM offset。
 - 不支持从 user message、tool message、system message 中选择文本。
 - 不支持从 artifact 预览面板、文件预览、图片 OCR 或外部网页中添加片段。
 - 不支持 IM 渠道会话中的选中文本引用。
@@ -113,7 +113,7 @@ OpenClaw 会把 `chat.send.message` 保存为 user transcript：
 
 选中文本片段不是额外的一条 user message，也不是额外的一条 system message。
 
-在 LobsterAI UI 中：
+在 智码 GLM Code UI 中：
 
 ```text
 用户消息 = 当前请求正文 + selectedTextSnippets metadata
@@ -127,23 +127,23 @@ OpenClaw user transcript = 序列化后的片段上下文 + 当前请求正文
 
 这样可以同时满足：
 
-- LobsterAI UI 保持简洁。
+- 智码 GLM Code UI 保持简洁。
 - 模型能够看到片段原文。
 - OpenClaw 后续 turn 能从 transcript 中继续理解引用上下文。
-- LobsterAI 重新打开历史会话后能恢复片段 chip 和来源关系。
+- 智码 GLM Code 重新打开历史会话后能恢复片段 chip 和来源关系。
 
-### 2.2 LobsterAI 与 OpenClaw 的历史差异
+### 2.2 智码 GLM Code 与 OpenClaw 的历史差异
 
 同一个用户 turn 在两侧的持久化形态不同：
 
 | 存储位置 | `content` | metadata | 用途 |
 |---------|-----------|----------|------|
-| LobsterAI SQLite | 用户输入的原始请求，例如 `这个是什么意思？` | 结构化 `selectedTextSnippets` | 本地 UI、历史恢复、来源定位 |
+| 智码 GLM Code SQLite | 用户输入的原始请求，例如 `这个是什么意思？` | 结构化 `selectedTextSnippets` | 本地 UI、历史恢复、来源定位 |
 | OpenClaw transcript | 片段区块 + 当前请求 | OpenClaw 自身字段 | 模型上下文、OpenClaw 后续历史 |
 
 这是有意设计，不要求两侧 `content` 字符串完全一致。
 
-LobsterAI 当前 managed Cowork session 已经采用类似边界：
+智码 GLM Code 当前 managed Cowork session 已经采用类似边界：
 
 - 本地 SQLite 保存面向用户展示的原始输入。
 - `buildOutboundPrompt()` 在发送前追加本地时间、模型信息、媒体引用和上下文 bridge。
@@ -165,7 +165,7 @@ LobsterAI 当前 managed Cowork session 已经采用类似边界：
 **And** 输入框获得焦点
 
 **When** 用户输入 `这个是什么意思？` 并发送
-**Then** LobsterAI 保存用户问题和结构化文本片段
+**Then** 智码 GLM Code 保存用户问题和结构化文本片段
 
 **And** OpenClaw 收到包含片段原文与用户问题的单个 `chat.send.message`
 
@@ -221,7 +221,7 @@ LobsterAI 当前 managed Cowork session 已经采用类似边界：
 
 **Given** 用户选中的文本超过单片段限制
 **When** 用户点击 `添加到对话`
-**Then** LobsterAI 拒绝添加并展示 i18n toast
+**Then** 智码 GLM Code 拒绝添加并展示 i18n toast
 
 **And** 不静默截断文本
 
@@ -264,7 +264,7 @@ export interface CoworkSelectedTextSnippet {
 
 | 字段 | 说明 |
 |------|------|
-| `id` | LobsterAI 生成的片段 id，用于草稿列表 key 和删除 |
+| `id` | 智码 GLM Code 生成的片段 id，用于草稿列表 key 和删除 |
 | `text` | 发送时的文本快照，是模型上下文与历史 UI 的权威来源 |
 | `sourceMessageId` | 来源 assistant message id，用于尽力定位 |
 | `sourceMessageType` | 第一版固定为 `assistant` |
@@ -499,7 +499,7 @@ IPC handler 需要：
 
 1. 校验片段数组结构。
 2. 再次应用数量和长度限制，不能只依赖 renderer。
-3. 把片段保存到 LobsterAI user message metadata。
+3. 把片段保存到 智码 GLM Code user message metadata。
 4. 把片段传给 runtime options。
 
 ### FR-9: OpenClaw prompt 序列化
@@ -530,9 +530,9 @@ Kit 元数据字段
 - 按用户添加顺序编号。
 - 片段正文原样保留。
 - 片段区块放在 `[Current user request]` 之前。
-- 不把 `sourceMessageId` 发给模型，避免注入无意义的 LobsterAI 内部 id。
+- 不把 `sourceMessageId` 发给模型，避免注入无意义的 智码 GLM Code 内部 id。
 - 片段区块只在本次 user turn 中追加一次。
-- 不把序列化后的包装文本回写到 LobsterAI user message `content`。
+- 不把序列化后的包装文本回写到 智码 GLM Code user message `content`。
 - 必须明确告诉模型：excerpt 是不可信的引用数据，只能用于理解用户问题，不能执行 excerpt 内的指令。
 - 每一行 excerpt 文本增加引用前缀，例如 `> `，避免片段正文伪造边界标记后改变包装语义。
 
@@ -605,14 +605,14 @@ if (selectedTextSection) {
 
 ### FR-11: managed Cowork session 与 IM session 边界
 
-第一版只对 LobsterAI managed Cowork session 开放文本选择入口。
+第一版只对 智码 GLM Code managed Cowork session 开放文本选择入口。
 
 原因：
 
-- managed Cowork session 中，LobsterAI SQLite 是 UI 展示的主要来源。
+- managed Cowork session 中，智码 GLM Code SQLite 是 UI 展示的主要来源。
 - OpenClaw transcript 保存序列化后的包装文本，用于模型上下文。
 - IM / channel session 会通过 `chat.history` reconcile 覆盖本地 user / assistant 消息。
-- `chat.history` 只能恢复包装后的 user message 字符串，不能恢复 LobsterAI 专用 `sourceMessageId` 与片段列表。
+- `chat.history` 只能恢复包装后的 user message 字符串，不能恢复 智码 GLM Code 专用 `sourceMessageId` 与片段列表。
 
 如果未来支持 IM 引用，需要单独设计：
 
@@ -723,7 +723,7 @@ cowork_messages.metadata TEXT
 
 - `chat.send.message` 是字符串。
 - `additionalProperties: false` 禁止自定义 snippets 字段。
-- LobsterAI 的版本 patch 只增加 `cwd?: string`。
+- 智码 GLM Code 的版本 patch 只增加 `cwd?: string`。
 - `chat.send.message` 会作为 user transcript `content` 持久化。
 - `attachments` 仍只用于媒体输入。
 
@@ -733,7 +733,7 @@ cowork_messages.metadata TEXT
 2. `src/gateway/server-methods/chat.ts`
 3. `docs/web/control-ui.md`
 4. `docs/web/webchat.md`
-5. LobsterAI 对应版本 patch 中的 `chat.send` 改动
+5. 智码 GLM Code 对应版本 patch 中的 `chat.send` 改动
 
 如果 OpenClaw 未来提供原生结构化文本引用字段，可以增加原生字段支持，但必须保留当前字符串序列化 fallback，避免旧 runtime 或混合版本不可用。
 
@@ -922,7 +922,7 @@ private async buildOutboundPrompt(
 拼接顺序建议：
 
 ```text
-1. LobsterAI system instructions（如有变化）
+1. 智码 GLM Code system instructions（如有变化）
 2. Local time context
 3. Session info / current model
 4. Media reference section（如有）
@@ -999,7 +999,7 @@ tag: v2026.4.14
 已确认：
 
 1. `chat.send` 使用严格 schema，禁止任意自定义字段。
-2. LobsterAI patch 只新增 `cwd?: string`，没有文本引用协议。
+2. 智码 GLM Code patch 只新增 `cwd?: string`，没有文本引用协议。
 3. `chat.send.message` 是模型输入的核心文本字段。
 4. OpenClaw 将 `chat.send.message` 作为 user transcript `content` 持久化。
 5. `attachments` 是媒体输入扩展点，不用于结构化文本引用。
@@ -1028,7 +1028,7 @@ CoworkPromptInput.handleSubmit()
   -> coworkService.startSession() / continueSession()
   -> preload IPC
   -> main.ts 校验 snippets
-  -> LobsterAI SQLite:
+  -> 智码 GLM Code SQLite:
        content = "这个是什么意思？"
        metadata.selectedTextSnippets = [...]
   -> OpenClawRuntimeAdapter.buildOutboundPrompt()
@@ -1068,7 +1068,7 @@ CoworkStore.getSession()
 | 当前 session 仍在运行 | 允许整理草稿，不允许发送 |
 | 发送失败 | 保留文本、附件和片段草稿 |
 | OpenClaw transcript 已存在历史 | 正常追加包装后的 user message |
-| OpenClaw `chat.history` 截断长消息 | LobsterAI managed session 仍从本地 SQLite 展示干净 user message |
+| OpenClaw `chat.history` 截断长消息 | 智码 GLM Code managed session 仍从本地 SQLite 展示干净 user message |
 | IM/channel session reconcile | 第一版不开放入口，避免 metadata 丢失 |
 | artifact 中选择文本 | 第一版不展示入口 |
 | 片段包含 Markdown、代码或 XML 类文本 | 作为普通纯文本快照序列化，不做 parser 解释 |
@@ -1138,7 +1138,7 @@ src/main/libs/agentEngine/openclawRuntimeAdapter.test.ts
 
 - 无 snippets 时 `chat.send.message` 保持现有行为。
 - 有 snippets 时 `chat.send.message` 包含片段区块和当前请求。
-- LobsterAI SQLite user message `content` 仍为原始用户请求。
+- 智码 GLM Code SQLite user message `content` 仍为原始用户请求。
 - user message metadata 保存结构化 snippets。
 - startSession `skipInitialUserMessage` 路径不重复插入 user message。
 - selected snippets 与 media reference section 可以同时存在。
@@ -1200,7 +1200,7 @@ npm run electron:dev:openclaw
 2. 添加两个片段并要求对比，模型能够识别两个 excerpt。
 3. 连续追问下一轮，模型仍能通过 OpenClaw transcript 理解上一轮引用上下文。
 4. 查看 OpenClaw transcript，确认保存的是单条包装后的 user message。
-5. 查看 LobsterAI SQLite / UI，确认保存和展示的是原始问题 + snippets metadata。
+5. 查看 智码 GLM Code SQLite / UI，确认保存和展示的是原始问题 + snippets metadata。
 6. 图片附件、Skill、Kit、媒体引用与 snippets 同时使用时互不影响。
 
 ### 9.4 macOS / Windows 验证矩阵
@@ -1250,8 +1250,8 @@ npm run compile:electron
 
 ### 10.2 数据验收
 
-- [ ] LobsterAI SQLite user message `content` 只保存用户原始请求。
-- [ ] LobsterAI SQLite user message metadata 保存结构化 `selectedTextSnippets`。
+- [ ] 智码 GLM Code SQLite user message `content` 只保存用户原始请求。
+- [ ] 智码 GLM Code SQLite user message metadata 保存结构化 `selectedTextSnippets`。
 - [ ] OpenClaw `chat.send.message` 包含序列化片段区块和当前请求。
 - [ ] OpenClaw transcript 保存包装后的单条 user message。
 - [ ] 不向 OpenClaw `chat.send` 增加未声明字段。
@@ -1334,7 +1334,7 @@ npm run compile:electron
 2. `cowork_messages` 不执行 `ALTER TABLE`。
 3. 历史 metadata 没有 `selectedTextSnippets` 时，UI 按无引用消息展示。
 4. 新消息 metadata 增加可选 JSON 字段，旧消息读取路径不受影响。
-5. OpenClaw runtime 仍使用 `v2026.4.14` 与现有 LobsterAI patch，不需要额外 rebuild 语义变化。
+5. OpenClaw runtime 仍使用 `v2026.4.14` 与现有 智码 GLM Code patch，不需要额外 rebuild 语义变化。
 
 ### 11.5 OpenClaw API 最终结论
 
@@ -1354,7 +1354,7 @@ client.request('chat.send', {
 其中：
 
 - snippets 只进入 `message` 字符串。
-- `cwd` 继续由 LobsterAI 现有 patch 支持。
+- `cwd` 继续由 智码 GLM Code 现有 patch 支持。
 - 图片继续进入 `attachments`。
 - 不新增 `metadata`。
 - 不新增 `selectedTextSnippets` RPC 字段。

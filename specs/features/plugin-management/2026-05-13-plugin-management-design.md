@@ -4,13 +4,13 @@
 
 ### 1.1 问题/背景
 
-当前 LobsterAI 没有通用的插件管理入口，用户无法自行安装或管理 OpenClaw 社区插件。存在以下局限：
+当前 智码 GLM Code 没有通用的插件管理入口，用户无法自行安装或管理 OpenClaw 社区插件。存在以下局限：
 
 - 没有 UI 层面的插件管理功能
 - 用户无法自行安装其他 OpenClaw 社区插件
 - 随着 OpenClaw 插件生态的发展，需要一个通用的插件管理入口
 
-OpenClaw 本身已经提供了完善的插件系统，支持 ClawHub、npm、Git、本地路径等多种安装来源，并有标准的插件清单格式（`openclaw.plugin.json`）。LobsterAI 需要在 UI 层面对接这些能力。
+OpenClaw 本身已经提供了完善的插件系统，支持 ClawHub、npm、Git、本地路径等多种安装来源，并有标准的插件清单格式（`openclaw.plugin.json`）。智码 GLM Code 需要在 UI 层面对接这些能力。
 
 **OpenClaw 插件参考文档：**
 - https://docs.openclaw.ai/tools/plugin

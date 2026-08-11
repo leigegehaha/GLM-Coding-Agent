@@ -189,7 +189,7 @@ await completeCleanupBookkeeping(...);
 
 bundle import 兼容不能影响非 Windows 开发环境或 macOS/Linux 产物。路径判断必须足够窄，最好以入口文件名和文件位置作为条件。
 
-当前 LobsterAI 的实际启动路径里，只有 Windows fast path 会把 `gateway-bundle.mjs` 作为 gateway 主入口；macOS/Linux 虽然产物里也可能存在该 bundle，但不会通过它启动 gateway。因此 `cfmind\subagent-registry.runtime.js` 这类 root-relative runtime import 错误当前只确认影响 Windows bundle fast path。cleanup finalize 被 ended hook failure 阻断的问题本身是平台无关的，仍需要用状态收敛修复处理。
+当前 智码 GLM Code 的实际启动路径里，只有 Windows fast path 会把 `gateway-bundle.mjs` 作为 gateway 主入口；macOS/Linux 虽然产物里也可能存在该 bundle，但不会通过它启动 gateway。因此 `cfmind\subagent-registry.runtime.js` 这类 root-relative runtime import 错误当前只确认影响 Windows bundle fast path。cleanup finalize 被 ended hook failure 阻断的问题本身是平台无关的，仍需要用状态收敛修复处理。
 
 ### 5.6 包产物结构变化
 

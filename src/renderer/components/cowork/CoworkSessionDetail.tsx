@@ -30,6 +30,7 @@ import {
   type CoworkSelectedTextValidationError,
   normalizeCoworkSelectedTextSnippets,
 } from '../../../shared/cowork/selectedText';
+import type { ModelThinkingLevel } from '../../../shared/providers';
 import { ShareDeploymentCandidateSource } from '../../../shared/shareDeployment/constants';
 import { collectSessionArtifacts, loadDetectedFileArtifact } from '../../services/artifactDetection';
 import {
@@ -172,6 +173,8 @@ interface CoworkSessionDetailProps {
     selectedTextSnippets?: CoworkSelectedTextSnippet[],
     browserAnnotations?: import('@shared/cowork/browserAnnotations').CoworkBrowserAnnotationMessageBatch[],
     collaborationMode?: CoworkCollaborationModeType,
+    thinkingLevel?: ModelThinkingLevel,
+    codingOptimized?: boolean,
   ) => boolean | void | Promise<boolean | void>;
   onStop: () => void;
   isSidebarCollapsed?: boolean;
@@ -444,9 +447,9 @@ const buildRailItems = (
       messageId: primaryMessageId,
       turnIndex: index,
       absoluteIndex: messageOffsetById.get(primaryMessageId) ?? items.length,
-      label: turn.userMessage ? getRailLabel(userContent, `Turn ${index + 1}`) : 'LobsterAI',
+      label: turn.userMessage ? getRailLabel(userContent, `Turn ${index + 1}`) : '智码 GLM Code',
       summary: assistantContent
-        ? getRailLabel(assistantContent, 'LobsterAI', COWORK_RAIL_TOOLTIP_PREVIEW_MAX_LENGTH)
+        ? getRailLabel(assistantContent, '智码 GLM Code', COWORK_RAIL_TOOLTIP_PREVIEW_MAX_LENGTH)
         : '',
       contentLen: userContent.length + assistantContent.length,
       isUser: false,
@@ -514,7 +517,7 @@ const buildRailItemsFromIndex = (
       messageId: current.messageId,
       turnIndex: loadedTurnIndex,
       absoluteIndex: current.messageOffset,
-      label: 'LobsterAI',
+      label: '智码 GLM Code',
       summary: current.preview,
       contentLen: current.contentLen,
       isUser: false,
@@ -1008,11 +1011,11 @@ const composeExportCanvas = async (
 
   ctx.fillStyle = brandColor;
   ctx.font = `600 ${brandFontSize}px ${fontStack}`;
-  ctx.fillText('LobsterAI — 全场景个人助理 Agent', textX, footerCenterY - taglineFontSize / 2 - 2);
+  ctx.fillText('智码 GLM Code — 全场景个人助理 Agent', textX, footerCenterY - taglineFontSize / 2 - 2);
 
   ctx.fillStyle = subtitleColor;
   ctx.font = `400 ${taglineFontSize}px ${fontStack}`;
-  ctx.fillText('7×24 小时帮你干活的全场景个人助理，由网易有道开发', textX, footerCenterY + brandFontSize / 2 + 3);
+  ctx.fillText('7×24 小时帮你干活的全场景个人助理，由智码 GLM 科技开发', textX, footerCenterY + brandFontSize / 2 + 3);
 
   ctx.restore(); // card clip
 
@@ -1260,6 +1263,9 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   const isMac = window.electron.platform === 'darwin';
   const isWindows = window.electron.platform === 'win32';
   const currentSession = useSelector(selectCurrentSession);
+  const codingOptimizationDefault = useSelector(
+    (state: RootState) => state.cowork.config.codingOptimizationEnabled ?? true,
+  );
   const isStreaming = useSelector(selectIsStreaming);
   const remoteManaged = useSelector(selectRemoteManaged);
   const lastMessageContent = useSelector(selectLastMessageContent);
@@ -5472,6 +5478,13 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
             onManageSkills={remoteManaged ? undefined : onManageSkills}
             onManageKits={remoteManaged ? undefined : onManageKits}
             showModelSelector={true}
+            codingOptimized={currentSession?.codingOptimized ?? codingOptimizationDefault}
+            onCodingOptimizedChange={currentSession?.id
+              ? enabled => coworkService.updateSessionCodingOptimization(
+                currentSession.id,
+                enabled,
+              )
+              : undefined}
             showReadOnlyContext={!isArtifactPanelExpanded}
             readOnlyContextTrailingText={isArtifactPanelExpanded ? undefined : i18nService.t('aiGeneratedDisclaimer')}
             workingDirectory={currentSession?.cwd ?? ''}

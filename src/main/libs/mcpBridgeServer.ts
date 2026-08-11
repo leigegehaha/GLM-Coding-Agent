@@ -274,7 +274,7 @@ export class McpBridgeServer {
 
         this.pendingAskUser.set(requestId, { requestId, resolve, timer });
 
-        // Notify LobsterAI to show the modal
+        // Notify 智码 GLM Code to show the modal
         if (this.onAskUserCallback) {
           this.onAskUserCallback({
             requestId,

@@ -64,6 +64,13 @@ function getOpenClawRuntimeBuildHint(targetId) {
   return `npm run openclaw:runtime:${targetId}`;
 }
 
+// 返回发布包必须包含的插件；可选插件允许在专用源不可达时缺席。
+function getRequiredPreinstalledPlugins(plugins) {
+  return Array.isArray(plugins)
+    ? plugins.filter(plugin => plugin && plugin.optional !== true)
+    : [];
+}
+
 function syncCurrentOpenClawRuntimeForTarget(context) {
   const runtimeBase = path.join(__dirname, '..', 'vendor', 'openclaw-runtime');
   const currentRoot = path.join(runtimeBase, 'current');
@@ -102,10 +109,12 @@ function verifyPreinstalledPlugins(runtimeRoot, buildHint) {
     return;
   }
 
+  // 可选插件可能依赖内网或专用仓库，离线构建时不应阻断核心安装包。
+  const requiredPlugins = getRequiredPreinstalledPlugins(plugins);
   const extensionsDir = path.join(runtimeRoot, 'third-party-extensions');
   const missing = [];
 
-  for (const plugin of plugins) {
+  for (const plugin of requiredPlugins) {
     if (!plugin.id) continue;
     const pluginDir = path.join(extensionsDir, plugin.id);
     if (!existsSync(pluginDir)) {
@@ -121,7 +130,7 @@ function verifyPreinstalledPlugins(runtimeRoot, buildHint) {
     );
   }
 
-  console.log(`[electron-builder-hooks] Verified ${plugins.length} preinstalled OpenClaw plugin(s).`);
+  console.log(`[electron-builder-hooks] Verified ${requiredPlugins.length} required preinstalled OpenClaw plugin(s).`);
 }
 
 function hasCompiledLocalExtension(runtimeRoot, extensionId) {
@@ -609,4 +618,5 @@ async function afterPack(context) {
 module.exports = {
   beforePack,
   afterPack,
+  getRequiredPreinstalledPlugins,
 };

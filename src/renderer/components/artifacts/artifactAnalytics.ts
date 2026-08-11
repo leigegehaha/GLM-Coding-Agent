@@ -1,4 +1,4 @@
-import { LogReporterAction, reportYdAnalyzer } from '@/services/logReporter';
+import { LogReporterAction, reportAnalytics } from '@/services/logReporter';
 import type { Artifact } from '@/types/artifact';
 
 type ArtifactAnalyticsValue = string | number | boolean | null | undefined;
@@ -91,7 +91,7 @@ export interface ReportArtifactPreviewActionOptions {
 
 export const reportArtifactPreviewAction = (options: ReportArtifactPreviewActionOptions): void => {
   logArtifactAnalytics(options.actionType);
-  void reportYdAnalyzer({
+  void reportAnalytics({
     action: LogReporterAction.ArtifactPreviewAction,
     source: options.source,
     actionType: options.actionType,

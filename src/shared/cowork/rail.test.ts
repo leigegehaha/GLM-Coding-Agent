@@ -11,6 +11,6 @@ describe('cowork rail preview', () => {
   });
 
   test('keeps rail preview fallback when plan tags contain no visible text', () => {
-    expect(getCoworkRailPreview('<proposed_plan></proposed_plan>', 'LobsterAI')).toBe('LobsterAI');
+    expect(getCoworkRailPreview('<proposed_plan></proposed_plan>', '智码 GLM Code')).toBe('智码 GLM Code');
   });
 });

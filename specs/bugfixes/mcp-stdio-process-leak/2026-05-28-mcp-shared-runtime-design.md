@@ -4,7 +4,7 @@
 
 ### 1.1 问题
 
-LobsterAI 桌面端运行期间，Node.js 进程不断增殖。每新建一个对话（无论是否用到 MCP 工具），都会额外产生 N 个 Node.js 子进程（N = 已配置的 stdio MCP server 数量）。这些进程永远不会被释放，直到用户退出应用。
+智码 GLM Code 桌面端运行期间，Node.js 进程不断增殖。每新建一个对话（无论是否用到 MCP 工具），都会额外产生 N 个 Node.js 子进程（N = 已配置的 stdio MCP server 数量）。这些进程永远不会被释放，直到用户退出应用。
 
 典型表现：配置 3 个 MCP server，开 5 个对话 → 任务管理器中出现 15 个 Node.js 进程。
 
@@ -12,7 +12,7 @@ LobsterAI 桌面端运行期间，Node.js 进程不断增殖。每新建一个�
 
 OpenClaw 的 `SessionMcpRuntimeManager` 以 **sessionId** 为 key 管理 MCP 连接。每个 session 拥有独立的 stdio 子进程组。
 
-LobsterAI 桌面端每个对话对应一个**独立的 gateway session key**（`agent:{agentId}:lobsterai:{uuid}`），新建对话 = 新 sessionId = 新 MCP 进程。
+智码 GLM Code 桌面端每个对话对应一个**独立的 gateway session key**（`agent:{agentId}:lobsterai:{uuid}`），新建对话 = 新 sessionId = 新 MCP 进程。
 
 释放路径的缺陷：
 
@@ -21,9 +21,9 @@ LobsterAI 桌面端每个对话对应一个**独立的 gateway session key**（`
 | Run 结束（`cleanupBundleMcpOnRunEnd`） | 否 | Gateway 模式下为 `false`，设计意图是同 session 内复用 |
 | `sessions.delete` / `sessions.reset` | 否 | `ensureSessionRuntimeCleanup` 未调用 `disposeSessionMcpRuntime` |
 | Session freshness 过期自动 rollover | 否 | 仅在 auto-reply 路径（IM 渠道）生效，desktop gateway RPC 路径不走此逻辑 |
-| 用户手动删除对话 | 否 | `onSessionDeleted` 只清理 LobsterAI 侧状态，不通知 gateway |
+| 用户手动删除对话 | 否 | `onSessionDeleted` 只清理 智码 GLM Code 侧状态，不通知 gateway |
 
-结论：对于 LobsterAI 桌面端的 gateway 模式，**不存在任何有效的 MCP 进程释放路径**。
+结论：对于 智码 GLM Code 桌面端的 gateway 模式，**不存在任何有效的 MCP 进程释放路径**。
 
 ### 1.3 上游关联
 

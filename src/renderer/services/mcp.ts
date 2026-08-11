@@ -1,5 +1,5 @@
 import { McpCategory, McpMarketplaceCategoryInfo, McpMarketplaceServer,McpRegistryEntry, McpServerConfig, McpServerFormData } from '../types/mcp';
-import { LogReporterAction, reportYdAnalyzer } from './logReporter';
+import { LogReporterAction, reportAnalytics } from './logReporter';
 
 /**
  * Convert remote marketplace server data to McpRegistryEntry format.
@@ -120,7 +120,7 @@ class McpService {
         this.servers = result.servers;
         const updatedServer = this.servers.find(server => server.id === id) ?? previousServer;
         if (enabled && previousServer?.enabled !== true && updatedServer) {
-          void reportYdAnalyzer({
+          void reportAnalytics({
             action: LogReporterAction.McpEnabled,
             mcpId: updatedServer.id,
             mcpName: updatedServer.name,

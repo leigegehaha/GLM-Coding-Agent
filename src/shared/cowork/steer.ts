@@ -46,6 +46,7 @@ export interface CoworkPendingSteer {
   browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
   modelSupportsImage?: boolean;
   skillPrompt?: string;
+  codingOptimized?: boolean;
   selectedSkillIds?: string[];
   activeSkillIds?: string[];
   runtimeSkillIds?: string[];

@@ -26,7 +26,7 @@ OpenClaw 引擎接管后，原有的 Claude Agent SDK `canUseTool` 执行前拦�
 
 ```
 模型调用 AskUserQuestion 工具（结构化 JSON）
-→ 插件 execute() 通过 HTTP POST /askuser 发送到 LobsterAI
+→ 插件 execute() 通过 HTTP POST /askuser 发送到 智码 GLM Code
 → McpBridgeServer 收到请求，创建 Promise 等待
 → IPC 通知渲染进程弹窗
 → 用户操作（确认/拒绝/选择/超时 120s）
@@ -61,7 +61,7 @@ IM 端模型工具列表中没有 AskUserQuestion，自然不会调用，命令�
                    POST /askuser                       │
                         │                              │
 ┌───────────────────────▼──────────────────────────────┐
-│ LobsterAI 主进程 (Electron)                          │
+│ 智码 GLM Code 主进程 (Electron)                          │
 │                                                      │
 │  McpBridgeServer ──IPC──▶ 渲染进程弹窗               │
 │  (HTTP callback)          CoworkPermissionModal      │

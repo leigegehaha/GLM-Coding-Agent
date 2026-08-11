@@ -4,7 +4,7 @@
 
 ### 1.1 背景
 
-LobsterAI 已经在对话中的 `ArtifactPreviewCard` 提供两类发布入口：
+智码 GLM Code 已经在对话中的 `ArtifactPreviewCard` 提供两类发布入口：
 
 - 可分享文件显示“分享”，通过 `ArtifactFileShareController` 创建或管理分享；
 - `local-service` 显示“部署”，通过 `ArtifactPanel` 完成订阅校验、项目目录解析、站点配额预检、项目分析、打包上传和部署状态管理。
@@ -243,7 +243,7 @@ Browser tab 的分享与部署按钮互斥：
 | 当前 URL 为本地服务 | 部署 |
 | 普通外部网页、空白页、无效 localhost URL | 不显示 |
 
-如果状态数据短暂冲突，以受管 HTML Artifact 身份为优先，因为 HTML preview session 本身使用内部 loopback 服务；只有 `browserHtmlArtifactId` 已清除后，loopback URL 才能作为用户本地服务参与部署识别。这样可以避免把 LobsterAI 的 HTML 预览服务误当作用户项目部署。
+如果状态数据短暂冲突，以受管 HTML Artifact 身份为优先，因为 HTML preview session 本身使用内部 loopback 服务；只有 `browserHtmlArtifactId` 已清除后，loopback URL 才能作为用户本地服务参与部署识别。这样可以避免把 智码 GLM Code 的 HTML 预览服务误当作用户项目部署。
 
 ### FR-5：状态与重复点击
 

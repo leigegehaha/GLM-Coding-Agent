@@ -4,7 +4,7 @@
 
 ### 1.1 问题/动机
 
-LobsterAI 在 OpenClaw `v2026.6.1` 基线上预装多个 IM 相关第三方插件。此次调整目标是升级部分插件到当前可用稳定版本，同时保持微信与 ClawEmail 不变：
+智码 GLM Code 在 OpenClaw `v2026.6.1` 基线上预装多个 IM 相关第三方插件。此次调整目标是升级部分插件到当前可用稳定版本，同时保持微信与 ClawEmail 不变：
 
 | 插件 | 原版本 | 目标版本 | 处理 |
 |------|--------|----------|------|
@@ -21,7 +21,7 @@ LobsterAI 在 OpenClaw `v2026.6.1` 基线上预装多个 IM 相关第三方插�
 
 1. OpenClaw `v2026.6.1` 的 npm 插件安装布局发生变化，新版 CLI 会把 npm 插件放入临时 state 目录的 `npm/projects/.../node_modules/...`，而旧脚本只查找 `extensions/...`，导致“下载成功但被误判为失败”。
 2. 新版 npm project 布局下，插件依赖位于 project 级 `node_modules`，例如 `image-size`、`dingtalk-stream` 是插件包目录的 sibling dependency。只复制插件包目录会导致 gateway runtime 加载时缺依赖。
-3. OpenClaw CLI 在 LobsterAI 的构建子进程中没有稳定识别 bundled channel 目录，日志出现 `imessage` / `telegram` 的 `missing generated module` warning。Telegram 实际产物存在，但 setup/bundled metadata 扫描路径不确定。
+3. OpenClaw CLI 在 智码 GLM Code 的构建子进程中没有稳定识别 bundled channel 目录，日志出现 `imessage` / `telegram` 的 `missing generated module` warning。Telegram 实际产物存在，但 setup/bundled metadata 扫描路径不确定。
 4. `openclaw-netease-bee@0.1.3` npm 包只发布了 TypeScript runtime entry `./index.ts`，没有发布 `index.js` / `dist/index.js` 等编译产物。OpenClaw `v2026.6.1` 对 npm 包安装不再接受 TypeScript runtime fallback，因此从零构建会在 Bee 插件安装阶段失败。
 
 ### 1.2 目标
@@ -29,7 +29,7 @@ LobsterAI 在 OpenClaw `v2026.6.1` 基线上预装多个 IM 相关第三方插�
 - 完成指定 IM 插件版本升级，不改动微信与 ClawEmail 版本。
 - 兼容 OpenClaw 新旧插件安装布局，避免缓存缺失或从零构建时误判安装失败。
 - 消除 OpenClaw CLI 安装阶段的 bundled channel 目录探测 warning，避免 Telegram setup 能力被误判。
-- 为 Bee 提供 LobsterAI 侧临时兼容方案，直到上游发布带编译产物的新版本。
+- 为 Bee 提供 智码 GLM Code 侧临时兼容方案，直到上游发布带编译产物的新版本。
 - 保持插件最终仍通过 `openclaw plugins install` 安装，不绕过 OpenClaw 的 manifest 校验、安全扫描与依赖安装流程。
 
 ## 2. 现状分析
@@ -74,7 +74,7 @@ LobsterAI 在 OpenClaw `v2026.6.1` 基线上预装多个 IM 相关第三方插�
 {OPENCLAW_STATE_DIR}/npm/projects/{projectId}/node_modules/dingtalk-stream
 ```
 
-因此如果 LobsterAI 只复制插件包目录到：
+因此如果 智码 GLM Code 只复制插件包目录到：
 
 ```text
 vendor/openclaw-runtime/current/third-party-extensions/{pluginId}
@@ -87,7 +87,7 @@ Cannot find module 'image-size'
 Cannot find package 'dingtalk-stream'
 ```
 
-这不是 Lark 或 DingTalk 插件本身漏声明依赖，而是 LobsterAI 从 staging 复制到 runtime 时丢失了 project 级 sibling dependencies。
+这不是 Lark 或 DingTalk 插件本身漏声明依赖，而是 智码 GLM Code 从 staging 复制到 runtime 时丢失了 project 级 sibling dependencies。
 
 ### 2.4 bundled channel warning
 
@@ -137,7 +137,7 @@ dist/index.mjs
 }
 ```
 
-OpenClaw `v2026.6.1` 对 npm 包安装要求 runtime entry 指向已编译 JavaScript。TypeScript fallback 只支持源码 checkout 或本地开发路径，不支持 registry npm 包。因此 Bee 当前失败属于插件发布包缺少编译产物，不是 LobsterAI 本地配置错误。
+OpenClaw `v2026.6.1` 对 npm 包安装要求 runtime entry 指向已编译 JavaScript。TypeScript fallback 只支持源码 checkout 或本地开发路径，不支持 registry npm 包。因此 Bee 当前失败属于插件发布包缺少编译产物，不是 智码 GLM Code 本地配置错误。
 
 日志中的：
 
@@ -179,7 +179,7 @@ Also not a valid hook pack: Error: package.json missing openclaw.hooks
 
 ### 3.3 避免复制 OpenClaw host peerDependency
 
-OpenClaw CLI 安装插件时会把插件的 peerDependency `openclaw` 链接到 LobsterAI bundled runtime：
+OpenClaw CLI 安装插件时会把插件的 peerDependency `openclaw` 链接到 智码 GLM Code bundled runtime：
 
 ```text
 node_modules/openclaw -> vendor/openclaw-runtime/...
@@ -352,11 +352,11 @@ npm run build
 
 ### 7.1 TypeScript 插件包兼容方案是临时方案
 
-Bee 与 NIM 的根因都是上游包没有发布已编译 runtime JavaScript。LobsterAI 当前方案只用于保证 OpenClaw `v2026.6.1` 从零构建可用。对应上游发布修复版本后，应移除插件包装；没有插件使用通用准备器时，再移除通用实现。
+Bee 与 NIM 的根因都是上游包没有发布已编译 runtime JavaScript。智码 GLM Code 当前方案只用于保证 OpenClaw `v2026.6.1` 从零构建可用。对应上游发布修复版本后，应移除插件包装；没有插件使用通用准备器时，再移除通用实现。
 
 ### 7.2 NIM 上游版本元数据不一致
 
-NIM Git tag 为 `1.1.1`，但该 tag 的包内 `package.json#version` 仍为 `1.0.3`；其 npm 包名是 `@nimsuite/openclaw-nim-channel`，manifest id 是 `nimsuite-openclaw-nim-channel`。安装缓存继续使用 LobsterAI 声明的 Git ref 版本，运行时配置继续使用 manifest id，不在临时兼容层内改写上游版本或 manifest id。
+NIM Git tag 为 `1.1.1`，但该 tag 的包内 `package.json#version` 仍为 `1.0.3`；其 npm 包名是 `@nimsuite/openclaw-nim-channel`，manifest id 是 `nimsuite-openclaw-nim-channel`。安装缓存继续使用 智码 GLM Code 声明的 Git ref 版本，运行时配置继续使用 manifest id，不在临时兼容层内改写上游版本或 manifest id。
 
 ### 7.3 POPO suspicious code pattern warning
 

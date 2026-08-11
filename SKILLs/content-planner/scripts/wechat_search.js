@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * LobsterAI WeChat Article Search
+ * 智码 GLM Code WeChat Article Search
  * Searches Sogou WeChat index for public account articles.
  *
  * Dependencies: npm install -g cheerio
@@ -327,7 +327,7 @@ async function main() {
 
   if (!query) {
     console.log(`
-LobsterAI 微信公众号文章搜索
+智码 GLM Code 微信公众号文章搜索
 
 用法:
   node wechat_search.js <关键词> [选项]

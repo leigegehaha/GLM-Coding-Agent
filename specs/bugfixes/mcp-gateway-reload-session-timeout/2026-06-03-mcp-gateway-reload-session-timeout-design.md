@@ -23,13 +23,13 @@ gateway request timeout for sessions.patch
 | `OpenClaw gateway client connect timeout after 60000ms` | gateway client 等待 WebSocket `hello-ok` | 本地 gateway 可启动但客户端握手未完成 |
 | `gateway request timeout for sessions.patch` | `chat.send` 前同步 session model | gateway client 已握手，但 session RPC 30 秒未返回 |
 
-它们的共同根因是：MCP 开启或切换后，OpenClaw gateway 正处于 MCP 配置 reload/restart 窗口，LobsterAI 仍然允许用户立即发起对话，导致握手或关键 session RPC 卡住。
+它们的共同根因是：MCP 开启或切换后，OpenClaw gateway 正处于 MCP 配置 reload/restart 窗口，智码 GLM Code 仍然允许用户立即发起对话，导致握手或关键 session RPC 卡住。
 
 ### 1.2 根因
 
-LobsterAI 与 OpenClaw 对 MCP 配置变更的处理语义不一致。
+智码 GLM Code 与 OpenClaw 对 MCP 配置变更的处理语义不一致。
 
-当前 LobsterAI 侧 MCP handler 在 create/update/delete/toggle/retry 时调用：
+当前 智码 GLM Code 侧 MCP handler 在 create/update/delete/toggle/retry 时调用：
 
 ```typescript
 syncOpenClawConfig({ reason });
@@ -41,7 +41,7 @@ syncOpenClawConfig({ reason });
 - bindings 是否变化
 - 调用方是否显式传入 `restartGatewayIfRunning: true`
 
-因此 MCP 配置变化会被 LobsterAI 判断为：
+因此 MCP 配置变化会被 智码 GLM Code 判断为：
 
 ```text
 NO RESTART, hot-reload only
@@ -55,10 +55,10 @@ NO RESTART, hot-reload only
 
 也就是说：
 
-1. LobsterAI 把 MCP 配置写入 `openclaw.json` 后认为可以热加载。
+1. 智码 GLM Code 把 MCP 配置写入 `openclaw.json` 后认为可以热加载。
 2. OpenClaw runtime 认为 `mcp` 变更需要重启，并进入 reload/restart pending 状态。
 3. 用户立即发起 Cowork 对话。
-4. LobsterAI 开始 `ensureGatewayClientReady()`、`sessions.patch`、`chat.send` 前置流程。
+4. 智码 GLM Code 开始 `ensureGatewayClientReady()`、`sessions.patch`、`chat.send` 前置流程。
 5. gateway 正在处理 MCP reload/restart 或处于 pending 状态，关键 RPC 无法及时返回。
 6. 最终表现为 60 秒 gateway client connect timeout 或 30 秒 `sessions.patch` timeout。
 
@@ -106,31 +106,31 @@ NO RESTART, hot-reload only
 
 ### 场景 A：用户开启 MCP 后立即发起对话
 
-**Given** 用户在 MCP 管理页启用一个 MCP server  
-**And** OpenClaw gateway 当前正在运行  
-**When** 用户立即回到 Cowork 对话区发送消息  
-**Then** LobsterAI 应等待 MCP 配置同步和 gateway restart/reconnect 完成  
+**Given** 用户在 MCP 管理页启用一个 MCP server
+**And** OpenClaw gateway 当前正在运行
+**When** 用户立即回到 Cowork 对话区发送消息
+**Then** 智码 GLM Code 应等待 MCP 配置同步和 gateway restart/reconnect 完成
 **And** 不应让消息进入 `sessions.patch` 后再 30 秒超时。
 
 ### 场景 B：MCP 启动解析完成后触发配置同步
 
-**Given** npx MCP managed launch resolution 从 `installing` 变为 `ready`  
-**When** LobsterAI 将优化后的 MCP 启动命令写入 `openclaw.json`  
-**Then** 该变更应按 OpenClaw gateway restart 语义处理  
+**Given** npx MCP managed launch resolution 从 `installing` 变为 `ready`
+**When** 智码 GLM Code 将优化后的 MCP 启动命令写入 `openclaw.json`
+**Then** 该变更应按 OpenClaw gateway restart 语义处理
 **And** Cowork 新 turn 应等待 gateway 达到可用状态。
 
 ### 场景 C：Gateway 正在执行已有任务
 
-**Given** OpenClaw gateway 存在 active task run  
-**When** MCP 配置变化需要 restart  
-**Then** restart 应延迟到 active workload 结束  
+**Given** OpenClaw gateway 存在 active task run
+**When** MCP 配置变化需要 restart
+**Then** restart 应延迟到 active workload 结束
 **And** 新的 Cowork turn 应看到明确的 pending 状态，而不是继续向 gateway 发送关键 RPC。
 
 ### 场景 D：Gateway client 握手被 restart 打断
 
-**Given** LobsterAI 正在等待 gateway client `hello-ok`  
-**When** MCP 配置变化触发 gateway restart 或连接关闭  
-**Then** 旧握手等待应立即失败或切换到新 gateway 的重连流程  
+**Given** 智码 GLM Code 正在等待 gateway client `hello-ok`
+**When** MCP 配置变化触发 gateway restart 或连接关闭
+**Then** 旧握手等待应立即失败或切换到新 gateway 的重连流程
 **And** 不应无信息地等待 60 秒后报 connect timeout。
 
 ## 3. 功能需求
@@ -178,21 +178,21 @@ Cowork 启动路径必须在以下操作前等待该 barrier：
 - `sessions.patch`
 - `chat.send`
 
-### FR-3：MCP 变更应由 LobsterAI 主动执行 hard restart
+### FR-3：MCP 变更应由 智码 GLM Code 主动执行 hard restart
 
-对于 MCP create/update/delete/toggle/launch-ready/retry 等导致的 `mcp` 配置变化，LobsterAI 应主动进入已有 hard restart 流程，而不是依赖 OpenClaw 自己在 runtime 内部检测 reload。
+对于 MCP create/update/delete/toggle/launch-ready/retry 等导致的 `mcp` 配置变化，智码 GLM Code 应主动进入已有 hard restart 流程，而不是依赖 OpenClaw 自己在 runtime 内部检测 reload。
 
 期望行为：
 
 1. 写入 `openclaw.json`。
 2. 判断变更包含 `mcp`。
 3. 如果 gateway running 且无 active workload，执行 hard restart。
-4. 如果有 active workload，进入 LobsterAI 自己的 deferred restart 队列。
+4. 如果有 active workload，进入 智码 GLM Code 自己的 deferred restart 队列。
 5. restart 完成后重新建立 gateway client。
 
 这样可以避免两套状态机同时存在：
 
-- LobsterAI 认为 hot reload 完成
+- 智码 GLM Code 认为 hot reload 完成
 - OpenClaw 认为 restart deferred
 
 ### FR-4：Cowork 发送路径应识别 gateway restart pending
@@ -210,14 +210,14 @@ Cowork 启动路径必须在以下操作前等待该 barrier：
 
 当前 gateway client 在 `onClose` 且 `settled=false` 时，会记录“connection closed before handshake, waiting for auto-reconnect”，最终依赖 60 秒 timeout。
 
-当 close 原因来自 LobsterAI 主动 hard restart 或 MCP config apply barrier 时，应立即取消旧 `gatewayReadyPromise`，并在新 gateway ready 后创建新的 client。
+当 close 原因来自 智码 GLM Code 主动 hard restart 或 MCP config apply barrier 时，应立即取消旧 `gatewayReadyPromise`，并在新 gateway ready 后创建新的 client。
 
 期望规则：
 
 | close 场景 | 处理方式 |
 |------------|----------|
 | 普通网络抖动 | 允许 auto reconnect |
-| LobsterAI 主动 restart | reject 旧 ready promise，并等待新 gateway |
+| 智码 GLM Code 主动 restart | reject 旧 ready promise，并等待新 gateway |
 | MCP config apply barrier active | reject 或挂接到 barrier 后重新建连 |
 | token/connection info 变化 | 丢弃旧 client，使用新 connection info |
 
@@ -385,7 +385,7 @@ expectedImpact: OpenClawConfigImpact.Restart
 | Gateway client 正在等待 `hello-ok` | restart 时取消旧等待，避免 60 秒 timeout |
 | `sessions.patch` 已经发出后 gateway reload | 记录 RPC timeout，并将 gateway 标记 degraded；后续 turn 先等待 barrier |
 | 用户手动重启 gateway | 清理 pending barrier 和旧 gateway client，按新 generation 建连 |
-| OpenClaw reload 仍自行检测到 mcp restart | LobsterAI 日志应能显示是否漏判 MCP restart impact |
+| OpenClaw reload 仍自行检测到 mcp restart | 智码 GLM Code 日志应能显示是否漏判 MCP restart impact |
 
 ## 6. 涉及文件
 
@@ -403,7 +403,7 @@ expectedImpact: OpenClawConfigImpact.Restart
 
 ## 7. 验收标准
 
-- 启用、停用、重试 MCP 后，日志中不再出现 LobsterAI 判断 `NO RESTART, hot-reload only` 但 OpenClaw 随后输出 `config change requires gateway restart (mcp)` 的矛盾状态。
+- 启用、停用、重试 MCP 后，日志中不再出现 智码 GLM Code 判断 `NO RESTART, hot-reload only` 但 OpenClaw 随后输出 `config change requires gateway restart (mcp)` 的矛盾状态。
 - 用户启用 MCP 后立即发起 Cowork 对话，不再出现 `OpenClaw gateway client connect timeout after 60000ms`。
 - 用户启用 MCP 后立即发起 Cowork 对话，不再因为 `model sync before chat.send` 阶段的 `sessions.patch` timeout 直接失败。
 - MCP launch-ready 连续触发时，配置同步被串行化或合并，不会在 1 秒内反复写入 `mcp.servers` 并触发多次 reload 判断。

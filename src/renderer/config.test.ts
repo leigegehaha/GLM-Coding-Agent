@@ -79,6 +79,11 @@ test('defaultConfig uses OpenAI-compatible DeepSeek defaults', () => {
   expect(defaultConfig.providers?.[ProviderName.Xiaomi]?.apiFormat).toBe(ApiFormat.OpenAI);
 });
 
+test('defaultConfig starts new installs with the classic light theme', () => {
+  expect(defaultConfig.theme).toBe('light');
+  expect(defaultConfig.themeId).toBe('classic-light');
+});
+
 test('defaultConfig enables usage analytics by default', () => {
   expect(defaultConfig.usageAnalyticsEnabled).toBe(true);
 });

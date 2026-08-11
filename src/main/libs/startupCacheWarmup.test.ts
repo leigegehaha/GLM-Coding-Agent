@@ -21,8 +21,8 @@ describe('startup server model warmup', () => {
   test('sends the fixed K3 capability and client version', () => {
     expect(buildServerModelCapabilityHeaders('2026.7.23')).toEqual({
       Accept: 'application/json',
-      'X-LobsterAI-Client-Capabilities': 'kimi-k3-agentic-v1',
-      'X-LobsterAI-Client-Version': '2026.7.23',
+      'X-GLM-Code-Client-Capabilities': 'kimi-k3-agentic-v1',
+      'X-GLM-Code-Client-Version': '2026.7.23',
     });
   });
 
@@ -70,8 +70,8 @@ describe('startup server model warmup', () => {
       expect.objectContaining({
         headers: {
           Accept: 'application/json',
-          'X-LobsterAI-Client-Capabilities': 'kimi-k3-agentic-v1',
-          'X-LobsterAI-Client-Version': '2026.7.23',
+          'X-GLM-Code-Client-Capabilities': 'kimi-k3-agentic-v1',
+          'X-GLM-Code-Client-Version': '2026.7.23',
         },
       }),
     );

@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-LobsterAI 的 IM 会话通过 OpenClaw 网关实现。用户从各 IM 平台（钉钉、飞书、Telegram、Discord、QQ、企业微信、POPO、云信等）发送消息后，LobsterAI 将消息路由到 OpenClaw 引擎执行，并将 AI 回复同步回 IM。
+智码 GLM Code 的 IM 会话通过 OpenClaw 网关实现。用户从各 IM 平台（钉钉、飞书、Telegram、Discord、QQ、企业微信、POPO、云信等）发送消息后，智码 GLM Code 将消息路由到 OpenClaw 引擎执行，并将 AI 回复同步回 IM。
 
 核心挑战在于：OpenClaw 引擎通过 WebSocket 实时推送流式事件，同时也提供 `chat.history` API 查询完整历史。本方案采用 **history-first** 架构，以 `chat.history` 作为唯一数据真相源（single source of truth），流式事件仅用于 UI 实时预览。
 
@@ -19,7 +19,7 @@ LobsterAI 的 IM 会话通过 OpenClaw 网关实现。用户从各 IM 平台（�
 
 ### 2.1 Managed IM Sessions（IMCoworkHandler 路径）
 
-**适用场景**：用户通过 IM 平台直接与 LobsterAI 对话（钉钉、飞书、Telegram 等）。
+**适用场景**：用户通过 IM 平台直接与 智码 GLM Code 对话（钉钉、飞书、Telegram 等）。
 
 **入口文件**：`src/main/im/imCoworkHandler.ts`
 
@@ -82,7 +82,7 @@ const messages = storeMessages.length > 0 ? storeMessages : accumulator.messages
 
 ### 2.2 Channel Sessions（OpenClaw 轮询路径）
 
-**适用场景**：Telegram/Discord 等通过 OpenClaw 扩展直接接入的频道会话，LobsterAI 通过轮询发现新会话。
+**适用场景**：Telegram/Discord 等通过 OpenClaw 扩展直接接入的频道会话，智码 GLM Code 通过轮询发现新会话。
 
 **入口文件**：`src/main/libs/agentEngine/openclawRuntimeAdapter.ts` + `src/main/libs/openclawChannelSessionSync.ts`
 
@@ -123,7 +123,7 @@ handleChatFinal()
 
 | 类型 | 格式 | 示例 |
 |------|------|------|
-| Managed（LobsterAI 发起） | `agent:main:lobsterai:{sessionId}` | `agent:main:lobsterai:abc123` |
+| Managed（智码 GLM Code 发起） | `agent:main:lobsterai:{sessionId}` | `agent:main:lobsterai:abc123` |
 | Channel（平台发起） | `agent:{agentId}:{platform}:{subtype}:{conversationId}` | `agent:bot1:telegram:private:12345` |
 | Cron（定时任务） | `cron:{jobId}` 或 `agent:{agentId}:cron:{jobId}` | `cron:task-001` |
 
@@ -513,7 +513,7 @@ node --test tests/imReplyGuard.test.mjs                    # IM 回复守卫测�
 
 | 测试项 | 步骤 | 预期结果 |
 |--------|------|----------|
-| 消息完整性 | 多轮对话后对比 LobsterAI UI 和 OpenClaw Dashboard | 消息数量和内容完全一致 |
+| 消息完整性 | 多轮对话后对比 智码 GLM Code UI 和 OpenClaw Dashboard | 消息数量和内容完全一致 |
 | 消息顺序 | 快速连续发送 3 条消息 | user/assistant 交替出现，顺序正确 |
 | 无重复 | 同一条消息不应出现两次 | 对比 UI 中无重复消息 |
 | 流式→最终 | 观察流式过程和最终结果 | 流式完成后，消息内容与 Dashboard 一致 |

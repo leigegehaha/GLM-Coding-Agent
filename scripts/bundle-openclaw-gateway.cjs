@@ -50,7 +50,7 @@ function ensureWorkerShims() {
   }
   if (result.protectedExisting.length > 0) {
     console.warn(
-      `[bundle-openclaw-gateway] Skipped ${result.protectedExisting.length} worker shim(s) because existing files are not LobsterAI shims.`,
+      `[bundle-openclaw-gateway] Skipped ${result.protectedExisting.length} worker shim(s) because existing files are not 智码 GLM Code shims.`,
     );
   }
 }

@@ -4,13 +4,13 @@
 
 ### 1.1 问题
 
-用户反馈某一个固定任务记录只要点击，整个 LobsterAI 应用就会卡死，无法继续操作。重启应用后，只要不点击该任务记录就正常；再次点击同一个任务记录后又会卡死。
+用户反馈某一个固定任务记录只要点击，整个 智码 GLM Code 应用就会卡死，无法继续操作。重启应用后，只要不点击该任务记录就正常；再次点击同一个任务记录后又会卡死。
 
 本次日志中可定位到异常会话：
 
 | 字段 | 值 |
 |---|---|
-| LobsterAI sessionId | `d5bc36d4-57f7-4c4b-8248-f7ddc5727e12` |
+| 智码 GLM Code sessionId | `d5bc36d4-57f7-4c4b-8248-f7ddc5727e12` |
 | OpenClaw sessionId | `98850bbd-4ec0-4a87-8865-7069801f3ccd` |
 | session key | `agent:pm:lobsterai:d5bc36d4-57f7-4c4b-8248-f7ddc5727e12` |
 | 任务特征 | `外挂逆向大盘 Dashboard`、`PM 外挂逆向数据` |
@@ -66,42 +66,42 @@ P0 不做以下事情：
 
 ### 场景 1: 点击正常任务记录
 
-**Given** 用户点击一个普通 Cowork 任务记录  
-**When** session 本地消息加载成功  
-**Then** UI 正常打开会话  
-**And** 用户可以继续查看和对话  
+**Given** 用户点击一个普通 Cowork 任务记录
+**When** session 本地消息加载成功
+**Then** UI 正常打开会话
+**And** 用户可以继续查看和对话
 **And** 如果 context usage 能快速返回，则展示上下文用量
 
 ### 场景 2: 点击异常大任务记录
 
-**Given** 某个 OpenClaw session transcript 异常巨大  
-**When** 用户点击该任务记录  
-**Then** UI 仍然打开会话详情  
-**And** 不因为 context usage 查询阻塞或卡死  
-**And** 如果上下文用量拿不到，则不展示  
+**Given** 某个 OpenClaw session transcript 异常巨大
+**When** 用户点击该任务记录
+**Then** UI 仍然打开会话详情
+**And** 不因为 context usage 查询阻塞或卡死
+**And** 如果上下文用量拿不到，则不展示
 **And** 系统不自动反复重试 context usage
 
 ### 场景 3: context usage 查询超时
 
-**Given** renderer 发起 context usage 查询  
-**When** gateway 在短超时时间内没有返回  
-**Then** 主进程返回缓存或 unavailable/null  
-**And** renderer 记录该 session 的自动刷新失败状态  
+**Given** renderer 发起 context usage 查询
+**When** gateway 在短超时时间内没有返回
+**Then** 主进程返回缓存或 unavailable/null
+**And** renderer 记录该 session 的自动刷新失败状态
 **And** 后续自动路径不再立即请求同一 session
 
 ### 场景 4: 用户手动刷新上下文用量
 
-**Given** 自动 context usage 因超时或错误被抑制  
-**When** 用户手动触发刷新  
-**Then** 可以发起一次新的受限查询  
-**And** 仍然有短超时和 in-flight 去重  
+**Given** 自动 context usage 因超时或错误被抑制
+**When** 用户手动触发刷新
+**Then** 可以发起一次新的受限查询
+**And** 仍然有短超时和 in-flight 去重
 **And** 失败后不影响会话查看和继续对话
 
 ### 场景 5: 新一轮任务完成后刷新
 
-**Given** 用户在 session 中继续对话并完成一轮新任务  
-**When** OpenClaw 返回新的完成事件或 context usage update  
-**Then** 可以清除该 session 的自动刷新抑制状态  
+**Given** 用户在 session 中继续对话并完成一轮新任务
+**When** OpenClaw 返回新的完成事件或 context usage update
+**Then** 可以清除该 session 的自动刷新抑制状态
 **And** 允许一次新的受限 context usage 查询
 
 ## 3. 功能需求

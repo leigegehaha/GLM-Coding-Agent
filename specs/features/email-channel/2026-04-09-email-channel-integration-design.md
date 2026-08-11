@@ -1,12 +1,12 @@
 # Email Channel Integration Design
 
-**Date:** 2026-04-09  
-**Status:** Approved  
+**Date:** 2026-04-09
+**Status:** Approved
 **Author:** CodeMaker (Claude)
 
 ## Overview
 
-This design integrates the `claw-mail-channel` email plugin (`@clawemail/email` v0.9.0) into LobsterAI using the existing multi-instance IM channel architecture. The integration enables users to manage email conversations through the LobsterAI UI with support for both traditional IMAP/SMTP and secure WebSocket transport modes.
+This design integrates the `claw-mail-channel` email plugin (`@clawemail/email` v0.9.0) into 智码 GLM Code using the existing multi-instance IM channel architecture. The integration enables users to manage email conversations through the 智码 GLM Code UI with support for both traditional IMAP/SMTP and secure WebSocket transport modes.
 
 ## Background
 
@@ -55,7 +55,7 @@ Based on user requirements, the integration will:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                          LobsterAI UI                                │
+│                          智码 GLM Code UI                                │
 │  ┌────────────────────────────────────────────────────────────────┐ │
 │  │              EmailSettings.tsx (Renderer)                       │ │
 │  │  • Multi-instance list (add/delete/select)                     │ │
@@ -124,7 +124,7 @@ Based on user requirements, the integration will:
 5. `resolveOrCreateSession()` creates local Cowork session with:
    - Title: `邮件:{threadId}` or `Email:{threadId}`
    - AgentId: read from `emailConfig.instances[accountId].agentId`
-6. Session appears in LobsterAI sidebar
+6. Session appears in 智码 GLM Code sidebar
 7. Streaming chat events update message content in real-time
 
 **Status Monitoring Flow:**
@@ -649,7 +649,7 @@ The UI must dynamically show/hide fields based on `transport`:
 4. System opens default browser to `https://your-clawemail-service.com/get-apikey?email={email}`
 5. User completes verification in browser (e.g., email OTP, OAuth)
 6. Service displays API Key (format: `ck_live_...`)
-7. User copies API Key and pastes into LobsterAI input field
+7. User copies API Key and pastes into 智码 GLM Code input field
 8. User clicks Save
 
 **Technical Implementation:**
@@ -757,7 +757,7 @@ Show consolidated error dialog if validation fails.
 
 - [ ] Send inbound email → verify session appears in sidebar
 - [ ] Session title format: `邮件:{threadId}`
-- [ ] Reply in LobsterAI → verify email sent via SMTP/WebSocket
+- [ ] Reply in 智码 GLM Code → verify email sent via SMTP/WebSocket
 
 **Advanced Options:**
 
@@ -812,7 +812,7 @@ if (parsed.email && !parsed.instances) {
 
 ### Backward Compatibility
 
-No existing LobsterAI features are affected:
+No existing 智码 GLM Code features are affected:
 
 - Email config is additive (new key in `im_config` table)
 - Email platform is new (no conflicts with existing platforms)
@@ -1181,7 +1181,7 @@ This design has been reviewed, corrected, and approved for implementation.
 ## 实施计划
 
 
-**Goal:** Integrate the `@clawemail/email` OpenClaw plugin into LobsterAI with full UI configuration support for IMAP/SMTP and WebSocket transport modes.
+**Goal:** Integrate the `@clawemail/email` OpenClaw plugin into 智码 GLM Code with full UI configuration support for IMAP/SMTP and WebSocket transport modes.
 
 **Architecture:** Reuse existing IM multi-instance pattern (Feishu/QQ model) with email-specific type extensions, account-level agent binding, and tiered configuration UI (basic + advanced collapsible).
 

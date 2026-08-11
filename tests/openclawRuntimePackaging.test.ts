@@ -6,6 +6,9 @@ import { afterEach, expect, test } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const {
+  getRequiredPreinstalledPlugins,
+} = require('../scripts/electron-builder-hooks.cjs');
+const {
   pruneBareDistAfterGatewayPack,
   pruneGatewayAsarStage,
   summarizeGatewayAsarEntries,
@@ -24,6 +27,14 @@ function makeTempDir(prefix: string): string {
   tempDirs.push(dir);
   return dir;
 }
+
+test('packaging requires only non-optional OpenClaw plugins', () => {
+  expect(getRequiredPreinstalledPlugins([
+    { id: 'required-channel' },
+    { id: 'private-channel', optional: true },
+    null,
+  ])).toEqual([{ id: 'required-channel' }]);
+});
 
 test('summarizeGatewayAsarEntries flags bundled extensions inside gateway.asar', () => {
   const summary = summarizeGatewayAsarEntries([

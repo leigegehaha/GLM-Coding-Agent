@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-OpenClaw 原生 UI 在每条 assistant 消息底部展示一行统计信息（input/output tokens、上下文占用百分比、模型名称等），LobsterAI 作为 OpenClaw 的 gateway-client 当前不展示这些信息。本次变更将从 OpenClaw 的 `chat.final` 事件中提取 token 使用量等元数据，持久化到本地 SQLite，并在 Cowork 聊天界面中展示。
+OpenClaw 原生 UI 在每条 assistant 消息底部展示一行统计信息（input/output tokens、上下文占用百分比、模型名称等），智码 GLM Code 作为 OpenClaw 的 gateway-client 当前不展示这些信息。本次变更将从 OpenClaw 的 `chat.final` 事件中提取 token 使用量等元数据，持久化到本地 SQLite，并在 Cowork 聊天界面中展示。
 
 ### 设计目标
 
@@ -63,7 +63,7 @@ OpenClaw gateway 在 `sessions.list` RPC 响应的每个 session row 中返回 `
 
 #### ⚠️ 为什么不能从本地 models.json 读取
 
-LobsterAI 的 `openclawConfigSync.ts` 写入 `models.json` 时，只使用 `PROVIDER_REGISTRY.modelDefaults.contextWindow`（如 Moonshot 硬编码 256000），这与 OpenClaw gateway 通过 provider extension catalog 解析到的值（262144）不一致。
+智码 GLM Code 的 `openclawConfigSync.ts` 写入 `models.json` 时，只使用 `PROVIDER_REGISTRY.modelDefaults.contextWindow`（如 Moonshot 硬编码 256000），这与 OpenClaw gateway 通过 provider extension catalog 解析到的值（262144）不一致。
 
 **实测**：input=58154，models.json 中 contextWindow=200000 → 我们计算 29%，而 OpenClaw 后台用 256000（或 262144）→ 显示 23%。
 
@@ -80,11 +80,11 @@ Agent 名称从 `sessionKey` 解析：
 
 OpenClaw `chat.final` / `chat.delta` 事件的 `payload.message` 中包含 `timestamp: Date.now()`（服务端发送事件时的时间）。
 
-**问题**：LobsterAI 之前在 `coworkStore.addMessage()` 中使用本地 `Date.now()`（收到事件时的时间），导致与 OpenClaw 后台显示的时间有 ~1 分钟偏差（网络传输 + 本地处理延迟）。
+**问题**：智码 GLM Code 之前在 `coworkStore.addMessage()` 中使用本地 `Date.now()`（收到事件时的时间），导致与 OpenClaw 后台显示的时间有 ~1 分钟偏差（网络传输 + 本地处理延迟）。
 
 **修复**：从事件 payload 中提取 `message.timestamp`，传入 `addMessage()` 作为消息时间戳。
 
-### 2.3 当前 LobsterAI 提取情况
+### 2.3 当前 智码 GLM Code 提取情况
 
 **文件**：`src/main/libs/agentEngine/openclawRuntimeAdapter.ts`
 
@@ -94,7 +94,7 @@ OpenClaw `chat.final` / `chat.delta` 事件的 `payload.message` 中包含 `time
 
 **未提取**：`usage`、`model`、`cost`
 
-LobsterAI 已调用 `sessions.list`（line 1170），但未提取返回的 `contextTokens` 字段。
+智码 GLM Code 已调用 `sessions.list`（line 1170），但未提取返回的 `contextTokens` 字段。
 
 ### 2.4 数据可用性
 
@@ -625,7 +625,7 @@ contextPercent 可选获取：如果 reconcile 内方便拿到 `sessions.preview
 
 ### 10.6 验证
 
-1. `npm run electron:dev:openclaw` → IM 渠道发消息 → LobsterAI 查看该会话 → assistant 消息展示 token 统计
+1. `npm run electron:dev:openclaw` → IM 渠道发消息 → 智码 GLM Code 查看该会话 → assistant 消息展示 token 统计
 2. managed 会话（主窗口）功能不受影响
 3. 重启应用 → 历史 IM 消息仍展示 metadata
 4. TypeScript 编译 + ESLint 通过
@@ -648,7 +648,7 @@ contextPercent = Math.round((input / contextWindow) * 100)
 
 ### 11.2 ctx% 数值不准（29% vs 23%）修复（2026-05-08）
 
-**问题**：LobsterAI 显示 29%，OpenClaw 后台显示 23%，差异 6 个百分点。
+**问题**：智码 GLM Code 显示 29%，OpenClaw 后台显示 23%，差异 6 个百分点。
 
 **根因**：分母不同。
 - 我们从 `models.json` 读取 contextWindow=200000（由 openclawConfigSync 写入，使用 PROVIDER_REGISTRY 硬编码值）
@@ -671,7 +671,7 @@ contextPercent = Math.round((input / contextWindow) * 100)
 
 ### 11.5 消息时间戳修复（2026-05-08）
 
-**问题**：LobsterAI 显示 9:43，OpenClaw 后台显示 9:42。
+**问题**：智码 GLM Code 显示 9:43，OpenClaw 后台显示 9:42。
 
 **根因**：`coworkStore.addMessage()` 使用本地 `Date.now()`（收到事件时），而非事件 payload 中的 `message.timestamp`（服务端发送时）。
 

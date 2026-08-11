@@ -1,10 +1,10 @@
-# LobsterAI 数据备份与跨机器还原设计文档
+# 智码 GLM Code 数据备份与跨机器还原设计文档
 
 ## 1. 概述
 
 ### 1.1 问题/背景
 
-LobsterAI 需要在设置页提供“数据备份”和“数据迁移”能力，用于用户把一台机器上的 LobsterAI 迁移到另一台机器。应用内迁移采用新的归档格式，只支持由 LobsterAI 设置页导出的备份包。
+智码 GLM Code 需要在设置页提供“数据备份”和“数据迁移”能力，用于用户把一台机器上的 智码 GLM Code 迁移到另一台机器。应用内迁移采用新的归档格式，只支持由 智码 GLM Code 设置页导出的备份包。
 
 应用内迁移不能简单采用“强制退出后打包/删除/解压”模型，因为主进程、SQLite、OpenClaw gateway、定时任务和 IM 网关都可能在运行中写入数据。已经出现过以下失败现象：
 
@@ -19,7 +19,7 @@ LobsterAI 需要在设置页提供“数据备份”和“数据迁移”能力�
 
 1. 在设置页 `Agent 引擎 -> OpenClaw 维护` 中提供可用的备份和导入入口。
 2. 支持 Windows、macOS 和 Linux 之间迁移核心用户数据。
-3. 备份必须包含 LobsterAI 的核心状态：登录态、Agent、会话历史、定时任务、自定义模型、IM 配置、技能、插件/MCP 状态和 OpenClaw state。
+3. 备份必须包含 智码 GLM Code 的核心状态：登录态、Agent、会话历史、定时任务、自定义模型、IM 配置、技能、插件/MCP 状态和 OpenClaw state。
 4. 导入必须采用整体替换语义，并在替换前生成目标机当前数据的回滚备份。
 5. UI 必须在备份/还原期间显示全局 loading，阻止用户继续操作，并提示关闭应用会中断操作。
 6. 导入期间应用不能提前退出；必须先完成恢复和验证，再自动重启。
@@ -39,26 +39,26 @@ LobsterAI 需要在设置页提供“数据备份”和“数据迁移”能力�
 
 ### 场景 1: 从旧 Windows 电脑迁移到新 Windows 电脑
 
-**Given** 旧电脑上有多个 Agent，每个 Agent 下有历史记录，自定义模型配置了 API key，IM 机器人已配置，存在定时任务。  
-**When** 用户在旧电脑设置页点击“备份数据”，把生成的 `lobsterai-backup-yyyyMMdd-HHmmss.tar.gz` 拷贝到新电脑，并在新电脑设置页点击“导入备份”。  
+**Given** 旧电脑上有多个 Agent，每个 Agent 下有历史记录，自定义模型配置了 API key，IM 机器人已配置，存在定时任务。
+**When** 用户在旧电脑设置页点击“备份数据”，把生成的 `lobsterai-backup-yyyyMMdd-HHmmss.tar.gz` 拷贝到新电脑，并在新电脑设置页点击“导入备份”。
 **Then** 新电脑重启后能看到同样的 Agent、历史记录、自定义模型、IM 配置和定时任务。
 
 ### 场景 2: 从 macOS 迁移到 Windows
 
-**Given** macOS 上的 LobsterAI 已使用一段时间，包含 SQLite 数据、OpenClaw state、技能和插件状态。  
-**When** 用户在 macOS 备份，在 Windows 上导入。  
+**Given** macOS 上的 智码 GLM Code 已使用一段时间，包含 SQLite 数据、OpenClaw state、技能和插件状态。
+**When** 用户在 macOS 备份，在 Windows 上导入。
 **Then** SQLite 数据和 OpenClaw state 被还原；路径类配置如果指向 macOS 文件路径，应用应保留原值但提示用户自行调整为 Windows 可用路径。
 
 ### 场景 3: 备份时存在正在运行的任务
 
-**Given** OpenClaw 正在执行 Cowork 会话、定时任务或 IM 触发的任务。  
-**When** 用户点击备份。  
+**Given** OpenClaw 正在执行 Cowork 会话、定时任务或 IM 触发的任务。
+**When** 用户点击备份。
 **Then** 应用不应生成可能不一致的备份包，应提示用户先停止或等待任务结束；或者进入明确的 quiesce 状态，暂停可写入服务后再备份。
 
 ### 场景 4: 导入失败并回滚
 
-**Given** 目标机已有可用数据，用户选择的备份包损坏或恢复过程中写入失败。  
-**When** 用户执行导入。  
+**Given** 目标机已有可用数据，用户选择的备份包损坏或恢复过程中写入失败。
+**When** 用户执行导入。
 **Then** 应用必须恢复到导入前的数据，写入失败结果 marker，并在 UI 上展示失败原因和回滚备份位置。
 
 ## 3. 功能需求
@@ -71,13 +71,13 @@ LobsterAI 需要在设置页提供“数据备份”和“数据迁移”能力�
 lobsterai-backup-yyyyMMdd-HHmmss.tar.gz
 ```
 
-备份期间显示全局 loading，文案说明正在备份 LobsterAI 数据，关闭应用会中断备份。备份成功后展示备份路径、文件大小，并提供“在文件夹中显示”。
+备份期间显示全局 loading，文案说明正在备份 智码 GLM Code 数据，关闭应用会中断备份。备份成功后展示备份路径、文件大小，并提供“在文件夹中显示”。
 
 ### FR-2: 导入入口
 
 同一位置提供“导入备份”按钮。点击后弹出选择归档对话框，支持 `.tar.gz`、`.tgz`。导入前必须弹出确认弹窗，说明：
 
-- 当前 LobsterAI 数据会被备份包整体替换。
+- 当前 智码 GLM Code 数据会被备份包整体替换。
 - 应用会先自动生成回滚备份。
 - 导入期间不要关闭应用。
 - 成功后应用会自动重启。
@@ -111,7 +111,7 @@ window.electron.openclaw.dataMigration.getLastRestoreResult(): Promise<LastResto
 新备份包必须包含 manifest 文件：
 
 ```text
-LobsterAI/.lobsterai-migration.json
+智码 GLM Code/.lobsterai-migration.json
 ```
 
 manifest 不保存敏感明文，但必须包含足够信息来判断备份是否完整，以及恢复后是否匹配。
@@ -139,7 +139,7 @@ manifest 不保存敏感明文，但必须包含足够信息来判断备份是�
 
 #### SQLite: `lobsterai.sqlite`
 
-SQLite 是 LobsterAI 的主要权威数据源，必须通过 SQLite backup API 生成一致快照后迁移。至少包括：
+SQLite 是 智码 GLM Code 的主要权威数据源，必须通过 SQLite backup API 生成一致快照后迁移。至少包括：
 
 | 数据类型 | 代表内容 |
 |----------|----------|
@@ -174,7 +174,7 @@ OpenClaw state 是 Agent 引擎运行态的重要来源，至少包括：
 | `SKILLs/` | 用户安装或修改的技能 |
 | `third-party-extensions/` | 用户安装的第三方扩展 |
 
-Electron/Chromium profile 数据不作为迁移主数据集。LobsterAI 登录态、模型配置、API key、IM 配置、Agent 和任务历史必须以 SQLite/OpenClaw state 为准；`Dictionaries/`、`Local Storage/`、`Session Storage/`、`Local State`、`Preferences`、`Shared Dictionary/`、`SharedStorage*` 这类 profile 文件在 Windows 上可能被 Chromium/LevelDB 持有锁，恢复时应保留目标机现有文件并跳过归档中的同名条目，不能因为它们删除失败而回滚核心数据恢复。
+Electron/Chromium profile 数据不作为迁移主数据集。智码 GLM Code 登录态、模型配置、API key、IM 配置、Agent 和任务历史必须以 SQLite/OpenClaw state 为准；`Dictionaries/`、`Local Storage/`、`Session Storage/`、`Local State`、`Preferences`、`Shared Dictionary/`、`SharedStorage*` 这类 profile 文件在 Windows 上可能被 Chromium/LevelDB 持有锁，恢复时应保留目标机现有文件并跳过归档中的同名条目，不能因为它们删除失败而回滚核心数据恢复。
 
 ### 4.2 默认排除的数据
 
@@ -187,7 +187,7 @@ Electron/Chromium profile 数据不作为迁移主数据集。LobsterAI 登录�
 | `Crashpad/`、`logs/`、`openclaw/logs/`、`openclaw/state/logs/`、`install-timing.log`、`skill-migrate.log` | 诊断和运行日志，不属于用户状态 |
 | `Dictionaries/`、`Local Storage/`、`Session Storage/`、`Local State`、`Preferences`、`Shared Dictionary/`、`SharedStorage*` | Chromium profile/LevelDB 运行态文件，Windows 上容易被锁；核心用户数据必须来自 SQLite/OpenClaw state |
 | `lockfile`、`Singleton*`、`.com.github.Electron.*` | Electron 运行时锁和临时标记 |
-| `Cookies*`、`DIPS*`、`Network/Cookies*` | Windows 上经常被 Chromium 锁定，且 LobsterAI 登录态应以 SQLite token 为准 |
+| `Cookies*`、`DIPS*`、`Network/Cookies*` | Windows 上经常被 Chromium 锁定，且 智码 GLM Code 登录态应以 SQLite token 为准 |
 | `backups/`、`sqlite-backups/` | 自动备份目录会造成包膨胀和旧数据混淆 |
 | `runtimes/` | 目标机安装包负责提供 runtime |
 | `openclaw/mcp-packages/`、`.compile-cache/`、`bin/` | OpenClaw/MCP 可重建或平台相关的运行时产物 |
@@ -205,7 +205,7 @@ Electron/Chromium profile 数据不作为迁移主数据集。LobsterAI 登录�
 
 ```text
 lobsterai-backup-20260609-103000.tar.gz
-└── LobsterAI/
+└── 智码 GLM Code/
     ├── .lobsterai-migration.json
     ├── lobsterai.sqlite
     ├── SKILLs/
@@ -233,7 +233,7 @@ manifest 建议结构如下：
     "openclawVersion": "x.y.z"
   },
   "archive": {
-    "root": "LobsterAI",
+    "root": "智码 GLM Code",
     "excluded": ["Cache", "Code Cache", "GPUCache", "logs", "openclaw/logs", "openclaw/state/logs"]
   },
   "sqlite": {
@@ -340,7 +340,7 @@ staging 目录中的 `lobsterai.sqlite` 必须来自该快照，不能来自 liv
 1. 创建临时 staging 目录。
 2. 按“必须迁移的数据”和“默认排除的数据”递归复制 `userData`。
 3. 不复制 live `lobsterai.sqlite`、`lobsterai.sqlite-wal`、`lobsterai.sqlite-shm`。
-4. 将 SQLite 快照复制为 `stage/LobsterAI/lobsterai.sqlite`。
+4. 将 SQLite 快照复制为 `stage/智码 GLM Code/lobsterai.sqlite`。
 5. 对 staged SQLite 再次执行 `PRAGMA quick_check`。
 
 ### 6.5 OpenClaw state 一致性检查
@@ -377,7 +377,7 @@ staging 目录中的 `lobsterai.sqlite` 必须来自该快照，不能来自 liv
 
 破坏性操作前必须完成以下检查：
 
-1. 识别根目录：只接受 `LobsterAI/`。
+1. 识别根目录：只接受 `智码 GLM Code/`。
 2. 拒绝绝对路径、`..`、空路径、目标根外写入。
 3. 拒绝 symlink、hardlink、device file 等特殊 entry。
 4. 如果存在 manifest，校验 manifest 与归档内容一致。
@@ -395,7 +395,7 @@ staging 目录中的 `lobsterai.sqlite` 必须来自该快照，不能来自 liv
 1. renderer 显示全局 loading。
 2. 停止接受新的 Cowork、IM、定时任务和设置写入请求。
 3. 释放原业务 BrowserWindow/renderer 进程持有的业务句柄；主进程必须继续运行并保持单实例锁，不能在恢复完成前退出。
-4. 立即打开一个不使用 LobsterAI `userData` 的专用恢复进度窗口，使用非持久化 session/partition，只展示 loading 和安全提示。
+4. 立即打开一个不使用 智码 GLM Code `userData` 的专用恢复进度窗口，使用非持久化 session/partition，只展示 loading 和安全提示。
 5. 停止或暂停 OpenClaw gateway、定时任务服务、IM gateway。
 6. flush 并关闭 SQLite store。
 7. 停止日志之外的所有可写入 userData 的服务。
@@ -495,7 +495,7 @@ OpenClaw state 中可能包含平台路径、插件路径、任务工作目录�
 
 ### 8.3 登录态和凭据
 
-LobsterAI 服务登录态应以 SQLite 中的 token 为准，可以跨机器恢复，但 refreshToken 过期时仍需要重新登录。
+智码 GLM Code 服务登录态应以 SQLite 中的 token 为准，可以跨机器恢复，但 refreshToken 过期时仍需要重新登录。
 
 自定义模型 API key、IM webhook token、MCP token 等本地保存凭据应随 SQLite 或 OpenClaw state 迁移。manifest 只能记录存在性和哈希，不能输出明文。
 
@@ -514,7 +514,7 @@ Windows 对 SQLite、Chromium profile、日志、目录 rename 更敏感。设�
 
 ### 8.5 macOS
 
-macOS 同机重装通常不会删除 `~/Library/Application Support/LobsterAI`，但跨机器迁移仍需本功能。macOS 也存在 WAL-only 数据丢失风险，所以必须使用同样的 SQLite 快照和 checkpoint 验证流程，不能因为 macOS 文件锁较少就直接复制 live 数据库。
+macOS 同机重装通常不会删除 `~/Library/Application Support/智码 GLM Code`，但跨机器迁移仍需本功能。macOS 也存在 WAL-only 数据丢失风险，所以必须使用同样的 SQLite 快照和 checkpoint 验证流程，不能因为 macOS 文件锁较少就直接复制 live 数据库。
 
 ## 9. 失败模型
 
@@ -622,7 +622,7 @@ npm run electron:dev
 
 ## 12. 验收标准
 
-1. 备份包中必须存在 `LobsterAI/lobsterai.sqlite` 和 `LobsterAI/.lobsterai-migration.json`。
+1. 备份包中必须存在 `智码 GLM Code/lobsterai.sqlite` 和 `智码 GLM Code/.lobsterai-migration.json`。
 2. 新格式备份包不得包含 `lobsterai.sqlite-wal`、`lobsterai.sqlite-shm`、`backups/`、`sqlite-backups/`、`runtimes/`、Chromium cache、日志和 lock 文件。
 3. 备份包 manifest 中的 SQLite 摘要能证明自定义模型、Agent、会话、IM、定时任务数据存在。
 4. 导入前如果归档缺少 SQLite，必须失败，不能继续恢复。

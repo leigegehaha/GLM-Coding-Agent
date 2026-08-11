@@ -83,6 +83,33 @@ The current public build is **v2026.7.31**. Read the full notes on the
 > Privacy & Security, and Windows may show a SmartScreen notice. Review release checksums
 > before installing. Linux users can build from source.
 
+## Install with an Agent
+
+If you are using Codex, Claude Code, or another agent with network, terminal, and local file
+access, paste the prompt below as a single message. The agent will detect the platform,
+download the matching package from the official release, verify it, and help complete setup.
+
+```text
+Install Zhima GLM Code on this computer. Do not only describe the steps; perform the download and installation.
+
+Official repository: https://github.com/leigegehaha/GLM-Coding-Agent
+
+Follow these requirements exactly:
+1. Detect the operating system and CPU architecture first. Supported packages are macOS Apple Silicon (arm64) and Windows x64 only.
+2. Resolve the latest release through the official repository's GitHub Releases API. Do not download from search results, mirrors, or third-party links.
+3. On macOS, select the DMG whose name contains darwin-arm64. On Windows x64, select the GLMCode-Setup-x64 EXE.
+4. Download the installer into the current user's Downloads directory and report its version, filename, source URL, and size.
+5. Calculate SHA-256. If the GitHub Release API provides a digest, require an exact match and stop immediately on mismatch.
+6. Ask for my confirmation before running the installer or copying the app into Applications. Do not install silently or change security policies.
+7. Do not disable or bypass Gatekeeper, SmartScreen, antivirus, or other system protections. Explain any manual confirmation I need to perform.
+8. After installation, launch Zhima GLM Code, confirm the installed path and version, and explain how to sign in to Coding Plan or configure my own API key.
+9. Stop and clearly explain the reason if the platform is unsupported, verification fails, or the download source cannot be confirmed.
+```
+
+This prompt authorizes only the Zhima GLM Code installation. It does not authorize removing
+other versions, changing system security settings, or installing unrelated dependencies.
+You must still approve any operating-system permission dialogs yourself.
+
 ## Start in Three Steps
 
 1. **Install the desktop app** from the latest release.

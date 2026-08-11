@@ -78,6 +78,32 @@
 > 当前安装包为未签名预览版。macOS 可能要求在“隐私与安全性”中确认打开，Windows
 > 可能显示 SmartScreen 提示。安装前可在 Release 页面核对校验值。Linux 用户可从源码构建。
 
+## 让 Agent 帮你安装
+
+如果你正在使用 Codex、Claude Code 或其他具备网络、终端和本地文件权限的 Agent，
+可以把下面整段提示词直接发给它。Agent 会识别当前系统，从官方 Release 下载对应版本，
+校验文件并协助完成安装。
+
+```text
+请在这台电脑上安装智码 GLM Code，不要只告诉我安装步骤，请实际执行下载和安装。
+
+官方仓库：https://github.com/leigegehaha/GLM-Coding-Agent
+
+请严格遵守以下要求：
+1. 先识别当前操作系统和 CPU 架构，只支持 macOS Apple Silicon（arm64）和 Windows x64。
+2. 通过 GitHub Releases API 获取官方仓库的 latest release，不要从搜索结果、镜像站或第三方链接下载。
+3. macOS 选择文件名包含 darwin-arm64 的 DMG；Windows x64 选择 GLMCode-Setup-x64 的 EXE。
+4. 把安装包下载到当前用户的 Downloads 目录，并报告版本、文件名、下载地址和文件大小。
+5. 计算 SHA-256；如果 GitHub Release API 提供 digest，必须核对一致，不一致立即停止。
+6. 运行安装程序或把应用复制到 Applications 之前先向我确认。不要静默安装，不要修改系统安全策略。
+7. 不要关闭或绕过 Gatekeeper、SmartScreen、防病毒软件及其他系统安全保护；出现提示时告诉我如何手动确认。
+8. 安装完成后启动智码 GLM Code，确认应用路径和版本，并告诉我下一步如何登录 Coding Plan 或配置自己的 API Key。
+9. 如果系统架构不受支持、校验失败或下载来源无法确认，请停止操作并清楚说明原因。
+```
+
+这段提示词只授权安装智码 GLM Code，不授权 Agent 删除其他版本、修改系统安全设置，
+或安装任何无关依赖。安装过程中的系统授权窗口仍需由用户本人确认。
+
 ## 三步开始
 
 1. **安装桌面端**：从最新 Release 下载对应系统的安装包。
